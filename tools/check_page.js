@@ -13,4 +13,4 @@ const pub = fs.readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
 const D3 = '<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>';
 const expected = ref.toString('utf8').replace(D3, '<script src="shim.js"></script>\n' + D3) + '\n<script src="cloud.js"></script>\n';
 if (pub !== expected) { console.error('public/index.html is not the original page plus shim.js and cloud.js'); process.exit(1); }
-console.log('Page unchanged: ' + got);
+console.log('Page unchanged (original artifact + shim.js + cloud.js): ' + got);
