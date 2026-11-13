@@ -1,6 +1,7 @@
 {
   // BTC & ETH dashboard on Cloudflare Workers. Static files come from public/ (built on GitHub).
   // No public address of its own: it is reached only through the home site (repo dashboards), which holds the login lock.
+  // Deployed by .github/workflows/build.yml (needs secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID).
   "name": "btc-eth-dashboard",
   "main": "worker/index.js",
   "compatibility_date": "2026-11-01",
