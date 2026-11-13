@@ -64,5 +64,5 @@ jobs:
           # a pasted secret can carry a stray space or line break; a real token and account id never contain whitespace
           export CLOUDFLARE_API_TOKEN="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]')" CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
           echo "Token: ${#CLOUDFLARE_API_TOKEN} characters; account id: ${#CLOUDFLARE_ACCOUNT_ID} characters (expected 32)."
-          npx -y wrangler@4 deploy   # workers_dev is off: only the home site (dashboards) can reach this Worker
+          npx -y wrangler@4 deploy || { echo "::error::Cloudflare refused the deploy. Check the CLOUDFLARE_API_TOKEN secret (only the token value, Workers Scripts: Edit on your account) and CLOUDFLARE_ACCOUNT_ID (32 characters). The built data is saved; the site keeps its last deploy."; exit 1; }   # workers_dev is off: only the home site (dashboards) can reach this Worker
           printf '%s' "$REFRESH_TOKEN" | npx -y wrangler@4 secret put GITHUB_TOKEN
