@@ -19,7 +19,12 @@ Claude only loads data; it does not run the dashboard's logic. Spot only: there 
   2. Leverage steady: open interest 4h change within ±1%.
   3. Funding reset: OI-weighted funding at or below 0%.
   4. Price confirms: the last closed 4H close at or above the floor of the page's own 1D buy zone, with the page's 4H RSI above 30.
-  Thresholds 1–3 are rules of thumb, not backtested. Spot only, not financial advice.
+  Below it, a mirror **spot sell / trim checklist** (take some profit, never short):
+  1. Squeeze over: short liquidations of at least $50M in 24h that have faded below $20M in 4h and $5M in 1h.
+  2. Leverage piling in: open interest up 2% or more in 4h.
+  3. Funding hot: funding at or above 0.03%.
+  4. Price stalls: a 4H close at or above the floor of the page's 1D sell zone, with 4H RSI at or above 70.
+  Thresholds 1–3 of both lists are rules of thumb, not backtested: free open-interest and funding history isn't available, and the daily CoinGlass readings kept in market-data build that history. Spot only, not financial advice.
 - **Closed candles only**: prices are the last closed 4H and daily candles. This week, month and year run to the last closed day.
 
 Tests (need `npm i jsdom@24 d3@7.9.0` in some folder):

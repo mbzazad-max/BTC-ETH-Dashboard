@@ -7,7 +7,14 @@
      4. Price confirms  the page's own engine: last closed 4H close at or above the floor of the 1D spot buy zone
                         (Trade plan "Spot setup by timeframe", 1D row) and 4H RSI back above 30 (Trade plan, timeframe table)
 
-   Thresholds 1-3 are rules of thumb chosen with the owner (not backtested). Check 4 reads the numbers the page itself
+   A mirror SPOT SELL / TRIM checklist (spot only: it means take some profit, never short) is added below it:
+     1. Squeeze over    CoinGlass: short liquidations were large in 24h (>= $50M) and have faded (4h < $20M, 1h < $5M)
+     2. Leverage piling OI 4h change >= +2% (late longs piling in)
+     3. Funding hot     OI-weighted funding >= 0.03% (3x the 0.01% baseline)
+     4. Price stalls    last closed 4H close at or above the floor of the page's 1D sell zone and 4H RSI >= 70
+
+   Thresholds 1-3 of both lists are rules of thumb chosen with the owner (not backtested: free open-interest and
+   funding history is not available; the daily CoinGlass readings kept in market-data build that history). Check 4 reads the numbers the page itself
    shows: the original page runs in jsdom on the snapshot this build just wrote, so the buy zone and RSI are the page's.
    A check whose input is missing shows "no data" and is not counted as green. Spot only; not financial advice.
 
@@ -19,7 +26,8 @@ const fs = require('fs'), path = require('path');
 const NM = path.resolve(process.argv[2] || 'node_modules');
 const ROOT = path.resolve(__dirname, '..'), PUB = path.join(ROOT, 'public');
 const SNAP = path.join(PUB, 'snapshot.json');
-const RULES = { flush4h: 20e6, flush1h: 5e6, oiBand: 1, funding: 0, rsi: 30 };
+const RULES = { flush4h: 20e6, flush1h: 5e6, oiBand: 1, funding: 0, rsi: 30,
+  squeeze24h: 50e6, oiPile: 2, fundingHot: 0.03, rsiHot: 70 };
 const usd = (v) => (v >= 1e9 ? '$' + (v / 1e9).toFixed(2) + 'B' : v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + Math.round(v / 1e3) + 'K');
 const money = (v) => Math.round(v).toLocaleString('en-US');
 
@@ -46,7 +54,9 @@ function pageNumbers(snapshot) {   // the original page's own spot plan and time
         if (spot.status !== 'ok' || mtf.status !== 'ok' || sum.status !== 'ok') { out[a] = null; continue; }
         const d1 = spot.data.find((r) => r.tf === '1D'), h4 = mtf.data.find((r) => r.tf === '4H');
         const m = d1 && String(d1.buy_zone).match(/([\d,.]+)\s*[–-]\s*([\d,.]+)/);
+        const ms = d1 && String(d1.sell_zone).match(/([\d,.]+)\s*[–-]\s*([\d,.]+)/);   // first sell zone ("A–B then C–D")
         out[a] = { lo: m ? Number(m[1].replace(/,/g, '')) : null, hi: m ? Number(m[2].replace(/,/g, '')) : null, zone: d1 ? d1.buy_zone : null,
+          slo: ms ? Number(ms[1].replace(/,/g, '')) : null, shi: ms ? Number(ms[2].replace(/,/g, '')) : null,
           close4h: sum.data[0].spot, rsi4h: h4 ? h4.rsi : null };
       }
       w.close(); resolve(out);
@@ -93,17 +103,48 @@ function rowsFor(coin, cg, px) {
     signal: c.ok === true ? '✓ Green' : c.ok === false ? '✗ Not yet' : '– No data', note: c.note })));
 }
 
+function sellRowsFor(coin, cg, px) {
+  const find = (id) => (cg.rows || []).find((r) => r.id === id) || {};
+  const liq = find('liq_btc_24h'), oi = find('oi_total'), fund = find('funding_oiw');
+  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  const checks = [];
+  const s24 = num(liq.short_24h), s4 = num(liq.short_4h), s1 = num(liq.short_1h);
+  checks.push({ id: 'chs_squeeze', metric: '1. Squeeze over', ok: s24 == null || s4 == null || s1 == null ? null : s24 >= RULES.squeeze24h && s4 < RULES.flush4h && s1 < RULES.flush1h,
+    value: s24 == null || s4 == null || s1 == null ? 'no data yet' : `shorts 24h ${usd(s24)} · 4h ${usd(s4)} · 1h ${usd(s1)}`,
+    note: `Green when ${coin} short liquidations were large over 24h (at least $50M) and have faded (under $20M in 4h, under $5M in 1h): the squeeze fuel is used up.` });
+  const o4 = num(oi.num);
+  checks.push({ id: 'chs_oi', metric: '2. Leverage piling in', ok: o4 == null ? null : o4 >= RULES.oiPile,
+    value: o4 == null ? 'no data yet' : `OI 4h ${o4 > 0 ? '+' : ''}${o4.toFixed(1)}%`,
+    note: 'Green when open interest jumps 2% or more in 4h: late leveraged buyers piling in near the top.' });
+  const f = num(fund.num);
+  checks.push({ id: 'chs_funding', metric: '3. Funding hot', ok: f == null ? null : f >= RULES.fundingHot,
+    value: f == null ? 'no data yet' : `funding ${f > 0 ? '+' : ''}${f.toFixed(4)}%`,
+    note: 'Green at 0.03% or more (three times the 0.01% baseline): longs are paying heavily to stay in.' });
+  const okPx = px && px.slo != null && px.close4h != null && px.rsi4h != null;
+  checks.push({ id: 'chs_price', metric: '4. Price stalls', ok: okPx ? px.close4h >= px.slo && px.rsi4h >= RULES.rsiHot : null,
+    value: okPx ? `RSI ${px.rsi4h.toFixed(0)} · 4H ${money(px.close4h)} · sell zone ${money(px.slo)}–${money(px.shi)}` : 'no data yet',
+    note: 'Green when the last closed 4H candle is at or above the floor of the 1D sell zone (Trade plan tab) and 4H RSI is 70 or higher.' });
+  const greens = checks.filter((c) => c.ok === true).length, known = checks.filter((c) => c.ok !== null).length;
+  const verdict = greens === 4 ? 'All green: take a bigger profit' : greens >= 2 ? 'Trim a little' : 'Hold';
+  const sum = { group: 'Spot sell / trim checklist', id: 'chs_sum', metric: 'Spot sell / trim checklist', value: `${greens}/4 green · ${verdict}` + (known < 4 ? ` (${4 - known} no data)` : ''),
+    num: greens, signal: verdict,
+    note: checks.map((c) => c.metric.replace(/^\d\. /, '') + (c.ok === true ? ' ✓' : c.ok === false ? ' ✗' : ' –')).join(' · ') +
+      '. 0–1 green: hold. 2–3: trim a little (take partial profit) into the sell zone. 4: take a bigger profit; don\'t buy here. Spot only: this means selling some of what you hold, never shorting. Rules of thumb, not financial advice.' };
+  return [sum].concat(checks.map((c) => ({ group: 'Spot sell / trim checklist', id: c.id, metric: c.metric, value: (c.ok === true ? '✓ ' : c.ok === false ? '✗ ' : '– ') + c.value, num: c.ok === null ? null : c.ok ? 1 : 0,
+    signal: c.ok === true ? '✓ Green' : c.ok === false ? '✗ Not yet' : '– No data', note: c.note })));
+}
+
 (async () => {
   const snap = JSON.parse(fs.readFileSync(SNAP, 'utf8'));
   let px;
-  try { px = await pageNumbers(snap); } catch (e) { console.log('::warning::Spot buy checklist skipped: ' + e.message); return; }
+  try { px = await pageNumbers(snap); } catch (e) { console.log('::warning::Spot checklists skipped: ' + e.message); return; }
   const report = {};
   for (const [coin, doc] of [['BTC', 'snap/derivs'], ['ETH', 'snap/derivs_eth']]) {
     const cg = snap.docs[doc];
     if (!cg || !Array.isArray(cg.rows)) { report[coin] = 'no CoinGlass reading'; continue; }
-    cg.rows = cg.rows.filter((r) => !String(r.id).startsWith('chk_')).concat(rowsFor(coin, cg, px[coin]));
-    report[coin] = cg.rows.filter((r) => r.id.startsWith('chk_')).map((r) => r.metric + ': ' + r.value + ' [' + r.signal + ']');
+    cg.rows = cg.rows.filter((r) => !/^ch[ks]_/.test(String(r.id))).concat(rowsFor(coin, cg, px[coin]), sellRowsFor(coin, cg, px[coin]));
+    report[coin] = cg.rows.filter((r) => /^ch[ks]_/.test(r.id)).map((r) => r.metric + ': ' + r.value + ' [' + r.signal + ']');
   }
   fs.writeFileSync(SNAP, JSON.stringify(snap));
   console.log(JSON.stringify(report, null, 1));
-})().catch((e) => { console.log('::warning::Spot buy checklist skipped: ' + (e && e.message || e)); process.exit(0); });
+})().catch((e) => { console.log('::warning::Spot checklists skipped: ' + (e && e.message || e)); process.exit(0); });
