@@ -1,5 +1,5 @@
 {
- "_about": "BTC: the stored Coinbase BTCUSD history (TradingView, loaded once on 13 Nov 2026, back to Dec 2014) is kept, and every candle after its last one comes from Binance BTCUSDT in market-data (laptop upload), so BTC needs no TradingView calls. Which shared data (mbzazad-max/market-data) feeds each saved-snapshot document of the original page. The page asks TradingView for the same things in its own Refresh: 4H x1000, daily x8000 (all), weekly x2000 and monthly x500 per coin, and 1D x400 per gauge. Here weekly and monthly are built from closed daily candles and the gauges' daily candles from closed 4H candles (Monday weeks, calendar months, UTC days).",
+ "_about": "Gauges reuse what the daily 11:30 TradingView task already loads for other dashboards: the alt market cap gauge (the page calls it TOTAL2) reads CRYPTOCAP:TOTAL2ES (alt market cap without stablecoins), and BTC dominance is left out (the page shows it only as context and skips it when missing). BTC: the stored Coinbase BTCUSD history (TradingView, loaded once on 13 Nov 2026, back to Dec 2014) is kept, and every candle after its last one comes from Binance BTCUSDT in market-data (laptop upload), so BTC needs no TradingView calls. Which shared data (mbzazad-max/market-data) feeds each saved-snapshot document of the original page. The page asks TradingView for the same things in its own Refresh: 4H x1000, daily x8000 (all), weekly x2000 and monthly x500 per coin, and 1D x400 per gauge. Here weekly and monthly are built from closed daily candles and the gauges' daily candles from closed 4H candles (Monday weeks, calendar months, UTC days).",
  "sources": {
   "btc_4h":      { "use": "4H", "series_4h": "tv/COINBASE_BTCUSD/4H", "then_4h": "binance/BTCUSDT/4H", "last": 1000 },
   "btc_daily":   { "series": "tv/COINBASE_BTCUSD/1D", "then": "binance/BTCUSDT/1D", "use": "1D", "last": 8000 },
@@ -12,8 +12,7 @@
   "econ_cal":    { "reading": "snap/tv_econ_us", "use": "econ" },
   "gauge_usdtd": { "series_4h": "tv/CRYPTOCAP_USDT.D/4H", "use": "1D_from_4H", "last": 400 },
   "gauge_usdcd": { "series_4h": "tv/CRYPTOCAP_USDC.D/4H", "use": "1D_from_4H", "last": 400 },
-  "gauge_btcd":  { "series_4h": "tv/CRYPTOCAP_BTC.D/4H", "use": "1D_from_4H", "last": 400 },
-  "gauge_total2":{ "series_4h": "tv/CRYPTOCAP_TOTAL2/4H", "use": "1D_from_4H", "last": 400 }
+  "gauge_total2":{ "series_4h": "tv/CRYPTOCAP_TOTAL2ES/4H", "use": "1D_from_4H", "last": 400 }
  },
  "readings": {
   "sentiment":  { "reading": "snap/cmc_global", "use": "cmc" },

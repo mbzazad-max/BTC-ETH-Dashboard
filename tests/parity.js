@@ -25,6 +25,7 @@ const mo = (t) => { const d = new Date(t * 1000); return Date.UTC(d.getUTCFullYe
 const answer = (bars, n) => { const b = bars.slice(-n); return { success: true, format: 'columns', bars: { t: b.map((x) => x.t), o: b.map((x) => x.o), h: b.map((x) => x.h), l: b.map((x) => x.l), c: b.map((x) => x.c), v: b.map((x) => x.v) } }; };
 const SYMS = { 'COINBASE:BTCUSD': 'btc', 'BINANCE:ETHUSDT': 'eth' }, GAUGE = { 'CRYPTOCAP:USDT.D': 'gauge_usdtd', 'CRYPTOCAP:USDC.D': 'gauge_usdcd', 'CRYPTOCAP:BTC.D': 'gauge_btcd', 'CRYPTOCAP:TOTAL2': 'gauge_total2' };
 function tv(a) {
+  if (GAUGE[a.symbol] && !cfg.sources[GAUGE[a.symbol]]) throw { code: 'tool_error', message: 'not used on GitHub: ' + a.symbol };  // BTC.D is left out
   if (GAUGE[a.symbol]) { const s = cfg.sources[GAUGE[a.symbol]]; return answer(group(load(s.series_4h), (t) => Math.floor(t / 86400) * 86400).filter((g) => g.rs[g.rs.length - 1].t === g.k + 72000).map((g) => agg(g.k, g.rs)), a.count); }
   const c = SYMS[a.symbol]; if (!c) throw { code: 'tool_error', message: 'no fixture for ' + a.symbol };
   if (a.interval === '4h') return answer(chain(cfg.sources[c + '_4h'].series_4h, cfg.sources[c + '_4h'].then_4h), a.count);
@@ -62,11 +63,14 @@ function tv(a) {
   execFileSync('node', [path.join(tmp, 'build/build.js'), MD, '--force'], { env: { ...process.env, BUILD_NOW: String(Math.floor(Date.parse(store['snap/meta'].at) / 1000)) } });
   const ours = JSON.parse(fs.readFileSync(path.join(tmp, 'public/snapshot.json'), 'utf8')).docs;
   const norm = (k, d) => { const c = JSON.parse(JSON.stringify(d)); delete c.at;
-    if (k === 'snap/meta') Object.values(c.sources).forEach((s) => delete s.at);
+    if (k === 'snap/meta') { Object.values(c.sources).forEach((s) => delete s.at); delete c.failed; }
     if (k === 'snap/sentiment') { delete c.as_of; c.rows.forEach((r) => { if (r.id === 'as_of') delete r.value; }); }
     return c; };
   const res = { page_banner: banner, page_calls: calls.length, identical: [], different: {}, only_page: [], only_build: [] };
+  const unused = Object.keys(GAUGE).filter((g) => !cfg.sources[GAUGE[g]]).map((g) => GAUGE[g]);   // gauges left out on GitHub
+  res.page_failed = store['snap/meta'].failed; res.left_out = unused;
   for (const k of Object.keys(store)) {
+    if (unused.some((u) => k.startsWith('snap/' + u + '-'))) continue;
     if (!(k in ours)) { res.only_page.push(k); continue; }
     if (JSON.stringify(norm(k, store[k])) === JSON.stringify(norm(k, ours[k]))) res.identical.push(k);
     else { const a = norm(k, store[k]), b = norm(k, ours[k]); res.different[k] = (a.rows && b.rows) ? a.rows.findIndex((r, i) => JSON.stringify(r) !== JSON.stringify(b.rows[i])) : 'fields'; }
@@ -75,7 +79,7 @@ function tv(a) {
   // CoinGlass readings pass through unchanged
   res.coinglass_unchanged = ['derivs', 'derivs_eth'].every((d) => JSON.stringify(ours['snap/' + d]) === JSON.stringify(reading(cfg.readings[d].reading).payload));
   res.page_errors = errors;
-  const ok = !Object.keys(res.different).length && !res.only_page.length && res.only_build.every((k) => k === 'snap/derivs' || k === 'snap/derivs_eth') && res.coinglass_unchanged && !errors.length && /All 13/.test(banner);
+  const ok = !Object.keys(res.different).length && !res.only_page.length && res.only_build.every((k) => k === 'snap/derivs' || k === 'snap/derivs_eth') && res.coinglass_unchanged && !errors.length && (unused.length ? JSON.stringify(res.page_failed) === JSON.stringify(unused) : /All 13/.test(banner));
   console.log(JSON.stringify({ ok, compared: res.identical.length + Object.keys(res.different).length, ...res }, null, 1));
   w.close(); process.exit(ok ? 0 : 1);
 })().catch((e) => { console.error(e); process.exit(2); });

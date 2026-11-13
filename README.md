@@ -6,7 +6,7 @@ Claude only loads data; it does not run the dashboard's logic. Spot only: there 
 - **Data**: read from the shared repo `mbzazad-max/market-data`, closed candles only.
   - BTC: the stored Coinbase BTCUSD history (TradingView, loaded once on 13 Nov 2026: 1D from Dec 2014, 4H from Aug 2024), then every newer candle from Binance BTCUSDT (laptop upload). No TradingView calls for BTC after the first load.
   - ETH: Binance ETHUSDT 1D and 4H, from your laptop upload.
-  - Gauges: TradingView CRYPTOCAP USDT.D, USDC.D, BTC.D and TOTAL2 (4H, made into daily).
+  - Gauges: CRYPTOCAP USDT.D, USDC.D and TOTAL2ES (4H, made into daily), the same files the daily 11:30 TradingView task already loads for other dashboards. The page's "Alt market cap (TOTAL2)" gauge shows TOTAL2ES (alts without stablecoins); BTC dominance is left out (context only on the page).
   - Readings: US macro calendar and CoinMarketCap (daily 11:30 Claude task), and CoinGlass BTC and ETH (daily CoinGlass Claude task).
   - Nothing is fetched twice: series used by other dashboards are shared.
 - **Logic**: all of it stays in the original page, which runs unchanged in the browser. `public/index.html` is the artifact page plus two script tags: `shim.js` (the saved snapshot, read-only, in place of the claude.ai database) and `cloud.js` (Refresh button and freshness strip). The original is `reference/index.original.html`, and every run checks it against `reference/PAGE_SHA256SUMS` (`node tools/check_page.js`).
