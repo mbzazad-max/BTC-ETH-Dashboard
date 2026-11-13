@@ -1,0 +1,2455 @@
+<title>Bitcoin Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: status bar with the saved-snapshot time and Refresh on top, headline tiles, tabbed views (Day → Forecast), method notes. Same visual family as the Breakout Radar and Coin Zones Board. */
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --ink:#12202c; --muted:#586878; --line:#dce2e9; --soft:#eaeef3;
+  --up:#0d8a5c; --up-bg:#e3f4ec; --dn:#c0410f; --dn-bg:#fbe9df; --acc:#2557d6; --acc-bg:#e4ebfb;
+  --warn:#9a6700; --warn-bg:#fff3cd; --wk:#8a97a6;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  /* names the dashboard views were written against, mapped onto the tokens above */
+  --color-fg:var(--ink); --color-fg-muted:var(--muted); --color-bg:var(--bg); --color-panel:var(--panel); --color-border-line:var(--line);
+  --color-ok:var(--up); --color-warn:var(--warn); --color-bad:var(--dn);
+  --font-anthropic-sans:var(--sans); --font-anthropic-serif:var(--mono);
+  --cds-font-size-caption:12.5px; --cds-font-size-body:14px; --cds-font-size-heading:16px; --cds-font-size-title:24px; --cds-font-weight-medium:600;
+  --cds-gap-xs:4px; --cds-gap-sm:8px; --cds-gap-md:12px; --cds-gap-lg:16px; --cds-gap-xl:24px;
+  --cds-pad-xs:4px; --cds-pad-sm:8px; --cds-pad-md:12px; --cds-pad-lg:16px; --cds-pad-xl:24px; --cds-radius:10px;
+  --cds-chart-grid:var(--line); --cds-chart-axis:var(--muted); --cds-chart-reference:var(--wk); --cds-chart-muted:var(--wk);
+  --cds-surface-popover:var(--panel); --cds-border:var(--line); --cds-shadow-popover:0 4px 14px rgba(0,0,0,.12); --cds-text-secondary:var(--muted);
+  --cds-dur-slow:.4s; --cds-ease-out:ease-out;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e141a; --panel:#151d25; --ink:#e5ecf3; --muted:#92a3b4; --line:#26323d; --soft:#1c2630;
+  --up:#41d09a; --up-bg:#0f2d24; --dn:#ff9265; --dn-bg:#33211a; --acc:#7ba5ff; --acc-bg:#182643;
+  --warn:#f2c14e; --warn-bg:#33290f; --wk:#6b7a8a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141a; --panel:#151d25; --ink:#e5ecf3; --muted:#92a3b4; --line:#26323d; --soft:#1c2630;
+  --up:#41d09a; --up-bg:#0f2d24; --dn:#ff9265; --dn-bg:#33211a; --acc:#7ba5ff; --acc-bg:#182643;
+  --warn:#f2c14e; --warn-bg:#33290f; --wk:#6b7a8a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+.page{max-width:1240px;margin:0 auto;display:grid;gap:14px;min-width:0}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.dash-skeleton{color:transparent!important;background:var(--soft);border-radius:4px;animation:sk 1.4s ease-in-out infinite}
+@keyframes sk{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.dash-skeleton{animation:none}}
+/* status bar, as on the Breakout Radar */
+.rf-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+.rf-top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+.rf-card h1{font-family:var(--sans);font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em}
+.rf-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rf-pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:500;background:var(--soft);color:var(--muted);white-space:nowrap}
+.rf-pill.acc{background:var(--acc-bg);color:var(--acc)} .rf-pill.warn{background:var(--warn-bg);color:var(--warn)} .rf-pill.ok{background:var(--up-bg);color:var(--up)} .rf-pill.bad{background:var(--dn-bg);color:var(--dn)}
+.rf-btn{font:inherit;font-weight:500;padding:6px 16px;border-radius:999px;border:1px solid var(--acc);background:var(--acc);color:var(--panel);cursor:pointer}
+.rf-btn.ghost{background:transparent;color:var(--acc)}
+.rf-btn:disabled{opacity:.5;cursor:default}
+.rf-prog{height:4px;border-radius:2px;background:var(--soft);overflow:hidden}
+.rf-prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .4s}
+.rf-note{color:var(--muted);font-size:12.5px;line-height:1.45;margin:0}
+.rf-banner{border-radius:8px;padding:8px 12px;font-size:13px;background:var(--warn-bg);color:var(--warn)}
+.rf-banner.ok{background:var(--up-bg);color:var(--up)} .rf-banner.bad{background:var(--dn-bg);color:var(--dn)}
+.rf-empty{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:28px 16px;display:grid;gap:8px;justify-items:center;text-align:center}
+.rf-empty h2{font-size:16px;font-weight:600;margin:0}
+.method{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:8px}
+.method h2{font-size:16px;font-weight:600;margin:0}
+.method ul{margin:0;padding-left:18px;color:var(--muted);font-size:13px;line-height:1.6}
+.method b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.rf-prog i{transition:none}}
+</style>
+<style>
+  .br { font-family: var(--font-anthropic-sans); color: var(--color-fg); display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
+  .br h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; }
+  .br-lede { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); line-height: 1.5; }
+  .br-lede b { color: var(--color-fg); font-weight: 600; }
+  .br-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); gap: var(--cds-gap-md); }
+  .br-tile, .br-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+  .br-tile .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .br-tile .val { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; margin-top: var(--cds-gap-xs); min-height: 1.3em; }
+  .br-tile .sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-xs); font-variant-numeric: tabular-nums; }
+  .pos { color: var(--color-ok); } .neg { color: var(--color-bad); }
+  .br-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: calc(var(--cds-radius) + 2px); background: color-mix(in srgb, var(--color-fg) 8%, transparent); align-self: flex-start; }
+  .br-tabs button { font: inherit; font-size: var(--cds-font-size-body); background: none; border: 0; border-radius: var(--cds-radius); color: var(--color-fg-muted); padding: var(--cds-pad-xs) var(--cds-pad-md); cursor: pointer; }
+  .br-tabs button[aria-selected="true"] { color: var(--color-bg); background: var(--color-fg); font-weight: 600; }
+  .br-page { display: flex; flex-direction: column; gap: var(--cds-gap-md); }
+  .br-page[hidden] { display: none; }
+  .br-card h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .br-card .note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-xs) 0 var(--cds-gap-md); }
+  .br-scroll { overflow-x: auto; }
+  .br-heat { border-collapse: separate; border-spacing: 4px; width: 100%; font-variant-numeric: tabular-nums; font-size: var(--cds-font-size-caption); }
+  .br-heat th { font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); padding: var(--cds-pad-xs); text-align: center; white-space: nowrap; }
+  .br-heat td { padding: 7px var(--cds-pad-sm); text-align: center; border-radius: 4px; white-space: nowrap; min-width: 4.2rem; font-weight: 600; border: 1px solid transparent; }
+  .br-heat td:first-child { text-align: left; font-weight: 600; color: var(--color-fg); min-width: 3.5rem; background: none; }
+  .br-heat td.up { background: #3fbf74; color: #fff; }
+  .br-heat td.down { background: #ef5f5c; color: #fff; }
+  .br-heat td.flat { background: color-mix(in srgb, var(--color-fg) 22%, transparent); }
+  .br-heat td.live { border: 1.5px dashed var(--color-fg); }
+  .br-heat td.listing { opacity: .45; }
+  .br-heat td.stat { background: color-mix(in srgb, var(--color-fg) 14%, transparent); color: var(--color-fg); font-weight: 500; }
+  .br-heat tr.stat td:first-child { color: var(--color-fg-muted); font-weight: 500; }
+  .br-heat tr.first-stat > * { padding-top: 14px; }
+  .br-heat.compact td { min-width: 3.3rem; padding: 6px 4px; font-size: 11px; }
+  .br-heat.compact td:first-child, .br-heat.days td:first-child { position: sticky; left: 0; background: var(--color-panel); z-index: 1; }
+  .br-heat.compact th:first-child, .br-heat.days th:first-child { position: sticky; left: 0; background: var(--color-panel); z-index: 1; }
+  .br-heat.days td { padding: 5px var(--cds-pad-xs); min-width: 3.9rem; }
+  .br-card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: var(--cds-gap-sm); }
+  .br-card-head select { font: inherit; font-size: var(--cds-font-size-body); padding: var(--cds-pad-xs) var(--cds-pad-sm); border-radius: var(--cds-radius); border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); }
+  .br-win { display: inline-flex; gap: 2px; padding: 3px; border-radius: calc(var(--cds-radius) + 2px); background: color-mix(in srgb, var(--color-fg) 8%, transparent); }
+  .br-win button { font: inherit; font-size: var(--cds-font-size-caption); background: none; border: 0; border-radius: var(--cds-radius); color: var(--color-fg-muted); padding: 4px var(--cds-pad-sm); cursor: pointer; }
+  .br-win button[aria-pressed="true"] { background: var(--color-panel); color: var(--color-fg); font-weight: 600; box-shadow: 0 0 0 1px var(--color-border-line); }
+  .br-find { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--cds-gap-md); }
+  .br-find .f { border-radius: var(--cds-radius); padding: var(--cds-pad-md); border: 1px solid var(--color-border-line); }
+  .br-find .f.bull { border-left: 4px solid #3fbf74; } .br-find .f.bear { border-left: 4px solid #ef5f5c; }
+  .br-find .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .br-find .big { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-title); margin: var(--cds-gap-xs) 0; min-height: 1.3em; }
+  .br-find .sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; min-height: 1.2em; }
+  .br-pt td.best { color: var(--color-ok); font-weight: 600; } .br-pt td.worst { color: var(--color-bad); font-weight: 600; }
+  .tp-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: var(--cds-gap-sm); }
+  .tp-strip > div { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-sm) var(--cds-pad-md); }
+  .tp-strip .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .tp-strip .v { font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; min-height: 1.2em; }
+  .tp-strip .s { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+  .tp-t { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .tp-t th, .tp-t td { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); text-align: left; vertical-align: top; }
+  .tp-t th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); white-space: nowrap; }
+  .tp-t td.num { text-align: right; white-space: nowrap; }
+  .tp-t td.nowrap { white-space: nowrap; }
+  .tp-t td.small { color: var(--color-fg-muted); min-width: 16rem; }
+  .tp-t tr.R td:nth-child(2) { color: var(--color-bad); font-weight: 600; }
+  .tp-t tr.S td:nth-child(2) { color: var(--color-ok); font-weight: 600; }
+  .tp-t tr.star { background: color-mix(in srgb, #e3b341 14%, transparent); }
+  .tp-flag { color: #b8860b; font-weight: 600; white-space: nowrap; }
+  .tp-call { border-left: 4px solid var(--color-bad); padding: var(--cds-pad-sm) var(--cds-pad-md); background: color-mix(in srgb, var(--color-bad) 7%, transparent); border-radius: 0 var(--cds-radius) var(--cds-radius) 0; margin-top: var(--cds-gap-md); font-size: var(--cds-font-size-body); }
+  .tp-call b { font-weight: 600; }
+  .tp-case { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--cds-gap-md); }
+  .tp-case > div { border-radius: var(--cds-radius); padding: var(--cds-pad-md); border: 1px solid var(--color-border-line); line-height: 1.5; }
+  .tp-case .bull { border-left: 4px solid #3fbf74; } .tp-case .bear { border-left: 4px solid #ef5f5c; }
+  .tp-case h3, .tp-fut h3 { margin: 0 0 var(--cds-gap-xs); font-size: var(--cds-font-size-body); font-weight: 600; }
+  .tp-fut { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); }
+  .tp-fut > div { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); }
+  .tp-fut .long { border-top: 4px solid #3fbf74; } .tp-fut .short { border-top: 4px solid #ef5f5c; }
+  .tp-fut dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px var(--cds-gap-md); margin: var(--cds-gap-sm) 0 0; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .tp-fut dt { color: var(--color-fg-muted); }
+  .tp-fut dd { margin: 0; font-weight: 500; }
+  .tp-fut .why { white-space: pre-line; color: var(--color-fg-muted); font-weight: 400; line-height: 1.45; }
+  .tp-verdict { display: inline-block; font-size: var(--cds-font-size-caption); font-weight: 600; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--color-fg) 10%, transparent); }
+  .tp-verdict.ok { background: color-mix(in srgb, #3fbf74 22%, transparent); color: var(--color-ok); }
+  .tp-verdict.no { background: color-mix(in srgb, #ef5f5c 18%, transparent); color: var(--color-bad); }
+  .fc-hz { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--cds-gap-md); }
+  .fc-hz > div { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+  .fc-hz .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .fc-hz .big { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-title); margin: 4px 0; font-variant-numeric: tabular-nums; min-height: 1.3em; }
+  .fc-hz .row { display: flex; justify-content: space-between; gap: var(--cds-gap-sm); font-size: var(--cds-font-size-caption); padding: 4px 0; border-top: 1px solid var(--color-border-line); font-variant-numeric: tabular-nums; }
+  .fc-hz .row span:first-child { color: var(--color-fg-muted); }
+  .fc-bar { display: flex; height: 22px; border-radius: 4px; overflow: hidden; margin: var(--cds-gap-sm) 0 4px; font-size: 11px; font-weight: 600; color: #fff; }
+  .fc-bar > div { display: flex; align-items: center; justify-content: center; min-width: 2.2rem; }
+  .fc-bar .bear { background: #ef5f5c; } .fc-bar .base { background: color-mix(in srgb, var(--color-fg) 35%, transparent); } .fc-bar .bull { background: #3fbf74; }
+  .fc-key { display: flex; justify-content: space-between; font-size: 11px; color: var(--color-fg-muted); }
+  .fc-chart { position: relative; min-height: 340px; }
+  .br-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: center; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: var(--cds-gap-sm); }
+  .br-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .br-legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+  .br-legend .stats { margin-left: auto; }
+  .br-chart { position: relative; min-height: 260px; }
+  .br-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; display: none; z-index: 2; }
+  .br-tip .d { color: var(--cds-text-secondary); }
+  .br-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); }
+  .br-yt { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--cds-font-size-caption); }
+  .br-yt th, .br-yt td { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); text-align: right; white-space: nowrap; }
+  .br-yt th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); position: sticky; top: 0; background: var(--color-panel); }
+  .br-yt th:first-child, .br-yt td:first-child { text-align: left; }
+  .br-foot { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  [data-dash-source-state=empty] { color: transparent; }
+  [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+</style>
+<style>
+.br.no-data > :not(header):not(#rfEmpty){display:none!important}
+.br > header h1{font-family:var(--sans)}
+.as-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.as-sw button{font-size:13px;padding:4px 14px}
+</style>
+
+<div class="page">
+<div class="br">
+  <header class="rf-card" id="refresh-bar">
+    <div class="rf-top">
+      <div>
+        <div class="as-head"><h1><span class="a-name">Bitcoin</span> Dashboard</h1>
+          <div class="br-win as-sw" id="assetSw" role="group" aria-label="Coin"><button type="button" data-asset="BTC" aria-pressed="true">BTC</button><button type="button" data-asset="ETH" aria-pressed="false">ETH</button></div></div>
+        <p class="rf-note">BTC (Coinbase BTCUSD) and ETH (Binance ETHUSDT): 4H, daily, weekly and monthly bars, market-sentiment gauges and the US macro calendar, saved as a snapshot each time you refresh. Every tab follows the coin you pick. Spot only.</p>
+      </div>
+      <div class="rf-status">
+        <span class="rf-pill" id="rfAt">Loading…</span>
+        <span class="rf-pill warn" id="rfStale" hidden>New daily candle since this refresh</span>
+        <span class="rf-pill warn" id="rfFailed" hidden></span>
+        <span class="rf-pill" id="rfCr" title="Fear &amp; Greed, Altcoin Season, market cap and BTC/ETH ETF assets from CoinMarketCap, pulled with every Refresh">CoinMarketCap <span id="rfCrTime">—</span></span>
+        <span class="rf-pill" id="rfCg" title="The CoinGlass numbers are a snapshot Claude reads for you; ask Claude to refresh them">CoinGlass <span class="a-sym">BTC</span> <span id="rfCgTime">—</span></span>
+        <button class="rf-btn" id="rfBtn" type="button" hidden>Refresh from TradingView</button>
+        <button class="rf-btn ghost" id="rfMissing" type="button" hidden>Fetch missing</button>
+      </div>
+    </div>
+    <div class="rf-prog" id="rfProgWrap" hidden><i id="rfProg"></i></div>
+    <p class="rf-note" id="rfText" hidden></p>
+    <div class="rf-banner" id="rfBanner" hidden></div>
+    <p class="br-lede" id="lede">
+      As of <b data-source="headline" data-field="as_of" class="dash-skeleton">—</b>, <span class="a-pair">Coinbase BTCUSD</span> is at
+      <b data-source="headline" data-field="price">—</b>:
+      <b data-source="headline" data-field="ytd">—</b> year to date,
+      <b data-source="headline" data-field="mtd">—</b> this month, and
+      <b data-source="headline" data-field="from_ath">—</b> from its all-time high.
+    </p>
+  </header>
+
+  <section class="rf-empty" id="rfEmpty" hidden>
+    <h2 id="rfEmptyTitle">Loading the last saved snapshot…</h2>
+    <p class="rf-note" id="rfEmptyNote"></p>
+  </section>
+
+
+  <section class="br-tiles" id="tiles">
+    <div class="br-tile"><div class="lbl"><span class="a-sym">BTC</span> price (last close)</div><div class="val dash-skeleton" data-source="headline" data-field="price">—</div><div class="sub">ATH <span data-source="headline" data-field="ath">—</span></div></div>
+    <div class="br-tile"><div class="lbl">Today (1D)</div><div class="val dash-skeleton" data-source="headline_short" data-field="d1">—</div><div class="sub" data-source="headline_short" data-field="day">—</div></div>
+    <div class="br-tile"><div class="lbl">This week (WTD)</div><div class="val dash-skeleton" data-source="headline_short" data-field="wtd">—</div><div class="sub" data-source="headline_short" data-field="week">—</div></div>
+    <div class="br-tile"><div class="lbl">This month (MTD)</div><div class="val dash-skeleton" data-source="headline" data-field="mtd">—</div><div class="sub">month still forming</div></div>
+    <div class="br-tile"><div class="lbl">This quarter (QTD)</div><div class="val dash-skeleton" data-source="headline" data-field="qtd">—</div><div class="sub" data-source="headline" data-field="quarter">—</div></div>
+    <div class="br-tile"><div class="lbl">This year (YTD)</div><div class="val dash-skeleton" data-source="headline" data-field="ytd">—</div><div class="sub" data-source="headline" data-field="year">—</div></div>
+    <div class="br-tile"><div class="lbl">Since <span class="a-exch">Coinbase</span> listing</div><div class="val dash-skeleton" data-source="headline" data-field="all_time">—</div><div class="sub">from <span class="a-list">Dec 2014</span> open of $<span data-source="headline" data-field="first_open">—</span></div></div>
+  </section>
+
+  <nav class="br-tabs" role="tablist">
+    <button id="daily" role="tab" aria-selected="false">Day</button>
+    <button id="weekly" role="tab" aria-selected="false">Week</button>
+    <button id="monthly" role="tab" aria-selected="true">Month</button>
+    <button id="quarterly" role="tab" aria-selected="false">Quarter</button>
+    <button id="yearly" role="tab" aria-selected="false">Year</button>
+    <button id="patterns" role="tab" aria-selected="false">Patterns</button>
+    <button id="plan" role="tab" aria-selected="false">Trade plan</button>
+    <button id="forecast" role="tab" aria-selected="false">Forecast</button>
+  </nav>
+
+  <section class="br-page" data-page="daily" hidden>
+    <div class="br-card" id="daily-heatmap">
+      <div class="br-card-head">
+        <div><h2><span class="a-name">Bitcoin</span> (<span class="a-sym">BTC</span>) daily returns</h2>
+        <p class="note">Close-to-close % change each day (UTC), <span class="a-pair">Coinbase BTCUSD</span>. Pick a year.</p></div>
+        <select class="br-day-year" aria-label="Year" data-source="daily_roi"></select>
+      </div>
+      <div class="br-legend" data-source="daily_roi"><span><i style="background:#ef5f5c"></i>Down</span><span><i style="background:#3fbf74"></i>Up</span><span><i style="border:1.5px dashed var(--color-fg)"></i>In progress</span><span><i style="background:#3fbf74;opacity:.45"></i>Listing period</span><span class="stats">Stats exclude in-progress and listing periods</span></div>
+      <div class="br-scroll">
+        <table class="br-heat days" data-source="daily_grid" data-row-key="year,day">
+          <thead><tr><th data-field="day"></th>
+            <th data-field="Jan">Jan</th><th data-field="Feb">Feb</th><th data-field="Mar">Mar</th><th data-field="Apr">Apr</th><th data-field="May">May</th><th data-field="Jun">Jun</th>
+            <th data-field="Jul">Jul</th><th data-field="Aug">Aug</th><th data-field="Sep">Sep</th><th data-field="Oct">Oct</th><th data-field="Nov">Nov</th><th data-field="Dec">Dec</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="br-card" id="daily-dow">
+      <h2>Average return by day of week</h2>
+      <p class="note">Mean daily return for each weekday across all completed days since listing (UTC); hover for median and win rate.</p>
+      <div class="br-chart" data-source="dow_stats"></div>
+    </div>
+  </section>
+
+  <section class="br-page" data-page="weekly" hidden>
+    <div class="br-card" id="weekly-heatmap">
+      <h2><span class="a-name">Bitcoin</span> (<span class="a-sym">BTC</span>) weekly returns</h2>
+      <p class="note">Close-to-close % change each ISO week (Monday–Sunday UTC), <span class="a-pair">Coinbase BTCUSD</span>. Scroll sideways for later weeks.</p>
+      <div class="br-legend" data-source="weekly_roi"><span><i style="background:#ef5f5c"></i>Down</span><span><i style="background:#3fbf74"></i>Up</span><span><i style="border:1.5px dashed var(--color-fg)"></i>In progress</span><span><i style="background:#3fbf74;opacity:.45"></i>Listing period</span><span class="stats">Stats exclude in-progress and listing periods</span></div>
+      <div class="br-scroll">
+        <table class="br-heat compact" data-source="weekly_grid" data-row-key="year">
+          <thead><tr><th data-field="year"></th><th data-field="W1">W1</th><th data-field="W2">W2</th><th data-field="W3">W3</th><th data-field="W4">W4</th><th data-field="W5">W5</th><th data-field="W6">W6</th><th data-field="W7">W7</th><th data-field="W8">W8</th><th data-field="W9">W9</th><th data-field="W10">W10</th><th data-field="W11">W11</th><th data-field="W12">W12</th><th data-field="W13">W13</th><th data-field="W14">W14</th><th data-field="W15">W15</th><th data-field="W16">W16</th><th data-field="W17">W17</th><th data-field="W18">W18</th><th data-field="W19">W19</th><th data-field="W20">W20</th><th data-field="W21">W21</th><th data-field="W22">W22</th><th data-field="W23">W23</th><th data-field="W24">W24</th><th data-field="W25">W25</th><th data-field="W26">W26</th><th data-field="W27">W27</th><th data-field="W28">W28</th><th data-field="W29">W29</th><th data-field="W30">W30</th><th data-field="W31">W31</th><th data-field="W32">W32</th><th data-field="W33">W33</th><th data-field="W34">W34</th><th data-field="W35">W35</th><th data-field="W36">W36</th><th data-field="W37">W37</th><th data-field="W38">W38</th><th data-field="W39">W39</th><th data-field="W40">W40</th><th data-field="W41">W41</th><th data-field="W42">W42</th><th data-field="W43">W43</th><th data-field="W44">W44</th><th data-field="W45">W45</th><th data-field="W46">W46</th><th data-field="W47">W47</th><th data-field="W48">W48</th><th data-field="W49">W49</th><th data-field="W50">W50</th><th data-field="W51">W51</th><th data-field="W52">W52</th><th data-field="W53">W53</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="br-card" id="weekly-recent">
+      <h2>Last 52 weeks</h2>
+      <p class="note">Each week's return, oldest to newest; the last bar is the week in progress.</p>
+      <div class="br-chart" data-source="weekly_roi"></div>
+    </div>
+  </section>
+
+  <section class="br-page" data-page="forecast" hidden>
+    <div class="br-card" id="forecast-head">
+      <h2><span class="a-sym">BTC</span> forecast · next 1 and 2 weeks</h2>
+      <p class="note">Probabilities, not promises. Ranges come from <span class="a-sym">BTC</span>'s own volatility (30-day and 1-year blend), sized by how far it actually moved after past periods with similar volatility, so a calm market gets a narrower range than a wild one. The centre is nudged by the confluence signals below. Recalculated from the saved snapshot; the derivatives inputs come from the CoinGlass snapshot on the Trade plan tab.</p>
+      <div class="fc-hz">
+        <div id="fc-7"><div class="lbl">1 week · by <span data-source="fc_horizons" data-field="target_date" data-where="h=1 week">—</span></div>
+          <div class="big dash-skeleton" data-source="fc_horizons" data-field="median" data-where="h=1 week" data-fmt="usd">—</div>
+          <div class="lbl">most likely price (median)</div>
+          <div class="fc-bar" data-source="fc_horizons" data-where="h=1 week" data-bar="1"><div class="bear"></div><div class="base"></div><div class="bull"></div></div>
+          <div class="fc-key"><span>Bear</span><span>Range</span><span>Bull</span></div>
+          <div class="row"><span>68% range (likely)</span><span data-source="fc_horizons" data-field="range68" data-where="h=1 week">—</span></div>
+          <div class="row"><span>90% range (wide)</span><span data-source="fc_horizons" data-field="range90" data-where="h=1 week">—</span></div>
+          <div class="row"><span>Typical move (68%)</span><span>±<span data-source="fc_horizons" data-field="move68" data-where="h=1 week" data-fmt="pct1u">—</span></span></div>
+          <div class="row"><span>Chance of being higher than now</span><span data-source="fc_horizons" data-field="p_up" data-where="h=1 week" data-fmt="pct0u">—</span></div>
+          <div class="row"><span>Signal tilt (−4 to +4)</span><span data-source="fc_horizons" data-field="score" data-where="h=1 week" data-fmt="sgn2">—</span></div>
+          <div class="row"><span>Big macro events inside</span><span data-source="fc_horizons" data-field="events" data-where="h=1 week" style="text-align:right">—</span></div>
+        </div>
+        <div id="fc-14"><div class="lbl">2 weeks · by <span data-source="fc_horizons" data-field="target_date" data-where="h=2 weeks">—</span></div>
+          <div class="big dash-skeleton" data-source="fc_horizons" data-field="median" data-where="h=2 weeks" data-fmt="usd">—</div>
+          <div class="lbl">most likely price (median)</div>
+          <div class="fc-bar" data-source="fc_horizons" data-where="h=2 weeks" data-bar="1"><div class="bear"></div><div class="base"></div><div class="bull"></div></div>
+          <div class="fc-key"><span>Bear</span><span>Range</span><span>Bull</span></div>
+          <div class="row"><span>68% range (likely)</span><span data-source="fc_horizons" data-field="range68" data-where="h=2 weeks">—</span></div>
+          <div class="row"><span>90% range (wide)</span><span data-source="fc_horizons" data-field="range90" data-where="h=2 weeks">—</span></div>
+          <div class="row"><span>Typical move (68%)</span><span>±<span data-source="fc_horizons" data-field="move68" data-where="h=2 weeks" data-fmt="pct1u">—</span></span></div>
+          <div class="row"><span>Chance of being higher than now</span><span data-source="fc_horizons" data-field="p_up" data-where="h=2 weeks" data-fmt="pct0u">—</span></div>
+          <div class="row"><span>Signal tilt (−4 to +4)</span><span data-source="fc_horizons" data-field="score" data-where="h=2 weeks" data-fmt="sgn2">—</span></div>
+          <div class="row"><span>Big macro events inside</span><span data-source="fc_horizons" data-field="events" data-where="h=2 weeks" style="text-align:right">—</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="br-card" id="forecast-chart">
+      <h2>Price path and probability cone</h2>
+      <p class="note">Last 30 days of closes, then the median path with 68% (dark) and 90% (light) bands. Shaded rows are the confluence zones: red resistance, green support. Dashed lines mark 1 and 2 weeks out.</p>
+      <div class="fc-chart" data-source="fc_path fc_model fc_events"></div>
+    </div>
+    <div class="br-card" id="forecast-scenarios">
+      <h2>Scenarios</h2>
+      <p class="note">Odds of finishing each horizon above the nearest resistance top (bull), inside the range (base) or below the nearest support floor (bear). Targets are the next confluence zones.</p>
+      <div class="br-scroll">
+        <table class="tp-t" data-source="fc_scenarios" data-row-key="id">
+          <thead><tr><th data-field="id"></th><th data-field="scenario">Scenario</th><th data-field="p7">1 week</th><th data-field="p14">2 weeks</th><th data-field="trigger">What has to happen</th><th data-field="targets">Targets</th><th data-field="watch">What to watch</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="br-card" id="forecast-sentiment">
+      <h2>Market sentiment</h2>
+      <p class="note">Whole-market risk appetite. Stablecoin dominance is scored on where it sits in its 90-day range (near the top has tended to come before BTC bounces; its weekly change alone mirrors BTC and predicts nothing). Stablecoin dominance, BTC dominance and alt market cap come from TradingView with every Refresh; Fear &amp; Greed, Altcoin Season, market cap and BTC ETF assets come from CoinMarketCap with every Refresh. Tilt is from the selected coin's point of view (the backtests behind the stablecoin rule are on BTC; ETH usually moves with BTC).</p>
+      <div class="br-scroll">
+        <table class="tp-t" data-source="mkt_sentiment" data-row-key="id">
+          <thead><tr><th data-field="gauge">Gauge</th><th data-field="now">Now</th><th data-field="d1">1D</th><th data-field="d7">7D</th><th data-field="d30">30D</th><th data-field="trend">Trend / change</th><th data-field="read">What it says</th><th data-field="score">Tilt</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="rf-note" id="sentEmpty" hidden>The TradingView gauges load on your next Refresh from TradingView.</p>
+    </div>
+    <div class="br-card" id="forecast-signals">
+      <h2>Confluence signals</h2>
+      <p class="note">Each signal scores from −1 (bearish) to +1 (bullish) per horizon; the weighted sum is the tilt shown above. Positive tilt shifts the cone up, negative shifts it down.</p>
+      <div class="br-scroll">
+        <table class="tp-t" data-source="fc_signals" data-row-key="name">
+          <thead><tr><th data-field="name">Signal</th><th data-field="reading">Reading now</th><th data-field="s7">1W score</th><th data-field="s14">2W score</th><th data-field="w">Weight</th><th data-field="why">Why it matters</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="br-card" id="forecast-events">
+      <h2>Macro catalysts in the window</h2>
+      <p class="note">High-importance US releases from TradingView's economic calendar, Sydney time. Fed and inflation days are where BTC and ETH most often break out of a range.</p>
+      <div class="br-scroll">
+        <table class="tp-t" data-source="fc_events" data-row-key="id">
+          <thead><tr><th data-field="id"></th><th data-field="when">When (Sydney)</th><th data-field="title">Event</th><th data-field="consensus">Consensus</th><th data-field="impact">Impact</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="br-card" id="forecast-method">
+      <h2>How reliable is this?</h2>
+      <div class="tp-case">
+        <div><h3>Range calibration</h3>Ranges are sized from <span data-source="fc_model" data-field="calib_n_txt" data-row="0">—</span> past windows when <span class="a-sym">BTC</span>'s volatility was at a similar level to now. Tested on the half of that history they were not fitted to, the 68% and 90% bands held <b data-source="fc_horizons" data-field="calib" data-where="h=1 week">—</b> of the time for 1 week and <b data-source="fc_horizons" data-field="calib" data-where="h=2 weeks">—</b> for 2 weeks. The 90% band is wider than a bell curve would give because <span class="a-sym">BTC</span>'s rare big moves are bigger than average.</div>
+        <div><h3>Volatility now</h3>30-day realized <b data-source="fc_model" data-field="s30" data-row="0" data-fmt="pct0u">—</b> vs 1-year <b data-source="fc_model" data-field="s365" data-row="0" data-fmt="pct0u">—</b> (annualised). Daily ATR is in its <b data-source="fc_model" data-field="atr_pctile" data-row="0" data-fmt="pct0u">—</b> percentile. Historically, <span class="a-sym">BTC</span>'s quietest stretches were followed by moves only <b data-source="fc_model" data-field="expand14" data-row="0" data-fmt="x2">—</b> the usual size over 2 weeks: calm tends to persist, so don't bank on a squeeze.</div>
+        <div><h3>What it can't see</h3>Headlines, ETF flows, liquidation cascades and the exact FOMC outcome. The direction tilt is deliberately small; the range is the useful part. Re-check after each big event and after you refresh the CoinGlass snapshot.</div>
+      </div>
+    </div>
+    <p class="br-foot">A statistical outlook for planning, not financial advice.</p>
+  </section>
+
+  <section class="br-page" data-page="monthly">
+    <div class="br-card" id="monthly-heatmap">
+      <h2><span class="a-name">Bitcoin</span> (<span class="a-sym">BTC</span>) monthly returns</h2>
+      <p class="note">Close-to-close % change each calendar month, <span class="a-pair">Coinbase BTCUSD</span>.</p>
+      <div class="br-legend" data-source="monthly_roi yearly_roi"><span><i style="background:#ef5f5c"></i>Down</span><span><i style="background:#3fbf74"></i>Up</span><span><i style="border:1.5px dashed var(--color-fg)"></i>In progress</span><span><i style="background:#3fbf74;opacity:.45"></i>Listing period</span><span class="stats">Stats exclude in-progress and listing periods</span></div>
+      <div class="br-scroll">
+        <table class="br-heat" data-source="monthly_grid" data-row-key="year">
+          <thead><tr><th data-field="year"></th>
+            <th data-field="Jan">Jan</th><th data-field="Feb">Feb</th><th data-field="Mar">Mar</th><th data-field="Apr">Apr</th><th data-field="May">May</th><th data-field="Jun">Jun</th>
+            <th data-field="Jul">Jul</th><th data-field="Aug">Aug</th><th data-field="Sep">Sep</th><th data-field="Oct">Oct</th><th data-field="Nov">Nov</th><th data-field="Dec">Dec</th>
+            <th data-field="Year">Year</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="br-card" id="monthly-seasonality">
+      <h2>Average return by calendar month</h2>
+      <p class="note">Mean of each month's return across all completed years; hover for median and how often it closed green.</p>
+      <div class="br-chart" data-source="season_month"></div>
+    </div>
+  </section>
+
+  <section class="br-page" data-page="quarterly" hidden>
+    <div class="br-card" id="quarterly-heatmap">
+      <h2><span class="a-name">Bitcoin</span> (<span class="a-sym">BTC</span>) quarterly returns</h2>
+      <p class="note">Close of each quarter vs. close of the previous quarter, <span class="a-pair">Coinbase BTCUSD</span>.</p>
+      <div class="br-legend" data-source="quarterly_roi yearly_roi"><span><i style="background:#ef5f5c"></i>Down</span><span><i style="background:#3fbf74"></i>Up</span><span><i style="border:1.5px dashed var(--color-fg)"></i>In progress</span><span><i style="background:#3fbf74;opacity:.45"></i>Listing period</span><span class="stats">Stats exclude in-progress and listing periods</span></div>
+      <div class="br-scroll">
+        <table class="br-heat" data-source="quarterly_grid" data-row-key="year">
+          <thead><tr><th data-field="year"></th><th data-field="Q1">Q1</th><th data-field="Q2">Q2</th><th data-field="Q3">Q3</th><th data-field="Q4">Q4</th><th data-field="Year">Year</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="br-card" id="quarterly-seasonality">
+      <h2>Average return by quarter</h2>
+      <p class="note">Mean of each quarter's return across completed years.</p>
+      <div class="br-chart" data-source="season_quarter"></div>
+    </div>
+  </section>
+
+  <section class="br-page" data-page="yearly" hidden>
+    <div class="br-card" id="yearly-chart">
+      <h2>Yearly returns</h2>
+      <p class="note">Close of each year vs. close of the previous year (the first year is partial: it starts at the <span class="a-exch">Coinbase</span> listing in <span class="a-list">Dec 2014</span>; the current year is year-to-date).</p>
+      <div class="br-chart" data-source="yearly_roi"></div>
+    </div>
+    <div class="br-card" id="yearly-table">
+      <h2>Year by year</h2>
+      <p class="note">Base is the previous year's close; high and low are intrayear extremes.</p>
+      <div class="br-scroll">
+        <table class="br-yt" data-source="yearly_roi" data-row-key="year">
+          <thead><tr><th data-field="year">Year</th><th data-field="base">Start</th><th data-field="close">Close</th><th data-field="high">High</th><th data-field="low">Low</th><th data-field="roi">ROI</th><th data-field="drawdown">Max drawdown from start</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="br-page" data-page="patterns" hidden>
+    <div class="br-card" id="patterns-findings">
+      <div class="br-card-head">
+        <div><h2>What the history says</h2>
+        <p class="note">Days and weeks ranked on average return, median return and win rate together, so one huge day can't decide the winner. Completed UTC days only.</p></div>
+        <div class="br-win" role="group" aria-label="History window">
+          <button data-win="All history" aria-pressed="true">All history</button>
+          <button data-win="Since 2020" aria-pressed="false">Since 2020</button>
+          <button data-win="Since 2023" aria-pressed="false">Since 2023</button>
+        </div>
+      </div>
+      <div class="br-find" data-source="pattern_summary">
+        <div class="f bull"><div class="lbl">Most bullish day of the week</div><div class="big dash-skeleton" data-k="best_day">—</div><div class="sub" data-k="best_day_s"></div></div>
+        <div class="f bear"><div class="lbl">Weakest day of the week</div><div class="big dash-skeleton" data-k="weak_day">—</div><div class="sub" data-k="weak_day_s"></div></div>
+        <div class="f bull"><div class="lbl">Most bullish week of the month</div><div class="big dash-skeleton" data-k="best_week">—</div><div class="sub" data-k="best_week_s"></div></div>
+        <div class="f bear"><div class="lbl">Most bearish week of the month</div><div class="big dash-skeleton" data-k="weak_week">—</div><div class="sub" data-k="weak_week_s"></div></div>
+      </div>
+    </div>
+    <div class="br-card" id="patterns-consistency">
+      <h2>Does it hold across time?</h2>
+      <p class="note">The winner and loser in each history window. A pick that repeats in every row is the more trustworthy pattern.</p>
+      <div class="br-scroll">
+        <table class="br-yt" data-source="pattern_summary" data-row-key="window">
+          <thead><tr><th data-field="window">Window</th><th data-field="best_day">Most bullish day</th><th data-field="weak_day">Weakest day</th><th data-field="best_week">Most bullish week</th><th data-field="weak_week">Most bearish week</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="br-grid2">
+      <div class="br-card" id="patterns-dow">
+        <h2>Day of week</h2>
+        <p class="note">Average daily return for each weekday in the selected window.</p>
+        <div class="br-chart" data-source="dow_patterns"></div>
+        <table class="br-yt br-pt" data-source="dow_patterns" data-row-key="window,period">
+          <thead><tr><th data-field="period">Day</th><th data-field="avg">Average</th><th data-field="median">Median</th><th data-field="up_share">Win rate</th><th data-field="rank">Rank</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="br-card" id="patterns-wom">
+        <h2>Week of month</h2>
+        <p class="note">Return over each block of days within a month (compounded), averaged across months.</p>
+        <div class="br-chart" data-source="wom_patterns"></div>
+        <table class="br-yt br-pt" data-source="wom_patterns" data-row-key="window,period">
+          <thead><tr><th data-field="period">Days</th><th data-field="avg">Average</th><th data-field="median">Median</th><th data-field="up_share">Win rate</th><th data-field="rank">Rank</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="br-foot">These are tilts, not signals: <span class="a-sym">BTC</span> moves about <span class="a-move">3%</span> on a typical day, so a 0.3% weekday edge is small and can flip. Use them for timing entries you already planned, not as trades on their own.</p>
+  </section>
+
+  <section class="br-page" data-page="plan" hidden>
+    <div class="br-card" id="plan-state">
+      <h2><span class="a-sym">BTC</span> spot plan</h2>
+      <p class="note">Levels from <span class="a-pair">Coinbase BTCUSD</span> on 4H, 1D, 1W and 1M, recalculated from the saved snapshot every time you refresh. Same method as your Coin Zones Board: a zone only counts when 3+ independent methods land in it.</p>
+      <div class="tp-strip">
+        <div><div class="lbl">Price (4H close)</div><div class="v dash-skeleton" data-source="tp_summary" data-field="spot" data-row="0" data-fmt="usd">—</div><div class="s">365d range <span data-source="tp_summary" data-field="lo365" data-row="0" data-fmt="usd">—</span>–<span data-source="tp_summary" data-field="hi365" data-row="0" data-fmt="usd">—</span></div></div>
+        <div><div class="lbl">Position</div><div class="v" data-source="tp_summary" data-field="status" data-row="0">—</div><div class="s"><span data-source="tp_summary" data-field="from_hi" data-row="0" data-fmt="pct">—</span> from 365d high</div></div>
+        <div><div class="lbl">Bias (EMA + MACD score)</div><div class="v" data-source="tp_summary" data-field="bias" data-row="0">—</div><div class="s">score <span data-source="tp_summary" data-field="bias_score" data-row="0">—</span> of ±4</div></div>
+        <div><div class="lbl">Regime</div><div class="v" data-source="tp_summary" data-field="trend_state" data-row="0">—</div><div class="s">vs daily EMA200 and EMA50 slope</div></div>
+        <div><div class="lbl">Volatility</div><div class="v" data-source="tp_summary" data-field="vol_state" data-row="0">—</div><div class="s">ATR <span data-source="tp_summary" data-field="atr_d_pct" data-row="0" data-fmt="pct2u">—</span> · <span data-source="tp_summary" data-field="atr_pctile" data-row="0" data-fmt="pct0u">—</span> pctile · 30d vol <span data-source="tp_summary" data-field="rv30" data-row="0" data-fmt="pct0u">—</span></div></div>
+      </div>
+    </div>
+
+    <div class="br-card" id="plan-levels">
+      <h2>Support and resistance (3+ methods, max 3 each side)</h2>
+      <p class="note">Resistance ascending from price, then support descending. Distance is to the nearest edge of the zone. The highlighted row is the strongest confluence cluster.</p>
+      <div class="br-scroll">
+        <table class="tp-t" data-source="tp_levels" data-row-key="id">
+          <thead><tr><th data-field="id"></th><th data-field="zone">Price zone</th><th data-field="what">What the level is</th><th data-field="dist">% from price</th><th data-field="count">Methods</th><th data-field="cross_tf">Confluent across TFs</th><th data-field="strongest">Flag</th><th data-field="detail">Evidence</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="br-card" id="plan-spot">
+      <h2>Spot setup by timeframe</h2>
+      <p class="note">Buy at the timeframe's nearest support, take profit at the first confluence zones at least 2R away. Stop = buy-zone floor minus an ATR multiple of that timeframe.</p>
+      <div class="br-scroll">
+        <table class="tp-t" data-source="tp_spot" data-row-key="tf">
+          <thead><tr><th data-field="tf">TF</th><th data-field="buy_zone">Buy zone</th><th data-field="sell_zone">Sell zone</th><th data-field="trigger">Trigger</th><th data-field="invalidation">Invalidation</th><th data-field="stop_txt">Stop</th><th data-field="t1_txt">Target 1 (R:R)</th><th data-field="t2_txt">Target 2 (R:R)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="tp-call">The single level that voids the setup: <b data-source="tp_summary" data-field="void_txt" data-row="0">—</b>, the floor of the <span data-source="tp_summary" data-field="void_zone" data-row="0">—</span> support. Below it every buy zone above has failed.</div>
+    </div>
+
+    <div class="br-card" id="plan-derivs">
+      <h2>Derivatives context (CoinGlass)</h2>
+      <p class="note">Market context for <span class="a-sym">BTC</span>, read from CoinGlass: crowded leverage often ends in a flush that spot buyers can use. The first row shows when it was taken; say "Refresh the CoinGlass snapshot" in chat to update it.</p>
+      <div class="br-scroll">
+        <table class="tp-t" data-source="derivs" data-row-key="id">
+          <thead><tr><th data-field="metric">Metric</th><th data-field="value">Value</th><th data-field="signal">Signal</th><th data-field="note">What it says</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="br-card" id="plan-breakdown">
+      <h2>Complete breakdown</h2>
+      <p class="note">Multi-timeframe technicals, then the bull and bear case and a swing plan.</p>
+      <div class="br-scroll">
+        <table class="tp-t" data-source="tp_mtf" data-row-key="tf">
+          <thead><tr><th data-field="tf">TF</th><th data-field="trend">Trend vs EMAs</th><th data-field="ema_txt">EMA 20 · 50 · 200</th><th data-field="rsi">RSI(14)</th><th data-field="macd_state">MACD</th><th data-field="atr_pct">ATR %</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="tp-case" style="margin-top: var(--cds-gap-md)">
+        <div class="bull"><h3>Bull case</h3><div data-source="tp_summary" data-field="bull" data-row="0">—</div></div>
+        <div class="bear"><h3>Bear case</h3><div data-source="tp_summary" data-field="bear" data-row="0">—</div></div>
+        <div><h3>Swing plan (1D)</h3>
+          Buy <span data-source="tp_spot" data-field="buy_zone" data-where="tf=1D">—</span>.
+          Trigger: <span data-source="tp_spot" data-field="trigger" data-where="tf=1D">—</span>.
+          Stop <span data-source="tp_spot" data-field="stop_txt" data-where="tf=1D">—</span>.
+          Targets <span data-source="tp_spot" data-field="t1_txt" data-where="tf=1D">—</span> and <span data-source="tp_spot" data-field="t2_txt" data-where="tf=1D">—</span>.
+        </div>
+      </div>
+    </div>
+
+    <p class="br-foot">Spot only: rules-based levels and buy/sell zones for your own analysis, not financial advice. The CoinGlass table is market context (how leveraged traders are positioned), not a trade plan.</p>
+  </section>
+
+  <p class="br-foot">Data: <span class="a-pair">Coinbase BTCUSD</span> 4-hour, daily, weekly and monthly bars from your last refresh (recent bars come from your Google Drive files when Claude runs the refresh). The latest bar was still forming when it was saved.</p>
+</div>
+
+  <section class="method">
+    <h2>How refresh works</h2>
+    <ul>
+      <li><b>Saved snapshot.</b> Opening the page shows the last saved snapshot and makes no TradingView calls, so it loads instantly and stays inside TradingView's limits. The pill at the top says when it was saved.</li>
+      <li><b>Refresh from TradingView</b> pulls the 4H, daily, weekly and monthly bars for BTC (Coinbase BTCUSD) and ETH (Binance ETHUSDT), four sentiment gauges and the US macro calendar one at a time, about 1.5 seconds apart, then recalculates every tab (ROI grids, Patterns, levels, spot plans, Forecast) for both coins and saves the result as the new snapshot. A source that fails keeps its previous data, and <b>Fetch missing</b> retries only those.</li>
+      <li><b>New candle.</b> A yellow pill appears when a new 4H or daily candle has opened since the snapshot. The daily candle closes at 11am Sydney time.</li>
+      <li><b>Market sentiment.</b> Refresh also pulls stablecoin dominance (USDT.D + USDC.D), BTC dominance and the alt market cap (TOTAL2) from TradingView. They feed the Market sentiment card and a signal in the Forecast.</li>
+      <li><b>CoinMarketCap</b> Fear &amp; Greed, Altcoin Season, market cap, dominance and US spot BTC and ETH ETF assets are pulled through your CoinMarketCap connector at the end of every Refresh (allow it the first time claude.ai asks).</li>
+      <li><b>CoinGlass</b> funding, open interest and liquidations for BTC and ETH are read by Claude in your Claude desktop app (also in the daily 11:27am refresh). Say "Refresh the CoinGlass snapshot on my Bitcoin dashboard" in chat.</li>
+      <li><b>BTC / ETH switch.</b> Every tab (ROI, Patterns, spot plan, Forecast, CoinGlass) follows the coin you pick; the market-sentiment gauges are shared. Your pick is remembered on this device.</li>
+      <li>Rules-based analysis for your own planning, not financial advice.</li>
+    </ul>
+  </section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+/* A small stand-in for the dashboard runtime: the views below register loaders and calculations
+   with `dash` and read data with dash.data(id). Here the raw data comes from the saved snapshot. */
+(function () {
+  const LOADERS = {}, CALCS = {}, CBS = [], RAW = {}, CACHE = {};
+  const KNOWN = ['btc_4h', 'btc_daily', 'btc_weekly', 'btc_monthly', 'eth_4h', 'eth_daily', 'eth_weekly', 'eth_monthly', 'econ_cal', 'derivs', 'derivs_eth', 'gauge_usdtd', 'gauge_usdcd', 'gauge_btcd', 'gauge_total2', 'cr_sentiment'];
+  let VER = 0, PARAMS = {}, BOOTED = false, ASSET = 'BTC';
+  /* The views read btc_* and derivs; with ETH selected those names point at the eth_* bars and derivs_eth. */
+  const rawId = (id) => (ASSET === 'ETH' ? (/^btc_(4h|daily|weekly|monthly)$/.test(id) ? 'eth_' + id.slice(4) : id === 'derivs' ? 'derivs_eth' : id) : id);
+  const empty = (status, message) => ({ status, data: [], columns: [], meta: [], message, refreshing: false });
+  function data(id) {
+    const rid = rawId(id);
+    if (RAW[rid]) return RAW[rid];
+    if (rid !== id) return empty(BOOTED ? 'missing' : 'loading', 'Not in the saved snapshot yet');
+    if (CALCS[id]) {
+      const c = CACHE[id];
+      if (c && c.ver === VER) return c.res;
+      const opt = CALCS[id].optional || [];
+      const ins = CALCS[id].inputs.map((i) => { const d = data(i); return opt.includes(i) && (d.status === 'error' || d.status === 'missing') ? { status: 'ok', data: [] } : d; });
+      let res;
+      if (ins.some((d) => d.status === 'error' || d.status === 'missing')) res = empty('error', 'An input is missing from the saved snapshot');
+      else if (ins.some((d) => d.status !== 'ok')) return empty('loading');
+      else {
+        try {
+          const out = CALCS[id].fn(...ins.map((d) => d.data));
+          res = { status: 'ok', data: out, columns: Array.isArray(out) && out[0] ? Object.keys(out[0]) : [], meta: [], refreshing: false };
+        } catch (e) { console.error('calc ' + id, e); res = empty('error', String((e && e.message) || e)); }
+      }
+      CACHE[id] = { ver: VER, res };
+      return res;
+    }
+    return empty(BOOTED || !KNOWN.includes(id) ? 'missing' : 'loading');
+  }
+  let raf = null;
+  function emit() {
+    if (raf) return;
+    raf = requestAnimationFrame(() => { raf = null; CBS.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } }); });
+  }
+  let lastW = window.innerWidth;
+  window.addEventListener('resize', () => { if (window.innerWidth !== lastW) { lastW = window.innerWidth; emit(); } });
+  window.dash = {
+    loader: (id, o) => { LOADERS[id] = o; },
+    calc: (id, o) => { CALCS[id] = o; },
+    data,
+    onData: (fn) => { CBS.push(fn); try { fn(); } catch (e) { console.error(e); } },
+    refresh: () => {},
+    params: () => PARAMS,
+    setParams: (p) => { PARAMS = Object.assign({}, PARAMS, p); emit(); },
+    resetParams: () => { PARAMS = {}; emit(); },
+    setLink: (name) => { try { history.replaceState(null, '', '#' + name); } catch (e) { /* hash not available */ } },
+    colors: ['var(--acc)', 'var(--up)', 'var(--dn)', 'var(--warn)', 'var(--wk)', 'var(--muted)', 'var(--acc)', 'var(--up)'],
+  };
+  window.__snap = {
+    LOADERS,
+    setRaw(id, rows, columns) { RAW[id] = { status: 'ok', data: rows, columns: columns || [], meta: [], refreshing: false }; },
+    setMissing(id) { RAW[id] = empty('missing', 'Not in the saved snapshot yet'); },
+    commit() { BOOTED = true; VER++; emit(); },
+    has: (id) => !!(RAW[id] && RAW[id].status === 'ok'),
+    asset: () => ASSET,
+    setAsset(a) { ASSET = a === 'ETH' ? 'ETH' : 'BTC'; VER++; emit(); },
+  };
+})();
+</script>
+<script>
+dash.loader('btc_monthly', {
+  description: 'TradingView column arrays (t, o, h, l, c, v) zipped into one row per month; t (unix seconds) becomes YYYY-MM.',
+  fn: ({ answer }) => {
+    const a = typeof answer === 'string' ? JSON.parse(answer) : answer;
+    if (a && a.success === false) throw new Error(a.error || a.message || 'TradingView returned success: false');
+    const b = a && a.bars;
+    if (!b || !Array.isArray(b.t)) throw new Error('No bars in TradingView answer');
+    const rows = b.t.map((t, i) => ({
+      month: new Date(t * 1000).toISOString().slice(0, 7),
+      open: Number(b.o[i]), high: Number(b.h[i]), low: Number(b.l[i]), close: Number(b.c[i]), volume: Number(b.v[i]),
+    }));
+    const meta = [];
+    if (a.symbol) meta.push({ label: 'Symbol', value: String(a.symbol) });
+    if (a.interval) meta.push({ label: 'Interval', value: String(a.interval) });
+    if (a.notice) meta.push({ label: 'Notice', value: String(a.notice) });
+    return { data: rows, columns: ['month', 'open', 'high', 'low', 'close', 'volume'], meta };
+  },
+});
+
+dash.loader('btc_daily', {
+  description: 'TradingView column arrays (t, o, h, l, c, v) zipped into one row per bar; t (unix seconds) becomes a YYYY-MM-DD date.',
+  fn: ({ answer }) => {
+    const a = typeof answer === 'string' ? JSON.parse(answer) : answer;
+    if (a && a.success === false) throw new Error(a.error || a.message || 'TradingView returned success: false');
+    const b = a && a.bars;
+    if (!b || !Array.isArray(b.t)) throw new Error('No bars in TradingView answer');
+    const rows = b.t.map((t, i) => ({
+      day: new Date(t * 1000).toISOString().slice(0, 10),
+      open: Number(b.o[i]), high: Number(b.h[i]), low: Number(b.l[i]), close: Number(b.c[i]), volume: Number(b.v[i]),
+    }));
+    const meta = [];
+    if (a.symbol) meta.push({ label: 'Symbol', value: String(a.symbol) });
+    if (a.interval) meta.push({ label: 'Interval', value: String(a.interval) });
+    if (a.notice) meta.push({ label: 'Notice', value: String(a.notice) });
+    return { data: rows, columns: ['day', 'open', 'high', 'low', 'close', 'volume'], meta };
+  },
+});
+
+dash.loader('btc_weekly', {
+  description: 'TradingView column arrays (t, o, h, l, c, v) zipped into one row per bar; t (unix seconds) becomes a YYYY-MM-DD date.',
+  fn: ({ answer }) => {
+    const a = typeof answer === 'string' ? JSON.parse(answer) : answer;
+    if (a && a.success === false) throw new Error(a.error || a.message || 'TradingView returned success: false');
+    const b = a && a.bars;
+    if (!b || !Array.isArray(b.t)) throw new Error('No bars in TradingView answer');
+    const rows = b.t.map((t, i) => ({
+      week: new Date(t * 1000).toISOString().slice(0, 10),
+      open: Number(b.o[i]), high: Number(b.h[i]), low: Number(b.l[i]), close: Number(b.c[i]), volume: Number(b.v[i]),
+    }));
+    const meta = [];
+    if (a.symbol) meta.push({ label: 'Symbol', value: String(a.symbol) });
+    if (a.interval) meta.push({ label: 'Interval', value: String(a.interval) });
+    if (a.notice) meta.push({ label: 'Notice', value: String(a.notice) });
+    return { data: rows, columns: ['week', 'open', 'high', 'low', 'close', 'volume'], meta };
+  },
+});
+
+dash.calc('daily_roi', {
+  title: 'Daily ROI',
+  description: 'Each day close vs. previous day close (first day vs. its open), UTC days.',
+  inputs: ['btc_daily'],
+  fn: (btc_daily) => btc_daily.map((r, i) => ({
+    day: r.day, year: +r.day.slice(0, 4), mon: +r.day.slice(5, 7), dom: +r.day.slice(8, 10),
+    dow: (new Date(r.day + 'T00:00:00Z').getUTCDay() + 6) % 7,
+    close: r.close, roi: r.close / (i ? btc_daily[i - 1].close : r.open) - 1,
+    forming: i === btc_daily.length - 1, listing: i === 0,
+  })),
+});
+
+dash.calc('weekly_roi', {
+  title: 'Weekly ROI',
+  description: 'Each week close vs. previous week close (first week vs. its open), labelled by ISO year and week number.',
+  inputs: ['btc_weekly'],
+  fn: (btc_weekly) => btc_weekly.map((r, i) => {
+    const d = new Date(r.week + 'T00:00:00Z');
+    const th = new Date(d); th.setUTCDate(d.getUTCDate() + 3 - ((d.getUTCDay() + 6) % 7));
+    const isoYear = th.getUTCFullYear(), jan4 = new Date(Date.UTC(isoYear, 0, 4));
+    const isoWeek = 1 + Math.round(((th - jan4) / 864e5 - 3 + ((jan4.getUTCDay() + 6) % 7)) / 7);
+    return {
+      week: r.week, year: isoYear, wk: isoWeek, close: r.close,
+      roi: r.close / (i ? btc_weekly[i - 1].close : r.open) - 1,
+      forming: i === btc_weekly.length - 1, listing: i === 0,
+    };
+  }),
+});
+
+dash.calc('weekly_grid', {
+  title: 'Weekly returns grid',
+  description: 'Weekly ROI pivoted to ISO year × week number, with average/median/win-rate rows (completed weeks only).',
+  inputs: ['weekly_roi'],
+  fn: (weekly_roi) => {
+    const W = d3.range(1, 54).map((i) => 'W' + i);
+    const years = [...new Set(weekly_roi.map((r) => r.year))].sort((a, b) => b - a);
+    const rows = years.map((y) => {
+      const row = { year: String(y) };
+      W.forEach((w, i) => { const r = weekly_roi.find((x) => x.year === y && x.wk === i + 1); row[w] = r ? r.roi : null; });
+      return row;
+    });
+    const done = weekly_roi.filter((r) => !r.forming && !r.listing);
+    const avg = { year: 'Average' }, med = { year: 'Median' }, win = { year: 'Win rate' };
+    W.forEach((w, i) => {
+      const v = done.filter((r) => r.wk === i + 1).map((r) => r.roi);
+      avg[w] = v.length ? d3.mean(v) : null; med[w] = v.length ? d3.median(v) : null;
+      win[w] = v.length ? v.filter((x) => x > 0).length / v.length : null;
+    });
+    return [...rows, avg, med, win];
+  },
+});
+
+dash.calc('daily_grid', {
+  title: 'Daily returns calendar',
+  description: 'Daily ROI pivoted to day-of-month × month for every year, with that year\'s average/median/win-rate per month (completed days only).',
+  inputs: ['daily_roi'],
+  fn: (daily_roi) => {
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const years = [...new Set(daily_roi.map((r) => r.year))].sort((a, b) => b - a);
+    const out = [];
+    years.forEach((y) => {
+      const ys = daily_roi.filter((r) => r.year === y);
+      for (let dd = 1; dd <= 31; dd++) {
+        const row = { year: String(y), day: String(dd) };
+        M.forEach((m, i) => { const r = ys.find((x) => x.mon === i + 1 && x.dom === dd); row[m] = r ? r.roi : null; });
+        out.push(row);
+      }
+      const avg = { year: String(y), day: 'Average' }, med = { year: String(y), day: 'Median' }, win = { year: String(y), day: 'Win rate' };
+      M.forEach((m, i) => {
+        const v = ys.filter((r) => r.mon === i + 1 && !r.forming && !r.listing).map((r) => r.roi);
+        avg[m] = v.length ? d3.mean(v) : null; med[m] = v.length ? d3.median(v) : null;
+        win[m] = v.length ? v.filter((x) => x > 0).length / v.length : null;
+      });
+      out.push(avg, med, win);
+    });
+    return out;
+  },
+});
+
+dash.calc('dow_stats', {
+  title: 'Return by day of week',
+  description: 'Mean, median and share of green closes per weekday (UTC), completed days only.',
+  inputs: ['daily_roi'],
+  fn: (daily_roi) => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((name, i) => {
+    const v = daily_roi.filter((r) => !r.forming && !r.listing && r.dow === i).map((r) => r.roi);
+    return { period: name, avg: d3.mean(v), median: d3.median(v), up_share: v.filter((x) => x > 0).length / v.length, n: v.length };
+  }),
+});
+
+dash.calc('headline_short', {
+  title: 'Today and this week',
+  description: 'Current day and current week ROI (both still forming).',
+  inputs: ['daily_roi', 'weekly_roi'],
+  fn: (daily_roi, weekly_roi) => {
+    const d = daily_roi[daily_roi.length - 1], w = weekly_roi[weekly_roi.length - 1];
+    return [{ day: d.day, d1: d.roi, week: w.year + ' W' + w.wk, wtd: w.roi }];
+  },
+});
+
+dash.calc('dow_patterns', {
+  title: 'Day-of-week patterns',
+  description: 'Average, median and win rate per weekday for three history windows, ranked on all three together (completed UTC days).',
+  inputs: ['daily_roi'],
+  fn: (daily_roi) => {
+    const W = [['All history', 0], ['Since 2020', 2020], ['Since 2023', 2023]];
+    const D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const out = [];
+    W.forEach(([w, from]) => {
+      const rows = D.map((name, i) => {
+        const v = daily_roi.filter((r) => !r.forming && !r.listing && r.year >= from && r.dow === i).map((r) => r.roi);
+        return { window: w, period: name, avg: d3.mean(v), median: d3.median(v), up_share: v.filter((x) => x > 0).length / v.length, n: v.length };
+      });
+      const rk = (k) => { const s = rows.slice().sort((a, b) => b[k] - a[k]); return (r) => s.indexOf(r) + 1; };
+      const ra = rk('avg'), rm = rk('median'), ru = rk('up_share');
+      rows.forEach((r) => { r.score = ra(r) + rm(r) + ru(r); });
+      rows.slice().sort((a, b) => a.score - b.score || b.avg - a.avg).forEach((r, i) => { r.rank = i + 1; });
+      out.push(...rows);
+    });
+    return out;
+  },
+});
+
+dash.calc('wom_patterns', {
+  title: 'Week-of-month patterns',
+  description: 'Compounded return over days 1–7, 8–14, 15–21, 22–28 and 29–31 of each completed month; average, median and win rate per block for three history windows, ranked on all three together.',
+  inputs: ['daily_roi'],
+  fn: (daily_roi) => {
+    const W = [['All history', 0], ['Since 2020', 2020], ['Since 2023', 2023]];
+    const B = ['Days 1–7', 'Days 8–14', 'Days 15–21', 'Days 22–28', 'Days 29–31'];
+    const last = daily_roi[daily_roi.length - 1];
+    const cur = last.year * 100 + last.mon;
+    const blocks = {};
+    daily_roi.forEach((r) => {
+      if (r.listing || r.year * 100 + r.mon >= cur) return;
+      const b = r.dom <= 7 ? 0 : r.dom <= 14 ? 1 : r.dom <= 21 ? 2 : r.dom <= 28 ? 3 : 4;
+      const k = r.year + '-' + r.mon + '-' + b;
+      if (!blocks[k]) blocks[k] = { year: r.year, b, p: 1 };
+      blocks[k].p *= 1 + r.roi;
+    });
+    const all = Object.values(blocks).map((x) => ({ year: x.year, b: x.b, roi: x.p - 1 }));
+    const out = [];
+    W.forEach(([w, from]) => {
+      const rows = B.map((name, i) => {
+        const v = all.filter((x) => x.year >= from && x.b === i).map((x) => x.roi);
+        return { window: w, period: name, avg: d3.mean(v), median: d3.median(v), up_share: v.filter((x) => x > 0).length / v.length, n: v.length };
+      });
+      const rk = (k) => { const s = rows.slice().sort((a, b) => b[k] - a[k]); return (r) => s.indexOf(r) + 1; };
+      const ra = rk('avg'), rm = rk('median'), ru = rk('up_share');
+      rows.forEach((r) => { r.score = ra(r) + rm(r) + ru(r); });
+      rows.slice().sort((a, b) => a.score - b.score || b.avg - a.avg).forEach((r, i) => { r.rank = i + 1; });
+      out.push(...rows);
+    });
+    return out;
+  },
+});
+
+dash.calc('pattern_summary', {
+  title: 'Pattern winners by window',
+  description: 'Top- and bottom-ranked weekday and week-of-month block for each history window.',
+  inputs: ['dow_patterns', 'wom_patterns'],
+  fn: (dow_patterns, wom_patterns) => ['All history', 'Since 2020', 'Since 2023'].map((w) => {
+    const d = dow_patterns.filter((r) => r.window === w), m = wom_patterns.filter((r) => r.window === w);
+    const top = (rows) => rows.find((r) => r.rank === 1), bot = (rows) => rows.find((r) => r.rank === rows.length);
+    const bd = top(d), wd = bot(d), bw = top(m), ww = bot(m);
+    return {
+      window: w,
+      best_day: bd.period, best_day_avg: bd.avg, best_day_median: bd.median, best_day_win: bd.up_share,
+      weak_day: wd.period, weak_day_avg: wd.avg, weak_day_median: wd.median, weak_day_win: wd.up_share,
+      best_week: bw.period, best_week_avg: bw.avg, best_week_median: bw.median, best_week_win: bw.up_share,
+      weak_week: ww.period, weak_week_avg: ww.avg, weak_week_median: ww.median, weak_week_win: ww.up_share,
+    };
+  }),
+});
+
+dash.loader('btc_4h', {
+  description: 'TradingView column arrays (t, o, h, l, c, v) zipped into one row per 4-hour bar; t (unix seconds) becomes an ISO time.',
+  fn: ({ answer }) => {
+    const a = typeof answer === 'string' ? JSON.parse(answer) : answer;
+    if (a && a.success === false) throw new Error(a.error || a.message || 'TradingView returned success: false');
+    const b = a && a.bars;
+    if (!b || !Array.isArray(b.t)) throw new Error('No bars in TradingView answer');
+    const rows = b.t.map((t, i) => ({
+      time: new Date(t * 1000).toISOString().slice(0, 16),
+      open: Number(b.o[i]), high: Number(b.h[i]), low: Number(b.l[i]), close: Number(b.c[i]), volume: Number(b.v[i]),
+    }));
+    const meta = [];
+    if (a.symbol) meta.push({ label: 'Symbol', value: String(a.symbol) });
+    if (a.interval) meta.push({ label: 'Interval', value: String(a.interval) });
+    if (a.notice) meta.push({ label: 'Notice', value: String(a.notice) });
+    return { data: rows, columns: ['time', 'open', 'high', 'low', 'close', 'volume'], meta };
+  },
+});
+
+dash.calc('tp_engine', {
+  title: 'Level and setup engine',
+  description: 'Port of the Coin Zones engine: swing/equal highs-lows, order blocks, FVGs, EMAs, fib, breakout-retest shelves and volume nodes on 4H/1D/1W/1M, clustered into zones where 3+ methods agree; then spot setups per timeframe and 5x futures plans (40/60 entries, ATR stops).',
+  inputs: ['btc_4h', 'btc_daily', 'btc_weekly', 'btc_monthly'],
+  fn: (btc_4h, btc_daily, btc_weekly, btc_monthly) => {
+    const toB = (rows, n) => {
+      const r = rows.slice(-n);
+      return { o: r.map((x) => x.open), h: r.map((x) => x.high), l: r.map((x) => x.low), c: r.map((x) => x.close), v: r.map((x) => x.volume) };
+    };
+    const TF = { '4H': toB(btc_4h, 1000), '1D': toB(btc_daily, 400), '1W': toB(btc_weekly, 160), '1M': toB(btc_monthly, 150) };
+    const CFG = { '4H': { L: 420, k: 6, LF: 540, LV: 540 }, '1D': { L: 365, k: 7, LF: 365, LV: 365 }, '1W': { L: 156, k: 3, LF: 156, LV: 156 }, '1M': { L: 120, k: 2, LF: 120, LV: 120 } };
+    const TFS = ['4H', '1D', '1W', '1M'];
+    const fmt = (x) => (x == null ? '-' : Math.abs(x) >= 1000 ? Math.round(x).toLocaleString('en-US') : x.toFixed(1));
+    const sum = (a) => a.reduce((s, x) => s + x, 0);
+    const ema = (c, n) => { if (c.length < n) return null; const k = 2 / (n + 1); let e = sum(c.slice(0, n)) / n; for (const v of c.slice(n)) e = v * k + e * (1 - k); return e; };
+    const rsi = (c, n = 14) => {
+      if (c.length < n + 2) return null; let g = 0, l = 0;
+      for (let i = 1; i <= n; i++) { const d = c[i] - c[i - 1]; g += Math.max(d, 0); l += Math.max(-d, 0); }
+      g /= n; l /= n;
+      for (let i = n + 1; i < c.length; i++) { const d = c[i] - c[i - 1]; g = (g * (n - 1) + Math.max(d, 0)) / n; l = (l * (n - 1) + Math.max(-d, 0)) / n; }
+      return l === 0 ? 100 : 100 - 100 / (1 + g / l);
+    };
+    const atrSeries = (B, n = 14) => {
+      const { h, l, c } = B; if (c.length < n + 2) return [];
+      const tr = [h[0] - l[0]]; for (let i = 1; i < c.length; i++) tr.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i - 1]), Math.abs(l[i] - c[i - 1])));
+      let a = sum(tr.slice(1, n + 1)) / n; const out = [a];
+      for (let i = n + 1; i < tr.length; i++) { a = (a * (n - 1) + tr[i]) / n; out.push(a); }
+      return out;
+    };
+    const atr = (B) => { const s = atrSeries(B); return s.length ? s[s.length - 1] : null; };
+    const macd = (c) => {
+      if (c.length < 40) return null;
+      const ser = (n) => { const k = 2 / (n + 1); let e = c[0]; const o = [e]; for (const v of c.slice(1)) { e = v * k + e * (1 - k); o.push(e); } return o; };
+      const a = ser(12), b = ser(26), m = a.map((x, i) => x - b[i]);
+      let s = m[0]; const S = [s]; for (const v of m.slice(1)) { s = v * 0.2 + s * 0.8; S.push(s); }
+      const L = m.length;
+      return { macd: m[L - 1], signal: S[L - 1], above: m[L - 1] > S[L - 1], cross_up: m[L - 2] <= S[L - 2] && m[L - 1] > S[L - 1], cross_dn: m[L - 2] >= S[L - 2] && m[L - 1] < S[L - 1], hist: m[L - 1] - S[L - 1], hist_prev: m[L - 2] - S[L - 2] };
+    };
+    const pivots = (B, k) => {
+      const { h, l } = B, n = h.length, ph = [], pl = [];
+      for (let i = k; i < n - k; i++) {
+        const wh = h.slice(i - k, i + k + 1), wl = l.slice(i - k, i + k + 1);
+        if (h[i] === Math.max(...wh)) ph.push([i, h[i]]);
+        if (l[i] === Math.min(...wl)) pl.push([i, l[i]]);
+      }
+      return [ph, pl];
+    };
+    const cluster = (vals, tol, span) => {
+      span = span || 3 * tol; vals = vals.slice().sort((a, b) => a - b);
+      const cl = []; let cur = vals.length ? [vals[0]] : [];
+      for (const v of vals.slice(1)) { if (v - cur[cur.length - 1] <= tol && v - cur[0] <= span) cur.push(v); else { cl.push(cur); cur = [v]; } }
+      if (cur.length) cl.push(cur); return cl;
+    };
+    const fvg = (lo, hi, a, tf, kind) => {
+      if (hi - lo > 0.8 * a) { const mid = (lo + hi) / 2; return { lo: mid - 0.3 * a, hi: mid + 0.3 * a, m: 'FVG', tf, lab: `${kind} FVG ${fmt(lo)}-${fmt(hi)} (50% at ${fmt(mid)})` }; }
+      return { lo, hi, m: 'FVG', tf, lab: `${kind} FVG ${fmt(lo)}-${fmt(hi)}` };
+    };
+    const eventsTf = (B, tf, a, cfg) => {
+      const E = [], n = B.c.length, { h, l, o, c, v } = B;
+      if (a == null || n < 30) return E;
+      const L = cfg.L, s0 = Math.max(0, n - L);
+      let [ph, pl] = pivots(B, cfg.k); ph = ph.filter((p) => p[0] >= s0); pl = pl.filter((p) => p[0] >= s0);
+      [['high', ph], ['low', pl]].forEach(([kind, P]) => {
+        for (const cl of cluster(P.map((p) => p[1]), 0.4 * a, 1.0 * a)) {
+          if (cl.length >= 2) E.push({ lo: Math.min(...cl), hi: Math.max(...cl), m: 'SWING', tf, lab: `Equal ${kind}s x${cl.length} (${fmt(Math.min(...cl))}-${fmt(Math.max(...cl))})` });
+          else if (tf !== '4H') E.push({ lo: cl[0] - 0.12 * a, hi: cl[0] + 0.12 * a, m: 'SWING', tf, lab: `Swing ${kind} ${fmt(cl[0])}` });
+        }
+      });
+      const allp = ph.map((p) => [p[1], 'H']).concat(pl.map((p) => [p[1], 'L'])).sort((x, y) => x[0] - y[0]);
+      let cur = [];
+      const flush = (cur) => {
+        if (cur.length >= 3 && cur.some((x) => x[1] === 'H') && cur.some((x) => x[1] === 'L')) {
+          const lo = Math.min(...cur.map((x) => x[0])), hi = Math.max(...cur.map((x) => x[0]));
+          E.push({ lo, hi, m: 'SHELF', tf, lab: `Breakout-retest shelf ${fmt(lo)}-${fmt(hi)} (old highs became lows)` });
+        }
+      };
+      for (const p of allp) { if (cur.length && p[0] - cur[cur.length - 1][0] > 0.5 * a) { flush(cur); cur = []; } cur.push(p); }
+      flush(cur);
+      for (let i = Math.max(s0 + Math.floor(L / 2), 2); i < n - 2; i++) {
+        const restC = c.slice(i + 2);
+        if (c[i] < o[i] && c[i + 1] > h[i] && c[i + 1] - o[i + 1] >= 1.5 * a && (restC.length ? Math.min(...restC) : 1e99) >= l[i]) {
+          let lo = l[i], hi = h[i]; if (hi - lo > 1.5 * a) { lo = c[i]; hi = o[i]; }
+          E.push({ lo, hi, m: 'OB', tf, lab: `Bullish order block ${fmt(lo)}-${fmt(hi)}` });
+        }
+        if (c[i] > o[i] && c[i + 1] < l[i] && o[i + 1] - c[i + 1] >= 1.5 * a && (restC.length ? Math.max(...restC) : -1e99) <= h[i]) {
+          let lo = l[i], hi = h[i]; if (hi - lo > 1.5 * a) { lo = o[i]; hi = c[i]; }
+          E.push({ lo, hi, m: 'OB', tf, lab: `Bearish order block ${fmt(lo)}-${fmt(hi)}` });
+        }
+        if (i >= 1) {
+          const restL = l.slice(i + 2), restH = h.slice(i + 2);
+          if (l[i + 1] > h[i - 1] && l[i + 1] - h[i - 1] >= 0.4 * a) {
+            const glo = h[i - 1], ghi = l[i + 1], later = restL.length ? Math.min(...restL) : 1e99;
+            if (later > glo) E.push(fvg(glo, Math.min(ghi, later), a, tf, 'Bullish'));
+          }
+          if (h[i + 1] < l[i - 1] && l[i - 1] - h[i + 1] >= 0.4 * a) {
+            const glo = h[i + 1], ghi = l[i - 1], later = restH.length ? Math.max(...restH) : -1e99;
+            if (later < ghi) E.push(fvg(Math.max(glo, later), ghi, a, tf, 'Bearish'));
+          }
+        }
+      }
+      for (const p of tf === '4H' ? [50, 200] : [20, 50, 100, 200]) {
+        const e = ema(c, p); if (e) E.push({ lo: e - 0.1 * a, hi: e + 0.1 * a, m: 'EMA', tf, lab: `EMA${p} ${tf} at ${fmt(e)}` });
+      }
+      {
+        const st = Math.max(0, n - cfg.LF), hs = h.slice(st), ls = l.slice(st), hh = Math.max(...hs), ll = Math.min(...ls);
+        const ih = hs.indexOf(hh), il = ls.indexOf(ll);
+        if (tf !== '4H' && hh - ll > 3 * a) {
+          for (const r of [0.382, 0.5, 0.618, 0.786]) {
+            const px = il < ih ? hh - r * (hh - ll) : ll + r * (hh - ll);
+            E.push({ lo: px - 0.12 * a, hi: px + 0.12 * a, m: 'FIB', tf, lab: `Fib ${r} of ${fmt(ll)}-${fmt(hh)} swing (${fmt(px)})` });
+          }
+        }
+      }
+      {
+        const st = Math.max(0, n - cfg.LV), lo_ = Math.min(...l.slice(st)), hi_ = Math.max(...h.slice(st)), nb = 100;
+        if (hi_ > lo_) {
+          const bw = (hi_ - lo_) / nb, vol = new Array(nb).fill(0);
+          for (let i = st; i < n; i++) {
+            const b0 = Math.max(0, Math.floor((l[i] - lo_) / bw)), b1 = Math.min(nb - 1, Math.floor((h[i] - lo_) / bw)), cnt = b1 - b0 + 1;
+            for (let b = b0; b <= b1; b++) vol[b] += v[i] / cnt;
+          }
+          const sm = vol.map((_, b) => (vol[Math.max(0, b - 1)] + vol[b] + vol[Math.min(nb - 1, b + 1)]) / 3);
+          const mu = sum(sm) / nb, sd = Math.sqrt(sum(sm.map((x) => (x - mu) ** 2)) / nb), pk = [];
+          for (let b = 1; b < nb - 1; b++) {
+            if (sm[b] >= mu + 0.9 * sd && sm[b] >= sm[b - 1] && sm[b] >= sm[b + 1] && sm[b] >= Math.max(...sm.slice(Math.max(0, b - 3), b + 4)) - 1e-12) pk.push([sm[b], lo_ + (b + 0.5) * bw]);
+          }
+          pk.sort((x, y) => y[0] - x[0]).slice(0, 3).forEach(([, px]) => E.push({ lo: px - 0.3 * a, hi: px + 0.3 * a, m: 'HVN', tf, lab: `High-volume node ${fmt(px)}` }));
+        }
+      }
+      return E;
+    };
+    const zones = (E, aref, spot, rng = 8, minc = 3) => {
+      const tol = 0.35 * aref, cand = [], pts = new Set();
+      E.forEach((e) => { pts.add((e.lo + e.hi) / 2); pts.add(e.lo); pts.add(e.hi); });
+      const limLo = spot - rng * aref, limHi = spot + rng * aref;
+      [...pts].sort((a, b) => a - b).forEach((c0) => {
+        if (c0 < limLo || c0 > limHi) return;
+        const wlo = c0 - tol, whi = c0 + tol;
+        const mem = E.filter((e) => (wlo <= (e.lo + e.hi) / 2 && (e.lo + e.hi) / 2 <= whi) || Math.min(e.hi, whi) - Math.max(e.lo, wlo) >= 0.5 * Math.max(e.hi - e.lo, 1e-12));
+        const ms = new Set(mem.map((e) => e.m)); if (ms.size < minc) return;
+        const lo = Math.max(wlo, Math.min(...mem.map((e) => e.lo))), hi = Math.min(whi, Math.max(...mem.map((e) => e.hi)));
+        if (hi <= lo) return;
+        cand.push({ lo, hi, mem, ms, tfs: new Set(mem.map((e) => e.tf)) });
+      });
+      cand.sort((x, y) => y.ms.size - x.ms.size || y.tfs.size - x.tfs.size || (x.hi - x.lo) - (y.hi - y.lo));
+      const acc = [];
+      for (const z of cand) {
+        if (acc.every((a) => Math.min(z.hi, a.hi) - Math.max(z.lo, a.lo) <= 0.1 * Math.min(z.hi - z.lo, a.hi - a.lo))) acc.push(z);
+      }
+      return acc;
+    };
+    const rankSides = (Z, spot, maxn = 3) => {
+      const key = (a, b) => b.ms.size - a.ms.size || Math.abs((a.lo + a.hi) / 2 - spot) - Math.abs((b.lo + b.hi) / 2 - spot);
+      const S = Z.filter((z) => (z.lo + z.hi) / 2 < spot).sort(key).slice(0, maxn).sort((a, b) => b.hi - a.hi);
+      const R = Z.filter((z) => (z.lo + z.hi) / 2 >= spot).sort(key).slice(0, maxn).sort((a, b) => a.lo - b.lo);
+      return [S, R];
+    };
+    const NAMES = { SWING: 'Swing / equal highs-lows', SHELF: 'Breakout-retest shelf', EMA: 'EMA', FIB: 'Fib retracement', FVG: 'Fair value gap', OB: 'Order block', HVN: 'High-volume node' };
+    const zout = (z, spot, role) => {
+      const seen = new Set(), det = [], cnt = {};
+      z.mem.slice().sort((a, b) => (a.m + a.tf).localeCompare(b.m + b.tf)).forEach((e) => {
+        const k = e.m + e.tf + e.lab; if (seen.has(k)) return; seen.add(k);
+        cnt[e.m] = (cnt[e.m] || 0) + 1; if (cnt[e.m] <= 3) det.push({ m: e.m, tf: e.tf, lab: e.lab });
+      });
+      return {
+        role, lo: z.lo, hi: z.hi, d_lo: z.lo / spot - 1, d_hi: z.hi / spot - 1, count: z.ms.size,
+        methods: [...z.ms].sort(), tfs: TFS.filter((t) => z.tfs.has(t)), detail: det, inside: z.lo <= spot && spot <= z.hi,
+      };
+    };
+
+    const spot = TF['4H'].c[TF['4H'].c.length - 1];
+    const A = {}; TFS.forEach((t) => { A[t] = atr(TF[t]); });
+    const ad = A['1D'];
+    let E = []; const EV = {};
+    TFS.forEach((t) => { EV[t] = eventsTf(TF[t], t, A[t], CFG[t]); E = E.concat(EV[t]); });
+    const Z = zones(E, ad, spot, 9).filter((z) => Math.abs((z.lo + z.hi) / 2 / spot - 1) <= 0.45);
+    const [S, R] = rankSides(Z, spot, 3);
+    const zs = S.map((z) => zout(z, spot, 'S')).concat(R.map((z) => zout(z, spot, 'R')));
+    let best = null;
+    zs.forEach((z) => {
+      const sc = [z.count, z.tfs.length, -Math.min(Math.abs(z.d_lo), Math.abs(z.d_hi))];
+      if (!best || sc[0] > best[0][0] || (sc[0] === best[0][0] && (sc[1] > best[0][1] || (sc[1] === best[0][1] && sc[2] > best[0][2])))) best = [sc, z];
+    });
+    if (best) best[1].strongest = true;
+
+    const ind = {};
+    TFS.forEach((t) => {
+      const c = TF[t].c;
+      ind[t] = { rsi: rsi(c), atr: A[t], atr_pct: A[t] ? A[t] / spot : null, ema20: ema(c, 20), ema50: ema(c, 50), ema100: ema(c, 100), ema200: ema(c, 200), macd: macd(c), close: c[c.length - 1] };
+    });
+    const macd1 = ind['1D'].macd;
+    const tfz = {};
+    TFS.forEach((t) => {
+      let Zk = zones(EV[t], A[t], spot, 8, 3), weak = false;
+      if (!Zk.length) { Zk = zones(EV[t], A[t], spot, 8, 2); weak = true; }
+      const [Sk, Rk] = rankSides(Zk, spot, 2);
+      tfz[t] = { weak, S: Sk.map((z) => zout(z, spot, 'S')), R: Rk.map((z) => zout(z, spot, 'R')) };
+    });
+    const nearest = (list, role) => {
+      if (role === 'S') { const c = list.filter((z) => z.role === 'S' && z.lo <= spot); return c.length ? c.reduce((a, b) => (b.hi > a.hi ? b : a)) : null; }
+      const c = list.filter((z) => z.role === 'R' && z.hi >= spot); return c.length ? c.reduce((a, b) => (b.lo < a.lo ? b : a)) : null;
+    };
+
+    // bias
+    let sc = 0; const de = ind['1D'], we = ind['1W'];
+    if (de.ema50) sc += spot > de.ema50 ? 1 : -1;
+    if (de.ema200) sc += spot > de.ema200 ? 1 : -1;
+    if (we.ema20) sc += spot > we.ema20 ? 1 : -1;
+    if (macd1) sc += macd1.above ? 1 : -1;
+    const bias = sc >= 3 ? 'Bullish' : sc <= -3 ? 'Bearish' : 'Neutral / range';
+
+    // volatility & regime
+    const ats = atrSeries(TF['1D']), dc = TF['1D'].c;
+    const atrPctSeries = ats.map((a, i) => a / dc[dc.length - ats.length + i]).slice(-365);
+    const curAP = atrPctSeries[atrPctSeries.length - 1];
+    const atrPctile = atrPctSeries.filter((x) => x <= curAP).length / atrPctSeries.length;
+    const lr = dc.slice(-31).map((x, i, a) => (i ? Math.log(x / a[i - 1]) : null)).slice(1);
+    const mu = sum(lr) / lr.length, rv30 = Math.sqrt(sum(lr.map((x) => (x - mu) ** 2)) / (lr.length - 1)) * Math.sqrt(365);
+    const e50now = ema(dc, 50), e50ago = ema(dc.slice(0, -10), 50);
+    const slope = e50now && e50ago ? e50now / e50ago - 1 : 0;
+    const trendState = de.ema200 && spot > de.ema200 && slope > 0.005 ? 'Uptrend' : de.ema200 && spot < de.ema200 && slope < -0.005 ? 'Downtrend' : 'Range / transition';
+    const volState = atrPctile >= 0.7 ? 'High volatility' : atrPctile <= 0.3 ? 'Low volatility (squeeze risk)' : 'Normal volatility';
+    const hi365 = Math.max(...TF['1D'].h.slice(-365)), lo365 = Math.min(...TF['1D'].l.slice(-365));
+
+    // target pools: every 3+ method zone within 45%, plus 2-method levels as a fallback
+    const mkPool = (minc) => zones(E, ad, spot, 30, minc).filter((z) => Math.abs((z.lo + z.hi) / 2 / spot - 1) <= 0.45).map((z) => ({ ...zout(z, spot, (z.lo + z.hi) / 2 < spot ? 'S' : 'R'), weak: minc < 3 }));
+    const P3 = mkPool(3), P2 = mkPool(2);
+    const pick = (L, entry, risk, beyond) => {
+      const dirOk = (z) => (L ? z.lo > beyond : z.hi < beyond);
+      const px = (z) => (L ? z.lo : z.hi);
+      const ord = (a, b) => (L ? px(a) - px(b) : px(b) - px(a));
+      const rrOf = (z) => (L ? px(z) - entry : entry - px(z)) / risk;
+      const c3 = P3.filter(dirOk).sort(ord), c2 = P2.filter(dirOk).sort(ord);
+      const react = c3[0] || c2[0] || null;
+      const t1 = c3.find((z) => rrOf(z) >= 2) || c2.find((z) => rrOf(z) >= 2) || null;
+      let t2 = null;
+      if (t1) {
+        const past = (z) => (L ? z.lo > t1.hi + 0.5 * ad : z.hi < t1.lo - 0.5 * ad);
+        t2 = c3.find(past) || c2.find(past) || null;
+      }
+      const o = (z) => (z ? { px: px(z), lo: z.lo, hi: z.hi, count: z.count, tfs: z.tfs.join('/'), weak: !!z.weak, rr: rrOf(z), methods: z.methods.join(', ') } : null);
+      return { react: o(react), t1: o(t1), t2: o(t2) };
+    };
+
+    // reasons for futures entries
+    const reasons = (z, side) => {
+      const g = {};
+      z.detail.forEach((d) => { (g[d.m] = g[d.m] || []).push(`${d.lab} [${d.tf}]`); });
+      const out = Object.entries(g).map(([m, v]) => ({ k: NAMES[m], t: v.slice(0, 3).join('; ') }));
+      const r1 = ind['1D'].rsi, r4 = ind['4H'].rsi;
+      let rs = `RSI(14) 1D ${r1.toFixed(0)}, 4H ${r4.toFixed(0)}`;
+      if (side === 'LONG') rs += r1 < 35 ? ' – oversold, bounce setup' : r1 < 55 ? ' – room to run higher' : ' – not oversold, wait for a clean reaction at the zone';
+      else rs += r1 > 65 ? ' – overbought, fade setup' : r1 > 45 ? ' – mid-range, room to fall' : ' – already weak, less room for a short';
+      out.push({ k: 'RSI', t: rs });
+      if (macd1) {
+        let st = macd1.above ? 'MACD 1D line above signal (momentum up)' : 'MACD 1D line below signal (momentum down)';
+        if (macd1.cross_up) st = 'MACD 1D just crossed up'; if (macd1.cross_dn) st = 'MACD 1D just crossed down';
+        out.push({ k: 'MACD', t: st + (side === 'LONG' ? (macd1.above ? ' – supports the long' : ' – long is counter-momentum, size down') : (macd1.above ? ' – short is counter-momentum, size down' : ' – supports the short')) });
+      }
+      return out;
+    };
+    const plan = (side) => {
+      const L = side === 'LONG', sg = L ? 1 : -1;
+      const side_z = zs.filter((z) => z.role === (L ? 'S' : 'R')).sort((a, b) => (L ? b.hi - a.hi : a.lo - b.lo));
+      const z1 = nearest(zs, L ? 'S' : 'R');
+      if (!z1) return null;
+      const z2 = side_z.find((z) => z !== z1 && (L ? (z.lo + z.hi) / 2 < z1.lo : (z.lo + z.hi) / 2 > z1.hi) && Math.abs((z.lo + z.hi) / 2 / spot - 1) <= 0.15);
+      const e1 = L ? Math.min(z1.hi, spot) : Math.max(z1.lo, spot);
+      let e2, zStop, span_note;
+      if (z2) { e2 = (z2.lo + z2.hi) / 2; zStop = z2; span_note = 'next confluence zone'; }
+      else { e2 = L ? z1.lo : z1.hi; zStop = z1; span_note = 'far edge of the same zone'; }
+      const sl = L ? zStop.lo - 0.75 * ad : zStop.hi + 0.75 * ad;
+      const avg = 0.4 * e1 + 0.6 * e2, risk = Math.abs(avg - sl);
+      const tp = pick(L, avg, risk, L ? Math.max(z1.hi, spot) : Math.min(z1.lo, spot));
+      const t1 = tp.t1 ? tp.t1.px : null, t2 = tp.t2 ? tp.t2.px : null;
+      const rr = (t) => (t == null || !risk ? null : (sg * (t - avg)) / risk);
+      const blend = t1 != null && t2 != null ? (rr(t1) + rr(t2)) / 2 : rr(t1);
+      const liq = L ? avg * (1 - 1 / 5 + 0.005) : avg * (1 + 1 / 5 - 0.005);
+      return {
+        side, e1, e2, avg, sl, t1, t2, rr1: rr(t1), rr2: rr(t2), blend, tp, valid: rr(t1) != null && rr(t1) >= 2,
+        span: Math.abs(e1 - e2), span_atr: Math.abs(e1 - e2) / ad, span_note,
+        sl_pct: risk / avg, loss5x: (risk / avg) * 5, liq, sl_safe: L ? sl > liq : sl < liq,
+        z1: { lo: z1.lo, hi: z1.hi, count: z1.count, tfs: z1.tfs }, z2: zStop === z1 ? null : { lo: zStop.lo, hi: zStop.hi, count: zStop.count, tfs: zStop.tfs },
+        why_e1: reasons(z1, side), why_e2: zStop === z1 ? [{ k: 'Same zone', t: `Lower edge of the ${fmt(z1.lo)}-${fmt(z1.hi)} zone; no second confluence zone within 15%` }] : reasons(zStop, side),
+        why_sl: `${L ? 'Below' : 'Above'} the ${fmt(zStop.lo)}-${fmt(zStop.hi)} zone (${zStop.count} methods) plus 0.75× daily ATR (${fmt(0.75 * ad)}) so normal wicks don't stop you out. A close beyond it means the confluence failed. At 5x the stop costs ${((risk / avg) * 500).toFixed(1)}% of margin, and liquidation sits further out at ~${fmt(liq)}.`,
+      };
+    };
+
+    // spot setups per timeframe
+    const KM = { '4H': 1.5, '1D': 1.0, '1W': 0.5 };
+    const spotRows = ['4H', '1D', '1W'].map((t) => {
+      const Sx = tfz[t].S.filter((z) => z.hi <= spot * 1.01), Rx = tfz[t].R.filter((z) => z.lo >= spot * 0.99);
+      let b = Sx.length ? Sx.reduce((a, c) => (c.hi > a.hi ? c : a)) : null, bsrc = 'tf';
+      if (!b) { b = nearest(zs, 'S'); bsrc = 'merged'; }
+      const sells = Rx.slice().sort((a, c) => a.lo - c.lo);
+      const mergedR = zs.filter((z) => z.role === 'R' && z.lo > spot).sort((a, c) => a.lo - c.lo);
+      const s1 = sells[0] || mergedR[0] || null, s2 = sells[1] || mergedR.find((z) => s1 && z.lo > s1.hi) || null;
+      if (!b) return { tf: t };
+      const entry = (b.lo + b.hi) / 2, k = KM[t], stop = b.lo - k * A[t], risk = entry - stop;
+      const tp = pick(true, entry, risk, Math.max(b.hi, spot));
+      const t1 = tp.t1 ? tp.t1.px : null, t2 = tp.t2 ? tp.t2.px : null;
+      const trig = t === '4H' ? `4H candle wicks into ${fmt(b.lo)}-${fmt(b.hi)} and closes back above ${fmt(b.hi)} with 4H RSI turning up`
+        : t === '1D' ? `Daily close back above ${fmt(b.hi)} after testing the zone (bullish engulfing or long lower wick)`
+          : `Weekly candle holds above ${fmt(b.lo)} and closes in the upper half of its range`;
+      const inval = `${t === '4H' ? '4H' : t === '1D' ? 'Daily' : 'Weekly'} close below ${fmt(b.lo)}`;
+      return {
+        tf: t, buy_lo: b.lo, buy_hi: b.hi, buy_count: b.count, buy_methods: b.methods.join(', '), buy_src: bsrc, weak: tfz[t].weak && bsrc === 'tf',
+        sell_lo: s1 ? s1.lo : null, sell_hi: s1 ? s1.hi : null, sell_count: s1 ? s1.count : null, sell_methods: s1 ? s1.methods.join(', ') : '',
+        sell2_lo: s2 ? s2.lo : null, sell2_hi: s2 ? s2.hi : null,
+        entry, stop, atr: A[t], atr_mult: k, stop_pct: risk / entry, t1, t2, tp, react: tp.react ? tp.react.px : null, rr1: t1 == null ? null : (t1 - entry) / risk, rr2: t2 == null ? null : (t2 - entry) / risk, trigger: trig, invalidation: inval,
+      };
+    });
+    const nS = nearest(zs, 'S'), nR = nearest(zs, 'R');
+    const voidLevel = nS ? nS.lo : null;
+    const atS = zs.some((z) => z.role === 'S' && z.inside) || (nS && (spot - nS.hi) / spot <= 0.01);
+    const atR = zs.some((z) => z.role === 'R' && z.inside) || (nR && (nR.lo - spot) / spot <= 0.01);
+    const status = atS && atR ? 'At support and resistance' : atS ? 'At support' : atR ? 'At resistance' : !nS ? 'No qualified support' : !nR ? 'No qualified resistance' : 'Between zones';
+    const zt = (z) => `${fmt(z.lo)}–${fmt(z.hi)}`;
+    let bull, bear;
+    if (nR) { const n2 = P3.filter((z) => z.role === 'R' && z.lo > nR.hi).sort((a, b) => a.lo - b.lo); bull = `A daily close above ${fmt(nR.hi)} (top of the ${zt(nR)} resistance, ${nR.count} methods) hands control to buyers` + (n2.length ? `; next stop ${zt(n2[0])}.` : '; no qualified resistance above, so price would be in open air up to the next weekly level.'); }
+    else bull = 'No qualified resistance overhead: holding the current range is the bull case.';
+    if (nS) { const n2 = P3.filter((z) => z.role === 'S' && z.hi < nS.lo).sort((a, b) => b.hi - a.hi); bear = `A daily close below ${fmt(nS.lo)} (floor of the ${zt(nS)} support, ${nS.count} methods) hands control to sellers` + (n2.length ? `; next support ${zt(n2[0])}.` : '; no qualified support below, so risk is open until a new base forms.'); }
+    else bear = 'No qualified support below: a new base has to form first.';
+    const mtf = TFS.map((t) => {
+      const x = ind[t], m = x.macd;
+      const above = (e) => (e == null ? null : spot > e);
+      const ups = [above(x.ema20), above(x.ema50), above(x.ema200)].filter((v) => v != null);
+      const nUp = ups.filter(Boolean).length;
+      const trend = nUp === ups.length ? 'Up' : nUp === 0 ? 'Down' : 'Mixed';
+      return {
+        tf: t, close: x.close, rsi: x.rsi, atr: x.atr, atr_pct: x.atr_pct, ema20: x.ema20, ema50: x.ema50, ema200: x.ema200,
+        macd_state: !m ? 'n/a' : m.cross_up ? 'Crossed up' : m.cross_dn ? 'Crossed down' : m.above ? (m.hist > m.hist_prev ? 'Above signal, rising' : 'Above signal, fading') : (m.hist < m.hist_prev ? 'Below signal, falling' : 'Below signal, recovering'),
+        trend,
+      };
+    });
+    return [{
+      spot, ad, ad_pct: ad / spot, bias, bias_score: sc, status, trend_state: trendState, vol_state: volState, atr_pctile: atrPctile, rv30,
+      hi365, lo365, from_hi: spot / hi365 - 1, from_lo: spot / lo365 - 1,
+      zones: zs, pool: P3.map((z) => ({ role: z.role, lo: z.lo, hi: z.hi, count: z.count, tfs: z.tfs })), spot_setups: spotRows, void_level: voidLevel, void_zone: nS ? zt(nS) : null,
+      long: plan('LONG'), short: plan('SHORT'), bull, bear, mtf,
+    }];
+  },
+});
+
+dash.calc('tp_levels', {
+  title: 'Key levels (3+ methods)',
+  description: 'Up to 3 resistance and 3 support zones where more than 2 methods agree; resistance ascending from price, support descending, strongest cluster flagged.',
+  inputs: ['tp_engine'],
+  fn: (tp_engine) => {
+    const e = tp_engine[0], f = (x) => Math.round(x).toLocaleString('en-US');
+    const NAMES = { SWING: 'Swing / equal highs-lows', SHELF: 'Breakout-retest shelf', EMA: 'EMA', FIB: 'Fib', FVG: 'FVG', OB: 'Order block', HVN: 'Volume node' };
+    const R = e.zones.filter((z) => z.role === 'R').sort((a, b) => a.lo - b.lo);
+    const S = e.zones.filter((z) => z.role === 'S').sort((a, b) => b.hi - a.hi);
+    const row = (z, id) => {
+      const mid = (z.lo + z.hi) / 2;
+      const dist = z.inside ? 0 : z.role === 'R' ? z.lo / e.spot - 1 : z.hi / e.spot - 1;
+      return {
+        id, role: z.role === 'R' ? 'Resistance' : 'Support', zone: `${f(z.lo)}–${f(z.hi)}`, lo: z.lo, hi: z.hi, mid,
+        what: z.methods.map((m) => NAMES[m]).join(' + '),
+        detail: z.detail.map((d) => `${d.lab} [${d.tf}]`).join(' · '),
+        dist, count: z.count,
+        cross_tf: z.tfs.length >= 2 ? `Yes – ${z.tfs.join(' / ')}` : `No – ${z.tfs[0]} only`,
+        strongest: z.strongest ? 'Strongest cluster' : '', inside: z.inside ? 'Price inside' : '',
+      };
+    };
+    return [...R.map((z, i) => row(z, 'R' + (i + 1))).reverse(), ...S.map((z, i) => row(z, 'S' + (i + 1)))];
+  },
+});
+
+dash.calc('tp_summary', {
+  title: 'Market state',
+  description: 'Spot, bias score, regime, volatility and the bull/bear trigger levels from the level engine.',
+  inputs: ['tp_engine'],
+  fn: (tp_engine) => {
+    const e = tp_engine[0], f = (x) => (x == null ? '—' : Math.round(x).toLocaleString('en-US'));
+    return [{
+      spot: e.spot, bias: e.bias, bias_score: e.bias_score, status: e.status, trend_state: e.trend_state, vol_state: e.vol_state,
+      atr_d: e.ad, atr_d_pct: e.ad_pct, atr_pctile: e.atr_pctile, rv30: e.rv30, hi365: e.hi365, lo365: e.lo365, from_hi: e.from_hi, from_lo: e.from_lo,
+      void_level: e.void_level, void_txt: e.void_level == null ? 'No qualified support below' : `Daily close below ${f(e.void_level)}`,
+      void_zone: e.void_zone, bull: e.bull, bear: e.bear,
+    }];
+  },
+});
+
+dash.calc('tp_spot', {
+  title: 'Spot setups by timeframe',
+  description: 'Buy zone (nearest support on that timeframe), sell zone (nearest resistance), trigger, invalidation, stop = zone floor minus an ATR multiple of that timeframe, and two targets at the first confluence zones at least 2R away.',
+  inputs: ['tp_engine'],
+  fn: (tp_engine) => {
+    const e = tp_engine[0], f = (x) => (x == null ? '—' : Math.round(x).toLocaleString('en-US'));
+    return e.spot_setups.filter((s) => s.entry != null).map((s) => ({
+      tf: s.tf,
+      buy_zone: `${f(s.buy_lo)}–${f(s.buy_hi)} (${s.buy_count} methods${s.weak ? ', weak' : ''})`,
+      sell_zone: s.sell_lo == null ? '—' : `${f(s.sell_lo)}–${f(s.sell_hi)}` + (s.sell2_lo == null ? '' : ` then ${f(s.sell2_lo)}–${f(s.sell2_hi)}`),
+      trigger: s.trigger, invalidation: s.invalidation,
+      entry: s.entry, stop: s.stop,
+      stop_txt: `${f(s.stop)} (${s.atr_mult}× ${s.tf} ATR of ${f(s.atr)}, −${(s.stop_pct * 100).toFixed(1)}%)`,
+      t1_txt: s.t1 == null ? 'No 2R target in range' : `${f(s.t1)} · ${s.rr1.toFixed(1)}R` + (s.tp.t1.weak ? ' (2-method level)' : ''),
+      t2_txt: s.t2 == null ? '—' : `${f(s.t2)} · ${s.rr2.toFixed(1)}R` + (s.tp.t2.weak ? ' (2-method level)' : ''),
+      react_txt: s.react == null ? '—' : f(s.react),
+      rr_ok: s.rr1 != null && s.rr1 >= 2 ? 'Yes' : 'No',
+    }));
+  },
+});
+
+dash.calc('tp_mtf', {
+  title: 'Multi-timeframe read',
+  description: 'Trend vs EMA20/50/200, RSI(14), MACD state and ATR% on 4H, 1D, 1W and 1M.',
+  inputs: ['tp_engine'],
+  fn: (tp_engine) => tp_engine[0].mtf.map((m) => ({
+    tf: m.tf, trend: m.trend, rsi: m.rsi, macd_state: m.macd_state, atr_pct: m.atr_pct,
+    ema_txt: [['20', m.ema20], ['50', m.ema50], ['200', m.ema200]].filter(([, v]) => v != null).map(([k, v]) => `${k}: ${Math.round(v).toLocaleString('en-US')}`).join(' · '),
+  })),
+});
+
+dash.loader('econ_cal', {
+  description: 'TradingView economic-calendar answer ({result: [...]}) turned into one row per event.',
+  fn: ({ answer }) => {
+    const a = typeof answer === 'string' ? JSON.parse(answer) : answer;
+    if (a && a.status && a.status !== 'ok') throw new Error(a.error || a.message || 'Economic calendar returned status ' + a.status);
+    const list = (a && (a.result || a.data || a.events)) || [];
+    if (!Array.isArray(list)) throw new Error('No event list in economic-calendar answer');
+    const rows = list.map((e) => ({
+      id: String(e.id), date: String(e.date).slice(0, 16), title: String(e.title || e.indicator || ''), importance: Number(e.importance),
+      forecast: e.forecast == null ? null : Number(e.forecast), previous: e.previous == null ? null : Number(e.previous), actual: e.actual == null ? null : Number(e.actual), unit: e.unit || '',
+    }));
+    return { data: rows, columns: ['id', 'date', 'title', 'importance', 'forecast', 'previous', 'actual', 'unit'] };
+  },
+});
+
+dash.calc('mkt_sentiment', {
+  title: 'Market sentiment',
+  description: 'Stablecoin dominance (USDT.D + USDC.D), BTC dominance and alt market cap (TOTAL2) from TradingView, plus Fear & Greed, Altcoin Season, market cap and BTC ETF assets from CoinMarketCap; each scored as a tilt for BTC.',
+  inputs: ['gauge_usdtd', 'gauge_usdcd', 'gauge_btcd', 'gauge_total2', 'cr_sentiment'],
+  optional: ['gauge_usdtd', 'gauge_usdcd', 'gauge_btcd', 'gauge_total2', 'cr_sentiment'],
+  fn: (gauge_usdtd, gauge_usdcd, gauge_btcd, gauge_total2, cr_sentiment) => {
+    const chg = (r, n) => (r.length > n ? r[r.length - 1].close / r[r.length - 1 - n].close - 1 : null);
+    const ema = (c, n) => { if (c.length < n) return null; const k = 2 / (n + 1); let e = c.slice(0, n).reduce((a, b) => a + b, 0) / n; for (const v of c.slice(n)) e = v * k + e * (1 - k); return e; };
+    const trend = (r) => {
+      const c = r.map((x) => x.close), e20 = ema(c, 20), e20p = ema(c.slice(0, -5), 20), last = c[c.length - 1];
+      if (e20 == null || e20p == null) return 'Not enough data';
+      return last > e20 && e20 > e20p ? 'Rising' : last < e20 && e20 < e20p ? 'Falling' : 'Sideways';
+    };
+    const out = [];
+    const row = (id, gauge, now, r, read, score) => out.push({ id, gauge, now, d1: r ? chg(r, 1) : null, d7: r ? chg(r, 7) : null, d30: r ? chg(r, 30) : null, trend: r ? trend(r) : '—', read, score, source: r ? 'TradingView' : 'CoinMarketCap' });
+    let stD7 = null;
+    if (gauge_usdtd.length && gauge_usdcd.length) {
+      const m = new Map(gauge_usdcd.map((x) => [x.day, x.close]));
+      const st = gauge_usdtd.filter((x) => m.has(x.day)).map((x) => ({ day: x.day, close: x.close + m.get(x.day) }));
+      stD7 = chg(st, 7);
+      // Backtest 2019–2026 (BTC 14 days later): stablecoin dominance in the top 15% of its 90-day range → BTC up 61% of the time vs 54% normally
+      // (63% vs 53% in 2019–22, 57% vs 55% since 2023); bottom 15% → bearish before 2023, no edge since. Its 7-day change alone had no edge
+      // (it mirrors BTC's own move, correlation −0.87), so position in the range is what is scored.
+      const w = st.slice(-90).map((x) => x.close), hi = Math.max(...w), lo = Math.min(...w), pos = hi > lo ? (w[w.length - 1] - lo) / (hi - lo) : 0.5;
+      const pp = Math.round(pos * 100) + '% of its 90-day range';
+      const sc = pos >= 0.85 ? 0.5 : pos <= 0.15 ? -0.25 : 0;
+      row('stable', 'Stablecoin dominance (USDT + USDC)', st[st.length - 1].close.toFixed(2) + '%', st,
+        pos >= 0.85 ? `Near the top (${pp}): lots of cash on the sidelines, fear near a peak. Since 2019 BTC was higher 14 days later 61% of the time from here (vs 54% normally).`
+          : pos <= 0.15 ? `Near the bottom (${pp}): little cash left on the sidelines. Bearish before 2023, no clear edge since; small caution.`
+            : `Mid-range (${pp}). Its weekly change mostly mirrors BTC's own move, so no extra signal until it reaches the top or bottom of its range.`, sc);
+      out[out.length - 1].range_pos = pos;
+    }
+    let t2D7 = null;
+    if (gauge_total2.length) {
+      t2D7 = chg(gauge_total2, 7);
+      const sc = t2D7 >= 0.05 ? 1 : t2D7 >= 0.015 ? 0.5 : t2D7 <= -0.05 ? -1 : t2D7 <= -0.015 ? -0.5 : 0;
+      row('total2', 'Alt market cap (TOTAL2)', '$' + (gauge_total2[gauge_total2.length - 1].close / 1e12).toFixed(2) + 'T', gauge_total2,
+        sc > 0 ? 'Alts gaining: broad risk appetite' : sc < 0 ? 'Alts losing value: risk appetite fading' : 'Alts flat over the week', sc);
+    }
+    if (gauge_btcd.length) {
+      const d7 = chg(gauge_btcd, 7);
+      const read = d7 > 0.005 && t2D7 != null && t2D7 < 0 ? 'Money rotating into BTC while alts weaken (defensive)' : d7 < -0.005 && t2D7 != null && t2D7 > 0 ? 'Money rotating from BTC into alts (late-cycle risk-on)' : 'BTC share of the market steady';
+      row('btcd', 'BTC dominance', gauge_btcd[gauge_btcd.length - 1].close.toFixed(2) + '%', gauge_btcd, read, 0);
+    }
+    const cr = Object.fromEntries((cr_sentiment || []).map((x) => [x.id, x]));
+    if (cr.fng) {
+      const v = Number(cr.fng.num), sc = v <= 25 ? 1 : v <= 40 ? 0.5 : v >= 75 ? -1 : v >= 60 ? -0.5 : 0;
+      out.push({ id: 'fng', gauge: 'Fear & Greed Index', now: cr.fng.value, d1: null, d7: null, d30: null, trend: cr.fng.change || '—', read: (v <= 25 ? 'Extreme fear: historically a contrarian buy zone' : v <= 40 ? 'Fear: sentiment washed out, mild contrarian tailwind' : v >= 75 ? 'Extreme greed: crowded, contrarian warning' : v >= 60 ? 'Greed: froth building' : 'Neutral: no crowd extreme to lean on'), score: sc, source: 'CoinMarketCap' });
+    }
+    if (cr.asi) out.push({ id: 'asi', gauge: 'Altcoin Season Index', now: cr.asi.value, d1: null, d7: null, d30: null, trend: cr.asi.change || '—', read: cr.asi.note || '', score: 0, source: 'CoinMarketCap' });
+    if (cr.mcap) out.push({ id: 'mcap', gauge: 'Total crypto market cap', now: cr.mcap.value, d1: null, d7: null, d30: null, trend: cr.mcap.change || '—', read: cr.mcap.note || '', score: 0, source: 'CoinMarketCap' });
+    const isEth = window.__snap && window.__snap.asset() === 'ETH', etf = isEth ? cr.etf_eth : cr.etf;
+    if (etf) out.push({ id: 'etf', gauge: isEth ? 'US spot ETH ETF assets' : 'US spot BTC ETF assets', now: etf.value, d1: null, d7: null, d30: null, trend: etf.change || '—', read: etf.note || '', score: 0, source: 'CoinMarketCap' });
+    const total = out.reduce((a, x) => a + (x.score || 0), 0);
+    out.push({ id: 'overall', gauge: 'Overall', now: total >= 1 ? 'Risk-on' : total <= -1 ? 'Risk-off' : 'Neutral', d1: null, d7: null, d30: null, trend: '—', read: `Sum of tilts ${total >= 0 ? '+' : ''}${total.toFixed(1)} across ${out.filter((x) => x.score !== 0).length} scoring gauges`, score: total, source: '' });
+    return out;
+  },
+});
+
+dash.calc('fc_model', {
+  title: 'Forecast model',
+  description: 'Volatility cone from blended 30-day and 1-year realized volatility, scaled by how far BTC actually moved after past periods with similar volatility, shifted by a weighted score of trend, momentum, structure, seasonality and derivatives signals; scenario odds are the chance of finishing above the nearest resistance, inside the range, or below the nearest support. Includes an out-of-sample check of the bands against history.',
+  inputs: ['btc_daily', 'tp_engine', 'derivs', 'econ_cal', 'mkt_sentiment'],
+  optional: ['mkt_sentiment'],
+  fn: (btc_daily, tp_engine, derivs, econ_cal, mkt_sentiment) => {
+    const E = tp_engine[0], spot = E.spot;
+    const sum = (a) => a.reduce((s, x) => s + x, 0);
+    const sd = (a) => { const m = sum(a) / a.length; return Math.sqrt(sum(a.map((x) => (x - m) ** 2)) / (a.length - 1)); };
+    const med = (a) => { const s = a.slice().sort((x, y) => x - y), k = s.length >> 1; return s.length % 2 ? s[k] : (s[k - 1] + s[k]) / 2; };
+    const Phi = (x) => { const t = 1 / (1 + 0.2316419 * Math.abs(x)), d = 0.3989423 * Math.exp(-x * x / 2); const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return x > 0 ? 1 - p : p; };
+    const f = (x) => Math.round(x).toLocaleString('en-US');
+    const D = btc_daily.slice(0, -1); // completed days only
+    const C = D.map((r) => r.close), days = D.map((r) => r.day);
+    const lr = C.map((c, i) => (i ? Math.log(c / C[i - 1]) : 0)).slice(1);
+    const s30 = sd(lr.slice(-30)), s90 = sd(lr.slice(-90)), s365 = sd(lr.slice(-365));
+    const sBase = Math.sqrt(0.5 * s30 * s30 + 0.5 * s365 * s365);
+
+    // macro events in each horizon
+    const today = btc_daily[btc_daily.length - 1].day, lastDay = new Date(today + 'T00:00:00Z');
+    const ev = (econ_cal || []).filter((e) => e.importance >= 1);
+    const big = /FOMC|Fed Interest|Inflation Rate|Non Farm|Core PCE|CPI/i;
+    const evIn = (h) => ev.filter((e) => { const t = new Date(e.date + ':00Z'); return t >= lastDay && t <= new Date(+lastDay + (h + 1) * 864e5) && big.test(e.title); });
+
+    // historical analogs: realized-vol regime and calendar window
+    const atrPct = []; // 14d avg true range / close, Wilder
+    { let a = null; for (let i = 1; i < D.length; i++) { const tr = Math.max(D[i].high - D[i].low, Math.abs(D[i].high - C[i - 1]), Math.abs(D[i].low - C[i - 1])); a = a == null ? tr : (a * 13 + tr) / 14; atrPct[i] = a / C[i]; } }
+    const pctileAt = (i) => { const w = atrPct.slice(Math.max(1, i - 364), i + 1).filter((x) => x != null); return w.filter((x) => x <= atrPct[i]).length / w.length; };
+    const curPct = pctileAt(C.length - 1);
+    const fwd = (i, h) => (i + h < C.length ? C[i + h] / C[i] - 1 : null);
+    const sq = { 7: [], 14: [] }, all = { 7: [], 14: [] };
+    for (let i = 400; i < C.length - 14; i += 1) {
+      const p = pctileAt(i);
+      [7, 14].forEach((h) => { const r = fwd(i, h); all[h].push(Math.abs(r)); if (p <= 0.15) sq[h].push(Math.abs(r)); });
+    }
+    const expand = { 7: med(sq[7]) / med(all[7]), 14: med(sq[14]) / med(all[14]) };
+    // seasonality: same calendar window (±3 days) in past years
+    const md = days[days.length - 1].slice(5);
+    const seas = { 7: [], 14: [] };
+    const yrs = [...new Set(days.map((d) => d.slice(0, 4)))].slice(0, -1);
+    yrs.forEach((y) => {
+      const i0 = days.indexOf(y + '-' + md); if (i0 < 3) return;
+      [7, 14].forEach((h) => { const v = []; for (let o = -3; o <= 3; o++) { const r = fwd(i0 + o, h); if (r != null) v.push(r); } if (v.length) seas[h].push(sum(v) / v.length); });
+    });
+
+    // signals
+    const m1d = E.mtf.find((x) => x.tf === '1D'), m4 = E.mtf.find((x) => x.tf === '4H'), m1w = E.mtf.find((x) => x.tf === '1W');
+    const dv = Object.fromEntries((derivs || []).map((r) => [r.id, r]));
+    const fund = dv.funding_oiw ? Number(dv.funding_oiw.num) : null, oi4 = dv.oi_total ? Number(dv.oi_total.num) : null, shortLiq = dv.liq_btc_24h ? Number(dv.liq_btc_24h.num) : null;
+    const sig = [];
+    const add = (name, reading, s7, s14, why) => sig.push({ name, reading, s7, s14, why });
+    {
+      const a50 = spot > m1d.ema50, a200 = spot > m1d.ema200;
+      const s = a50 && a200 ? 1 : !a50 && !a200 ? -1 : 0;
+      add('Daily trend', `Price ${a50 ? 'above' : 'below'} EMA50 (${f(m1d.ema50)}), ${a200 ? 'above' : 'below'} EMA200 (${f(m1d.ema200)})`, s, s, s > 0 ? 'Both daily EMAs below price: buyers in control' : s < 0 ? 'Below both daily EMAs: sellers in control' : 'Stuck between the daily EMAs: no clear trend');
+    }
+    { const s = m1w.trend === 'Up' ? 1 : m1w.trend === 'Down' ? -1 : 0; add('Weekly trend', `${m1w.trend} vs weekly EMAs`, 0.5 * s, s, s > 0 ? 'Higher-timeframe trend still points up; matters more over 2 weeks' : s < 0 ? 'Weekly trend down' : 'Weekly trend mixed'); }
+    {
+      const st = m1d.macd_state, r = m1d.rsi;
+      let s = /Crossed up|Above signal, rising/.test(st) ? 1 : /Above signal, fading/.test(st) ? 0.25 : /Below signal, recovering/.test(st) ? -0.25 : /Crossed down|Below signal, falling/.test(st) ? -1 : 0;
+      s += r > 60 ? 0.5 : r < 40 ? -0.5 : 0;
+      add('Daily momentum', `MACD ${st.toLowerCase()}, RSI ${r.toFixed(0)}`, s, s, s > 0.3 ? 'Momentum building' : s < -0.3 ? 'Momentum fading' : 'Momentum neutral; MACD trying to turn');
+    }
+    { const st = m4.macd_state; const s = /Crossed up|Above signal, rising/.test(st) ? 0.5 : /Crossed down|Below signal, falling/.test(st) ? -0.5 : 0; add('4H momentum', `MACD ${st.toLowerCase()}, RSI ${m4.rsi.toFixed(0)}`, s, 0.5 * s, 'Short-term push; fades in importance beyond a few days'); }
+    {
+      const s7 = E.status === 'At resistance' ? -1 : E.status === 'At support' ? 1 : 0;
+      add('Position vs zones', E.status + (E.status === 'At resistance' ? ` (strongest cluster ${E.zones.find((z) => z.strongest) ? f(E.zones.find((z) => z.strongest).lo) + '–' + f(E.zones.find((z) => z.strongest).hi) : ''})` : ''), s7, 0.5 * s7, s7 < 0 ? 'Sitting in heavy resistance: odds favour a pause or pullback before a breakout' : s7 > 0 ? 'Sitting on support: odds favour a bounce' : 'Between zones');
+    }
+    [7, 14].forEach((h) => {
+      const v = seas[h]; if (v.length < 4) return;
+      const m = med(v), up = v.filter((x) => x > 0).length / v.length;
+      const s = Math.max(-1, Math.min(1, (up - 0.5) * 4));
+      const row = sig.find((x) => x.name === 'Seasonality');
+      const reading = `Next ${h}d from this date: median ${(m * 100).toFixed(1)}%, green ${Math.round(up * 100)}% of ${v.length} years`;
+      if (row) { row.reading += ' · ' + reading; row.s14 = s; } else add('Seasonality', reading, s, 0, 'Same calendar window in past years (±3 days); late Oct to mid Nov has historically leaned positive');
+    });
+    {
+      let s = 0, txt = [];
+      if (fund != null) { if (fund > 0.03) { s -= 1; txt.push('funding hot'); } else if (fund < 0) { s += 0.5; txt.push('funding negative'); } else txt.push('funding at baseline'); }
+      if (shortLiq != null && shortLiq > 0.65 && oi4 != null && oi4 <= 0.5) { s -= 0.5; txt.push('rally led by short liquidations while OI is flat or falling'); }
+      if (oi4 != null && oi4 > 2 && fund != null && fund <= 0.015) { s += 0.5; txt.push('OI building with calm funding'); }
+      add('Derivatives (CoinGlass)', `Funding ${fund != null ? (fund).toFixed(4) + '%' : '—'}, OI 4h ${oi4 != null ? oi4.toFixed(2) + '%' : '—'}, shorts ${shortLiq != null ? Math.round(shortLiq * 100) + '%' : '—'} of 24h liquidations`, s, 0.5 * s, txt.join('; ') + (s < 0 ? ': squeeze fuel tends to run out at resistance' : ''));
+    }
+    {
+      const ms = mkt_sentiment || [];
+      const st = ms.find((x) => x.id === 'stable');
+      if (st) {
+        add('Stablecoin dominance', `${st.now}, ${Math.round(st.range_pos * 100)}% of its 90-day range (7D ${st.d7 >= 0 ? '+' : ''}${(st.d7 * 100).toFixed(1)}%)`, st.score, st.score,
+          'Contrarian: when the stablecoin share of crypto is near the top of its 90-day range, BTC has tended to bounce over the next 2 weeks (61% up vs 54%); the edge is small and weaker since 2023');
+      }
+      const rest = ms.filter((x) => x.id !== 'overall' && x.id !== 'stable');
+      if (rest.length) {
+        const sum = rest.reduce((a, x) => a + (x.score || 0), 0), s = Math.max(-1, Math.min(1, sum / 2));
+        const parts = rest.filter((x) => x.score !== 0).map((x) => `${x.gauge.split(' (')[0]} ${x.score > 0 ? '+' : ''}${x.score}`);
+        add('Market sentiment', `${sum >= 1 ? 'Risk-on' : sum <= -1 ? 'Risk-off' : 'Neutral'} (${parts.length ? parts.join(', ') : 'no gauge leaning either way'})`, s, s, 'Alt market cap (TradingView) and Fear & Greed (CoinMarketCap): risk appetite across the whole market');
+      }
+    }
+    const W = { 'Stablecoin dominance': 0.75, 'Market sentiment': 0.75, 'Daily trend': 1, 'Weekly trend': 1, 'Daily momentum': 1, '4H momentum': 0.75, 'Position vs zones': 1, Seasonality: 0.75, 'Derivatives (CoinGlass)': 0.75 };
+    sig.forEach((x) => { x.w = W[x.name] || 1; });
+    const score = (h) => sum(sig.map((x) => x.w * (h === 7 ? x.s7 : x.s14)));
+
+    // zones for scenario boundaries
+    const R = E.pool.filter((z) => z.role === 'R').sort((a, b) => a.lo - b.lo), S = E.pool.filter((z) => z.role === 'S').sort((a, b) => b.hi - a.hi);
+    const nR = R.find((z) => z.hi > spot), nS = S.find((z) => z.hi < spot) || S[0];
+    const up = nR ? nR.hi : spot * 1.03, dn = nS ? nS.lo : spot * 0.97;
+    const bullT = R.filter((z) => z.lo > up).slice(0, 2), bearT = S.filter((z) => z.hi < dn).slice(0, 2);
+
+    // range calibration: in past periods with similar volatility (ATR percentile within ±0.15 of now),
+    // how big was the move relative to the blended-volatility estimate? Use those quantiles as the band
+    // multipliers, and check them on history they were not fitted to (fit first half, test second half).
+    const calib = {};
+    const zs = { 7: [], 14: [] };
+    for (let i = 400; i < lr.length - 7; i++) {
+      if (Math.abs(pctileAt(i + 1) - curPct) > 0.15) continue;
+      const a = sd(lr.slice(i - 30, i)), b = sd(lr.slice(i - 365, i)), base = Math.sqrt(0.5 * a * a + 0.5 * b * b);
+      [7, 14].forEach((h) => { if (i + h < lr.length) zs[h].push(Math.abs(Math.log(C[i + h] / C[i])) / (base * Math.sqrt(h))); });
+    }
+    const quant = (arr, p) => { const t = arr.slice().sort((x, y) => x - y); return t[Math.min(t.length - 1, Math.floor(p * t.length))]; };
+    [7, 14].forEach((h) => {
+      const z = zs[h], half = Math.floor(z.length / 2), test = z.slice(half);
+      const k68f = quant(z.slice(0, half), 0.68), k90f = quant(z.slice(0, half), 0.9);
+      calib[h] = {
+        n: z.length, k68: z.length >= 100 ? quant(z, 0.68) : 1, k90: z.length >= 100 ? quant(z, 0.9) : 1.645,
+        in68: test.filter((x) => x <= k68f).length / test.length, in90: test.filter((x) => x <= k90f).length / test.length,
+      };
+    });
+
+    const H = [7, 14].map((h) => {
+      const events = evIn(h);
+      const base = sBase * Math.sqrt(h), s68 = base * calib[h].k68, s90 = base * calib[h].k90;
+      const sc = Math.max(-4, Math.min(4, score(h)));
+      const mu = 0.12 * sc * s68;
+      const q = (z) => spot * Math.exp(mu + z);
+      const pAbove = (x) => 1 - Phi((Math.log(x / spot) - mu) / s68);
+      const pBull = pAbove(up), pBear = 1 - pAbove(dn), pBase = 1 - pBull - pBear;
+      return {
+        h, label: h === 7 ? '1 week' : '2 weeks', target_date: new Date(+lastDay + h * 864e5).toISOString().slice(0, 10),
+        sigma: s68, s68, s90, k68: calib[h].k68, k90: calib[h].k90, score: sc, mu, median: q(0), lo68: q(-s68), hi68: q(s68), lo90: q(-s90), hi90: q(s90),
+        p_up: pAbove(spot), p_bull: pBull, p_base: pBase, p_bear: pBear, up, dn,
+        events: events.map((e) => `${e.title} (${e.date.slice(5, 10)})`).join(', '),
+        calib68: calib[h].in68, calib90: calib[h].in90, calib_n: calib[h].n,
+        seas_med: seas[h].length ? med(seas[h]) : null, seas_up: seas[h].length ? seas[h].filter((x) => x > 0).length / seas[h].length : null, seas_n: seas[h].length,
+        expand: expand[h],
+      };
+    });
+    return [{
+      calib_n_txt: H[0].calib_n.toLocaleString('en-US'), expand14: H[1].expand, today,
+      spot, last_day: days[days.length - 1], s30: s30 * Math.sqrt(365), s90: s90 * Math.sqrt(365), s365: s365 * Math.sqrt(365), atr_pctile: curPct,
+      horizons: H, signals: sig, up, dn,
+      up_zone: nR ? `${f(nR.lo)}–${f(nR.hi)}` : null, dn_zone: nS ? `${f(nS.lo)}–${f(nS.hi)}` : null,
+      bull_targets: bullT.map((z) => `${f(z.lo)}–${f(z.hi)}`), bear_targets: bearT.map((z) => `${f(z.lo)}–${f(z.hi)}`),
+      zones: E.pool.filter((z) => Math.abs((z.lo + z.hi) / 2 / spot - 1) < 0.15),
+      history: D.slice(-30).map((r) => ({ day: r.day, close: r.close })),
+    }];
+  },
+});
+
+dash.calc('fc_horizons', {
+  title: 'Forecast by horizon',
+  description: 'Most likely price, 68% and 90% ranges, chance of being higher, and bull/base/bear odds for 1 and 2 weeks.',
+  inputs: ['fc_model'],
+  fn: (fc_model) => {
+    const m = fc_model[0], f = (x) => '$' + Math.round(x).toLocaleString('en-US');
+    return m.horizons.map((h) => ({
+      h: h.label, target_date: h.target_date, median: h.median,
+      range68: `${f(h.lo68)} – ${f(h.hi68)}`, range90: `${f(h.lo90)} – ${f(h.hi90)}`,
+      move68: Math.exp(h.s68) - 1, p_up: h.p_up, p_bull: h.p_bull, p_base: h.p_base, p_bear: h.p_bear,
+      score: h.score, events: h.events || 'None scheduled',
+      calib: `${Math.round(h.calib68 * 100)}% / ${Math.round(h.calib90 * 100)}%`,
+    }));
+  },
+});
+
+dash.calc('fc_scenarios', {
+  title: 'Forecast scenarios',
+  description: 'Bull (close above the nearest resistance top), base (stays inside the range) and bear (close below the nearest support floor), with odds per horizon and targets from the confluence zones.',
+  inputs: ['fc_model'],
+  fn: (fc_model) => {
+    const m = fc_model[0], f = (x) => Math.round(x).toLocaleString('en-US'), pc = (x) => Math.round(x * 100) + '%';
+    const h1 = m.horizons[0], h2 = m.horizons[1];
+    return [
+      { id: 'bull', scenario: 'Bull – breakout', p7: pc(h1.p_bull), p14: pc(h2.p_bull), trigger: `Daily close above ${f(m.up)}, the top of the ${m.up_zone} resistance`, targets: m.bull_targets.join(', then ') || 'Open air above', watch: 'Open interest rising with funding near 0.01% (real buyers, not just short covering); a calm or dovish FOMC reaction' },
+      { id: 'base', scenario: 'Base – range', p7: pc(h1.p_base), p14: pc(h2.p_base), trigger: `Price stays between ${f(m.dn)} and ${f(m.up)}`, targets: `Fade the edges: buy near ${m.dn_zone}, trim near ${m.up_zone}`, watch: 'Volatility stays low; funding and open interest flat; macro data comes in near forecast' },
+      { id: 'bear', scenario: 'Bear – breakdown', p7: pc(h1.p_bear), p14: pc(h2.p_bear), trigger: `Daily close below ${f(m.dn)}, the floor of the ${m.dn_zone} support`, targets: m.bear_targets.join(', then ') || 'No qualified support nearby', watch: 'Funding spiking above ~0.03% then flushing, open interest falling, a hawkish FOMC or hot CPI' },
+    ];
+  },
+});
+
+dash.calc('fc_signals', {
+  title: 'Forecast signals',
+  description: 'Each confluence signal, its current reading and its score for the 1-week and 2-week tilt (−1 bearish to +1 bullish), with its weight.',
+  inputs: ['fc_model'],
+  fn: (fc_model) => fc_model[0].signals.map((s) => ({ name: s.name, reading: s.reading, s7: s.s7, s14: s.s14, w: s.w, why: s.why })),
+});
+
+dash.calc('fc_path', {
+  title: 'Forecast path',
+  description: 'Last 30 daily closes, then the median path and 68%/90% bands for the next 14 days (bands widen with the square root of time).',
+  inputs: ['fc_model'],
+  fn: (fc_model) => {
+    const m = fc_model[0], h2 = m.horizons[1], h1 = m.horizons[0];
+    const rows = m.history.map((r) => ({ day: r.day, kind: 'actual', close: r.close, median: null, lo68: null, hi68: null, lo90: null, hi90: null }));
+    const t0 = new Date(m.today + 'T00:00:00Z');
+    for (let t = 0; t <= 14; t++) {
+      const h = t <= 7 ? h1 : h2, f = Math.sqrt(t / h.h);
+      const mu = h.mu * (t / h.h), a = h.s68 * f, b = h.s90 * f;
+      const q = (z) => m.spot * Math.exp(mu + z);
+      rows.push({ day: new Date(+t0 + t * 864e5).toISOString().slice(0, 10), kind: 'forecast', close: t === 0 ? m.spot : null, median: q(0), lo68: q(-a), hi68: q(a), lo90: q(-b), hi90: q(b) });
+    }
+    return rows;
+  },
+});
+
+dash.calc('fc_events', {
+  title: 'Macro catalysts',
+  description: 'High-importance US events in the forecast window, in Sydney time, with consensus and prior readings.',
+  inputs: ['econ_cal'],
+  fn: (econ_cal) => {
+    const now = Date.now() - 6 * 3600e3;
+    const fmt = (x, u) => (x == null ? '—' : x + (u === '%' ? '%' : ''));
+    const key = /FOMC|Fed |Inflation|CPI|PCE|Non Farm|Unemployment|GDP|ISM|Election|Retail Sales/i;
+    return econ_cal.filter((e) => e.importance >= 1 && key.test(e.title) && new Date(e.date + ':00Z') >= now)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((e) => ({
+        id: e.id,
+        when: new Date(e.date + ':00Z').toLocaleString('en-AU', { timeZone: 'Australia/Sydney', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }),
+        title: e.title, consensus: `forecast ${fmt(e.forecast, e.unit)} · prior ${fmt(e.previous, e.unit)}`,
+        impact: /FOMC|Fed Interest|Inflation Rate YoY|Core Inflation|Non Farm|Core PCE/i.test(e.title) ? 'High' : 'Medium',
+      }));
+  },
+});
+
+dash.calc('monthly_roi', {
+  title: 'Monthly ROI',
+  description: 'Each month close vs. previous month close (first month vs. its open).',
+  inputs: ['btc_monthly'],
+  fn: (btc_monthly) => btc_monthly.map((r, i) => ({
+    month: r.month, year: +r.month.slice(0, 4), mon: +r.month.slice(5, 7), close: r.close,
+    roi: r.close / (i ? btc_monthly[i - 1].close : r.open) - 1,
+    forming: i === btc_monthly.length - 1,
+    listing: i === 0,
+  })),
+});
+
+dash.calc('quarterly_roi', {
+  title: 'Quarterly ROI',
+  description: 'Each quarter close vs. previous quarter close (first quarter vs. first open).',
+  inputs: ['btc_monthly'],
+  fn: (btc_monthly) => {
+    const out = [];
+    btc_monthly.forEach((r, i) => {
+      const y = +r.month.slice(0, 4), q = Math.ceil(+r.month.slice(5, 7) / 3), key = y + '-Q' + q;
+      let g = out[out.length - 1];
+      if (!g || g.quarter !== key) { g = { quarter: key, year: y, q, base: out.length ? out[out.length - 1].close : r.open, listing: !out.length }; out.push(g); }
+      g.close = r.close; g.forming = i === btc_monthly.length - 1;
+    });
+    return out.map((g) => ({ ...g, roi: g.close / g.base - 1 }));
+  },
+});
+
+dash.calc('yearly_roi', {
+  title: 'Yearly ROI',
+  description: 'Each year close vs. previous year close; high/low are intrayear extremes.',
+  inputs: ['btc_monthly'],
+  fn: (btc_monthly) => {
+    const out = [];
+    btc_monthly.forEach((r, i) => {
+      const y = r.month.slice(0, 4);
+      let g = out[out.length - 1];
+      if (!g || g.year !== y) { g = { year: y, base: out.length ? out[out.length - 1].close : r.open, high: -Infinity, low: Infinity, listing: !out.length }; out.push(g); }
+      g.close = r.close; g.high = Math.max(g.high, r.high); g.low = Math.min(g.low, r.low); g.forming = i === btc_monthly.length - 1;
+    });
+    return out.map((g) => ({ ...g, roi: g.close / g.base - 1, drawdown: Math.min(0, g.low / g.base - 1) }));
+  },
+});
+
+dash.calc('monthly_grid', {
+  title: 'Monthly returns grid',
+  description: 'Monthly ROI pivoted to year × month, with yearly ROI and average/median rows (completed months only).',
+  inputs: ['monthly_roi', 'yearly_roi'],
+  fn: (monthly_roi, yearly_roi) => {
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const years = [...new Set(monthly_roi.map((r) => r.year))].sort((a, b) => b - a);
+    const rows = years.map((y) => {
+      const row = { year: String(y) };
+      M.forEach((m, i) => { const r = monthly_roi.find((x) => x.year === y && x.mon === i + 1); row[m] = r ? r.roi : null; });
+      const yr = yearly_roi.find((x) => x.year === String(y));
+      row.Year = yr ? yr.roi : null;
+      return row;
+    });
+    const done = monthly_roi.filter((r) => !r.forming && !r.listing);
+    const doneYears = yearly_roi.filter((r) => !r.forming && !r.listing).map((r) => r.roi);
+    const avg = { year: 'Average' }, med = { year: 'Median' }, win = { year: 'Win rate' };
+    M.forEach((m, i) => {
+      const v = done.filter((r) => r.mon === i + 1).map((r) => r.roi);
+      avg[m] = v.length ? d3.mean(v) : null; med[m] = v.length ? d3.median(v) : null;
+      win[m] = v.length ? v.filter((x) => x > 0).length / v.length : null;
+    });
+    avg.Year = d3.mean(doneYears); med.Year = d3.median(doneYears);
+    win.Year = doneYears.filter((x) => x > 0).length / doneYears.length;
+    return [...rows, avg, med, win];
+  },
+});
+
+dash.calc('quarterly_grid', {
+  title: 'Quarterly returns grid',
+  description: 'Quarterly ROI pivoted to year × quarter, with yearly ROI and average/median rows (completed quarters only).',
+  inputs: ['quarterly_roi', 'yearly_roi'],
+  fn: (quarterly_roi, yearly_roi) => {
+    const years = [...new Set(quarterly_roi.map((r) => r.year))].sort((a, b) => b - a);
+    const rows = years.map((y) => {
+      const row = { year: String(y) };
+      [1, 2, 3, 4].forEach((q) => { const r = quarterly_roi.find((x) => x.year === y && x.q === q); row['Q' + q] = r ? r.roi : null; });
+      const yr = yearly_roi.find((x) => x.year === String(y));
+      row.Year = yr ? yr.roi : null;
+      return row;
+    });
+    const done = quarterly_roi.filter((r) => !r.forming && !r.listing);
+    const doneYears = yearly_roi.filter((r) => !r.forming && !r.listing).map((r) => r.roi);
+    const avg = { year: 'Average' }, med = { year: 'Median' }, win = { year: 'Win rate' };
+    [1, 2, 3, 4].forEach((q) => {
+      const v = done.filter((r) => r.q === q).map((r) => r.roi);
+      avg['Q' + q] = v.length ? d3.mean(v) : null; med['Q' + q] = v.length ? d3.median(v) : null;
+      win['Q' + q] = v.length ? v.filter((x) => x > 0).length / v.length : null;
+    });
+    avg.Year = d3.mean(doneYears); med.Year = d3.median(doneYears);
+    win.Year = doneYears.filter((x) => x > 0).length / doneYears.length;
+    return [...rows, avg, med, win];
+  },
+});
+
+dash.calc('season_month', {
+  title: 'Return by calendar month',
+  description: 'Mean, median and share of green closes per calendar month, completed months only.',
+  inputs: ['monthly_roi'],
+  fn: (monthly_roi) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => {
+    const v = monthly_roi.filter((r) => !r.forming && !r.listing && r.mon === i + 1).map((r) => r.roi);
+    return { period: m, avg: d3.mean(v), median: d3.median(v), up_share: v.filter((x) => x > 0).length / v.length, n: v.length };
+  }),
+});
+
+dash.calc('season_quarter', {
+  title: 'Return by quarter',
+  description: 'Mean, median and share of green closes per quarter, completed quarters only.',
+  inputs: ['quarterly_roi'],
+  fn: (quarterly_roi) => [1, 2, 3, 4].map((q) => {
+    const v = quarterly_roi.filter((r) => !r.forming && !r.listing && r.q === q).map((r) => r.roi);
+    return { period: 'Q' + q, avg: d3.mean(v), median: d3.median(v), up_share: v.filter((x) => x > 0).length / v.length, n: v.length };
+  }),
+});
+
+dash.calc('headline', {
+  title: 'Headline figures',
+  description: 'Latest close, current month/quarter/year ROI, ROI since listing, and distance from the all-time high.',
+  inputs: ['btc_monthly', 'monthly_roi', 'quarterly_roi', 'yearly_roi'],
+  fn: (btc_monthly, monthly_roi, quarterly_roi, yearly_roi) => {
+    const last = btc_monthly[btc_monthly.length - 1];
+    const ath = d3.max(btc_monthly, (r) => r.high);
+    const q = quarterly_roi[quarterly_roi.length - 1], y = yearly_roi[yearly_roi.length - 1];
+    return [{
+      as_of: last.month, price: last.close, mtd: monthly_roi[monthly_roi.length - 1].roi,
+      quarter: q.quarter, qtd: q.roi, year: y.year, ytd: y.roi,
+      first_open: btc_monthly[0].open, all_time: last.close / btc_monthly[0].open - 1,
+      ath, from_ath: last.close / ath - 1,
+    }];
+  },
+});
+
+(() => {
+  const isoDay = (d) => d.toISOString().slice(0, 10);
+  dash.setParams({ cal_from: isoDay(new Date(Date.now() - 864e5)), cal_to: isoDay(new Date(Date.now() + 15 * 864e5)) });
+  const pct = d3.format('+,.1%');
+  const usd = (v) => '$' + d3.format(',.0f')(v);
+  const monthName = (s) => d3.utcFormat('%b %Y')(new Date(s + '-01T00:00:00Z'));
+  const signCls = (el, v) => { el.classList.remove('pos', 'neg'); if (v > 0) el.classList.add('pos'); else if (v < 0) el.classList.add('neg'); };
+
+  // Tabs
+  const tabs = [...document.querySelectorAll('.br-tabs button')];
+  let current = 'monthly';
+  const show = (id) => {
+    current = id;
+    tabs.forEach((b) => b.setAttribute('aria-selected', String(b.id === id)));
+    document.querySelectorAll('.br-page').forEach((p) => { p.hidden = p.dataset.page !== id; });
+    dash.setLink(id);
+    draw();
+  };
+  tabs.forEach((b) => b.addEventListener('click', () => show(b.id)));
+
+  const cellPct = (v) => {
+    const a = Math.abs(v);
+    return d3.format(a >= 10 ? '+,.0%' : a >= 1 ? '+,.1%' : '+.2%')(v);
+  };
+  const STATS = ['Average', 'Median', 'Win rate'];
+
+  // flags: { live: Set('year|col'), listing: Set('year|col') }
+  const drawHeat = (sel, id, cols, flags, opt = {}) => {
+    const table = document.querySelector(sel);
+    const tbody = table.querySelector('tbody');
+    const d = dash.data(id);
+    if (d.status !== 'ok') { tbody.replaceChildren(); return; }
+    const label = opt.label || ((r) => r.year);
+    const rows = opt.filter ? d.data.filter(opt.filter) : d.data;
+    tbody.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr');
+      const lab = label(r);
+      const isStat = STATS.includes(lab);
+      if (opt.keyAttr) tr.dataset.key = opt.keyAttr(r);
+      if (isStat) tr.className = 'stat' + (lab === 'Average' ? ' first-stat' : '');
+      const k = document.createElement('td'); k.textContent = lab; tr.append(k);
+      cols.forEach((c) => {
+        const td = document.createElement('td');
+        const v = r[c];
+        if (v == null || !isFinite(v)) { td.textContent = ''; td.style.background = 'none'; tr.append(td); return; }
+        const cls = [];
+        if (lab === 'Win rate') {
+          td.textContent = d3.format('.0%')(v);
+          cls.push(v >= 0.5 ? 'up' : 'down');
+        } else if (isStat) {
+          td.textContent = cellPct(v);
+          cls.push('stat');
+        } else {
+          td.textContent = cellPct(v);
+          cls.push(v > 0.0005 ? 'up' : v < -0.0005 ? 'down' : 'flat');
+          const key = (opt.cellKey ? opt.cellKey(r) : r.year) + '|' + c;
+          if (flags.live.has(key)) cls.push('live');
+          if (flags.listing.has(key)) cls.push('listing');
+        }
+        td.className = cls.join(' ');
+        tr.append(td);
+      });
+      return tr;
+    }));
+  };
+  const M_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dailyFlags = () => {
+    const live = new Set(), listing = new Set(), dd = dash.data('daily_roi');
+    (dd.status === 'ok' ? dd.data : []).forEach((r) => {
+      const k = r.year + '-' + r.dom + '|' + M_NAMES[r.mon - 1];
+      if (r.forming) live.add(k);
+      if (r.listing) listing.add(k);
+    });
+    return { live, listing };
+  };
+  const weeklyFlags = () => {
+    const live = new Set(), listing = new Set(), wd = dash.data('weekly_roi');
+    (wd.status === 'ok' ? wd.data : []).forEach((r) => {
+      if (r.forming) live.add(r.year + '|W' + r.wk);
+      if (r.listing) listing.add(r.year + '|W' + r.wk);
+    });
+    return { live, listing };
+  };
+  const flagsFor = (periodId, colOf) => {
+    const live = new Set(), listing = new Set();
+    const p = dash.data(periodId), yr = dash.data('yearly_roi');
+    (p.status === 'ok' ? p.data : []).forEach((r) => {
+      if (r.forming) live.add(r.year + '|' + colOf(r));
+      if (r.listing) listing.add(r.year + '|' + colOf(r));
+    });
+    (yr.status === 'ok' ? yr.data : []).forEach((r) => {
+      if (r.forming) live.add(r.year + '|Year');
+      if (r.listing) listing.add(r.year + '|Year');
+    });
+    return { live, listing };
+  };
+
+  const winBtns = [...document.querySelectorAll('.br-win button')];
+  winBtns.forEach((b) => b.addEventListener('click', () => dash.setParams({ pattern_window: b.dataset.win })));
+  const yearSel = document.querySelector('.br-day-year');
+  yearSel.addEventListener('change', () => dash.setParams({ day_year: yearSel.value || null }));
+
+  const tip = (box) => {
+    let t = box.querySelector('.br-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'br-tip'; box.append(t); }
+    return t;
+  };
+
+  const drawBars = (box, rows, xKey, yKey, lines) => {
+    d3.select(box).selectAll('svg').remove();
+    const W = box.clientWidth;
+    if (!W || !rows.length) return;
+    const H = 260, top = 16, bottom = 28;
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const ext = d3.extent(rows, (r) => r[yKey]);
+    const y = d3.scaleLinear([Math.min(0, ext[0]), Math.max(0, ext[1])], [H - bottom, top]).nice();
+    const ticks = y.ticks(5);
+    const fmtTick = d3.format(Math.max(...ticks.map(Math.abs)) >= 2 ? ',.0%' : '.0%');
+    const probe = svg.append('text').attr('font-size', 12).text(ticks.map(fmtTick).reduce((a, b) => (b.length > a.length ? b : a), ''));
+    const left = Math.ceil(probe.node().getComputedTextLength()) + 10; probe.remove();
+    const x = d3.scaleBand(rows.map((r) => r[xKey]), [left, W - 4]).padding(0.25);
+    svg.append('g').selectAll('line').data(ticks).join('line')
+      .attr('x1', left).attr('x2', W - 4).attr('y1', (d) => y(d)).attr('y2', (d) => y(d))
+      .attr('stroke', (d) => (d === 0 ? 'var(--cds-chart-axis)' : 'var(--cds-chart-grid)')).attr('stroke-width', 1);
+    svg.append('g').selectAll('text').data(ticks).join('text')
+      .attr('x', left - 6).attr('y', (d) => y(d)).attr('dy', '0.32em').attr('text-anchor', 'end')
+      .attr('fill', 'var(--color-fg-muted)').attr('font-size', 12).text(fmtTick);
+    const step = Math.ceil(rows.length / Math.max(1, Math.floor((W - left) / 38)));
+    svg.append('g').selectAll('text').data(rows.filter((_, i) => i % step === 0)).join('text')
+      .attr('x', (r) => x(r[xKey]) + x.bandwidth() / 2).attr('y', H - 8).attr('text-anchor', 'middle')
+      .attr('fill', 'var(--color-fg-muted)').attr('font-size', 12).text((r) => r[xKey]);
+    const t = tip(box);
+    svg.append('g').selectAll('rect').data(rows).join('rect')
+      .attr('x', (r) => x(r[xKey])).attr('width', Math.min(x.bandwidth(), 40))
+      .attr('y', (r) => y(Math.max(0, r[yKey]))).attr('height', (r) => Math.max(1, Math.abs(y(r[yKey]) - y(0))))
+      .attr('rx', 3).style('fill', (r) => (r[yKey] >= 0 ? 'var(--color-ok)' : 'var(--color-bad)')).style('opacity', 0.85)
+      .on('mousemove', function (ev, r) {
+        d3.select(this).style('opacity', 1);
+        t.replaceChildren();
+        const dl = document.createElement('div'); dl.className = 'd'; dl.textContent = r[xKey]; t.append(dl);
+        lines(r).forEach((s) => { const l = document.createElement('div'); l.textContent = s; t.append(l); });
+        t.style.display = 'block';
+        const [mx, my] = d3.pointer(ev, box);
+        const tw = t.offsetWidth;
+        t.style.left = Math.max(0, Math.min(mx + 12, box.clientWidth - tw)) + 'px';
+        t.style.top = Math.max(0, my - 40) + 'px';
+      })
+      .on('mouseleave', function () { d3.select(this).style('opacity', 0.85); t.style.display = 'none'; });
+  };
+
+  const seasonLines = (r) => [`Average ${pct(r.avg)}`, `Median ${pct(r.median)}`, `Green ${d3.format('.0%')(r.up_share)} of ${r.n} years`];
+
+
+  const FMT = {
+    usd: (v) => '$' + d3.format(',.0f')(v),
+    pct: (v) => d3.format('+.1%')(v),
+    pct2u: (v) => d3.format('.2%')(v),
+    pct0u: (v) => d3.format('.0%')(v),
+    num0: (v) => d3.format('.0f')(v),
+    pct1u: (v) => d3.format('.1%')(v),
+    sgn2: (v) => d3.format('+.2f')(v),
+    x2: (v) => d3.format('.2f')(v) + '×',
+  };
+  const findRow = (rows, el) => {
+    if (el.dataset.row != null) return rows[+el.dataset.row];
+    if (el.dataset.where) {
+      const conds = el.dataset.where.split('&').map((p) => p.split('=').map(decodeURIComponent));
+      return rows.find((r) => conds.every(([k, v]) => String(r[k]) === v));
+    }
+    return rows[0];
+  };
+  const fillTable = (id, cols, rowCls) => {
+    const t = document.querySelector(`#plan-root table[data-source="${id}"] tbody`) || document.querySelector(`table.tp-t[data-source="${id}"] tbody`);
+    const d = dash.data(id);
+    if (!t) return;
+    if (d.status !== 'ok') { t.replaceChildren(); return; }
+    t.replaceChildren(...d.data.map((r) => {
+      const tr = document.createElement('tr');
+      if (rowCls) tr.className = rowCls(r);
+      cols.forEach(([f, fmt, cls]) => {
+        const td = document.createElement('td');
+        const v = r[f];
+        td.textContent = v == null || v === '' ? '' : fmt ? fmt(v) : String(v);
+        if (cls) td.className = cls;
+        tr.append(td);
+      });
+      return tr;
+    }));
+  };
+  function drawPlan() {
+    document.querySelectorAll('section[data-page="plan"] [data-source][data-field]:not(th):not(table)').forEach((el) => {
+      const d = dash.data(el.dataset.source);
+      el.classList.toggle('dash-skeleton', d.status === 'loading');
+      if (d.status !== 'ok') { el.textContent = '—'; return; }
+      const r = findRow(d.data, el);
+      const v = r ? r[el.dataset.field] : null;
+      el.textContent = v == null ? '—' : el.dataset.fmt ? FMT[el.dataset.fmt](v) : String(v);
+      if (el.classList.contains('tp-verdict')) { el.classList.toggle('ok', /^Valid/.test(String(v))); el.classList.toggle('no', /^Skip/.test(String(v))); }
+      if (el.dataset.fmt === 'pct') signCls(el, v);
+    });
+    fillTable('tp_levels', [['id', null, 'nowrap'], ['zone', null, 'nowrap'], ['what'], ['dist', (v) => d3.format('+.1%')(v), 'num'], ['count', null, 'num'], ['cross_tf', null, 'nowrap'], ['strongest', null, 'tp-flag'], ['detail', null, 'small']],
+      (r) => (r.role === 'Resistance' ? 'R' : 'S') + (r.strongest ? ' star' : ''));
+    fillTable('tp_spot', [['tf', null, 'nowrap'], ['buy_zone', null, 'nowrap'], ['sell_zone'], ['trigger', null, 'small'], ['invalidation'], ['stop_txt'], ['t1_txt', null, 'nowrap'], ['t2_txt', null, 'nowrap']]);
+    fillTable('derivs', [['metric'], ['value', null, 'nowrap'], ['signal', null, 'nowrap'], ['note', null, 'small']]);
+    fillTable('tp_mtf', [['tf', null, 'nowrap'], ['trend'], ['ema_txt', null, 'nowrap'], ['rsi', (v) => d3.format('.0f')(v), 'num'], ['macd_state'], ['atr_pct', (v) => d3.format('.2%')(v), 'num']]);
+  }
+
+  function drawForecast() {
+    document.querySelectorAll('section[data-page="forecast"] [data-source][data-field]:not(th):not(table)').forEach((el) => {
+      const d = dash.data(el.dataset.source);
+      el.classList.toggle('dash-skeleton', d.status === 'loading');
+      if (d.status !== 'ok') { el.textContent = '—'; return; }
+      const r = findRow(d.data, el);
+      const v = r ? r[el.dataset.field] : null;
+      el.textContent = v == null ? '—' : el.dataset.fmt ? FMT[el.dataset.fmt](v) : String(v);
+      if (el.dataset.fmt === 'sgn2') signCls(el, v);
+    });
+    document.querySelectorAll('section[data-page="forecast"] [data-bar]').forEach((bar) => {
+      const d = dash.data('fc_horizons'); if (d.status !== 'ok') return;
+      const r = findRow(d.data, bar); if (!r) return;
+      [['bear', r.p_bear], ['base', r.p_base], ['bull', r.p_bull]].forEach(([k, p]) => {
+        const seg = bar.querySelector('.' + k); seg.style.flex = String(Math.max(p, 0.001)); seg.textContent = d3.format('.0%')(p);
+      });
+    });
+    fillTable('fc_scenarios', [['id', null, 'nowrap'], ['scenario', null, 'nowrap'], ['p7', null, 'num'], ['p14', null, 'num'], ['trigger'], ['targets'], ['watch', null, 'small']],
+      (r) => (r.id === 'bull' ? 'S' : r.id === 'bear' ? 'R' : ''));
+    {
+      const pctc = (v) => (v == null ? '—' : d3.format('+.1%')(v));
+      fillTable('mkt_sentiment', [['gauge'], ['now', null, 'nowrap'], ['d1', pctc, 'num'], ['d7', pctc, 'num'], ['d30', pctc, 'num'], ['trend', null, 'nowrap'], ['read', null, 'small'], ['score', (v) => (v ? d3.format('+.1f')(v) : '0'), 'num']]);
+      document.querySelectorAll('table[data-source="mkt_sentiment"] tbody tr').forEach((tr) => { const td = tr.lastChild, v = parseFloat(td.textContent); td.classList.toggle('pos', v > 0); td.classList.toggle('neg', v < 0); if (tr.firstChild.textContent === 'Overall') tr.style.fontWeight = '600'; });
+      const ms = dash.data('mkt_sentiment');
+      document.getElementById('sentEmpty').hidden = !(ms.status === 'ok' && !ms.data.some((x) => x.source === 'TradingView'));
+    }
+    fillTable('fc_signals', [['name', null, 'nowrap'], ['reading'], ['s7', (v) => d3.format('+.2f')(v), 'num'], ['s14', (v) => d3.format('+.2f')(v), 'num'], ['w', (v) => d3.format('.2f')(v), 'num'], ['why', null, 'small']]);
+    fillTable('fc_events', [['id', null, 'small'], ['when', null, 'nowrap'], ['title'], ['consensus', null, 'nowrap'], ['impact', null, 'nowrap']]);
+    document.querySelectorAll('table[data-source="fc_signals"] tbody tr').forEach((tr) => {
+      [2, 3].forEach((i) => { const td = tr.children[i]; const v = parseFloat(td.textContent); td.classList.toggle('pos', v > 0); td.classList.toggle('neg', v < 0); });
+    });
+    drawFan();
+  }
+  function drawFan() {
+    const box = document.querySelector('.fc-chart');
+    d3.select(box).selectAll('svg').remove();
+    const P = dash.data('fc_path'), M = dash.data('fc_model'), EV = dash.data('fc_events');
+    const W = box.clientWidth;
+    if (P.status !== 'ok' || M.status !== 'ok' || !W) return;
+    const rows = P.data.map((r) => ({ ...r, t: new Date(r.day + 'T00:00:00Z') }));
+    const m = M.data[0];
+    const H = 340, top = 18, bottom = 26, right = 64;
+    const fc = rows.filter((r) => r.kind === 'forecast'), act = rows.filter((r) => r.close != null);
+    const yMin = d3.min([...fc.map((r) => r.lo90), ...act.map((r) => r.close)]), yMax = d3.max([...fc.map((r) => r.hi90), ...act.map((r) => r.close)]);
+    const y = d3.scaleLinear([yMin * 0.99, yMax * 1.01], [H - bottom, top]).nice();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const ticks = y.ticks(6), fmtY = (v) => '$' + d3.format(',.0f')(v);
+    const probe = svg.append('text').attr('font-size', 12).text(fmtY(ticks[ticks.length - 1]));
+    const left = Math.ceil(probe.node().getComputedTextLength()) + 10; probe.remove();
+    const x = d3.scaleUtc(d3.extent(rows, (r) => r.t), [left, W - right]);
+    const [y0, y1] = y.domain();
+    // zones
+    m.zones.filter((z) => z.hi > y0 && z.lo < y1).forEach((z) => {
+      svg.append('rect').attr('x', left).attr('width', W - right - left).attr('y', y(Math.min(z.hi, y1))).attr('height', Math.max(1, y(Math.max(z.lo, y0)) - y(Math.min(z.hi, y1))))
+        .style('fill', z.role === 'R' ? '#ef5f5c' : '#3fbf74').style('opacity', 0.1);
+      svg.append('text').attr('x', W - right + 4).attr('y', y((Math.max(z.lo, y0) + Math.min(z.hi, y1)) / 2)).attr('dy', '0.32em').attr('font-size', 10)
+        .attr('fill', z.role === 'R' ? 'var(--color-bad)' : 'var(--color-ok)').text((z.role === 'R' ? 'R ' : 'S ') + d3.format(',.1f')(((z.lo + z.hi) / 2) / 1000) + 'K');
+    });
+    svg.append('g').selectAll('line').data(ticks).join('line').attr('x1', left).attr('x2', W - right).attr('y1', (d) => y(d)).attr('y2', (d) => y(d)).attr('stroke', 'var(--cds-chart-grid)');
+    svg.append('g').selectAll('text').data(ticks).join('text').attr('x', left - 6).attr('y', (d) => y(d)).attr('dy', '0.32em').attr('text-anchor', 'end').attr('fill', 'var(--color-fg-muted)').attr('font-size', 12).text(fmtY);
+    const xt = x.ticks(Math.max(2, Math.floor((W - left - right) / 90)));
+    svg.append('g').selectAll('text').data(xt).join('text').attr('x', (d) => x(d)).attr('y', H - 6).attr('text-anchor', 'middle').attr('fill', 'var(--color-fg-muted)').attr('font-size', 12).text(d3.utcFormat('%b %-d'));
+    const area = (lo, hi) => d3.area().x((r) => x(r.t)).y0((r) => y(r[lo])).y1((r) => y(r[hi]));
+    svg.append('path').datum(fc).attr('d', area('lo90', 'hi90')).style('fill', dash.colors[0]).style('opacity', 0.14);
+    svg.append('path').datum(fc).attr('d', area('lo68', 'hi68')).style('fill', dash.colors[0]).style('opacity', 0.26);
+    svg.append('path').datum(fc).attr('d', d3.line().x((r) => x(r.t)).y((r) => y(r.median))).attr('fill', 'none').style('stroke', dash.colors[0]).attr('stroke-width', 2).attr('stroke-dasharray', '5 4');
+    svg.append('path').datum(act).attr('d', d3.line().x((r) => x(r.t)).y((r) => y(r.close))).attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-width', 2).attr('stroke-linejoin', 'round');
+    const t0 = fc[0].t;
+    [[7, '1W'], [14, '2W']].forEach(([d, lab]) => {
+      const t = new Date(+t0 + d * 864e5), r = fc.find((q) => +q.t === +t); if (!r) return;
+      svg.append('line').attr('x1', x(t)).attr('x2', x(t)).attr('y1', top).attr('y2', H - bottom).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '3 3');
+      svg.append('text').attr('x', x(t) - 4).attr('y', top + 10).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(lab + ' ' + fmtY(r.median));
+    });
+    const tip = (() => { let t = box.querySelector('.br-tip'); if (!t) { t = document.createElement('div'); t.className = 'br-tip'; box.append(t); } return t; })();
+    const bis = d3.bisector((r) => r.t).center;
+    svg.append('rect').attr('x', left).attr('y', top).attr('width', W - right - left).attr('height', H - top - bottom).style('fill', 'transparent')
+      .on('mousemove', (ev) => {
+        const [mx, my] = d3.pointer(ev, box); const r = rows[bis(rows, x.invert(mx))]; if (!r) return;
+        tip.replaceChildren();
+        const add = (txt, cls) => { const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = txt; tip.append(d); };
+        add(d3.utcFormat('%a %b %-d')(r.t), 'd');
+        if (r.kind === 'actual') add('Close ' + fmtY(r.close));
+        else { add('Median ' + fmtY(r.median)); add('68%: ' + fmtY(r.lo68) + ' – ' + fmtY(r.hi68)); add('90%: ' + fmtY(r.lo90) + ' – ' + fmtY(r.hi90)); }
+        tip.style.display = 'block';
+        tip.style.left = Math.max(0, Math.min(mx + 12, box.clientWidth - tip.offsetWidth)) + 'px'; tip.style.top = Math.max(0, my - 60) + 'px';
+      })
+      .on('mouseleave', () => { tip.style.display = 'none'; });
+  }
+  function draw() {
+    // headline
+    const h = dash.data('headline');
+    document.querySelectorAll('[data-source="headline"]').forEach((el) => {
+      el.classList.toggle('dash-skeleton', h.status === 'loading');
+      if (h.status !== 'ok') { el.textContent = '—'; return; }
+      const r = h.data[0], f = el.dataset.field, v = r[f];
+      if (f === 'price' || f === 'ath') el.textContent = usd(v);
+      else if (f === 'first_open') el.textContent = d3.format(',.0f')(v);
+      else if (f === 'as_of') el.textContent = monthName(v);
+      else if (f === 'quarter' || f === 'year') el.textContent = String(v);
+      else { el.textContent = pct(v); signCls(el, v); }
+    });
+
+    const hs = dash.data('headline_short');
+    document.querySelectorAll('[data-source="headline_short"]').forEach((el) => {
+      el.classList.toggle('dash-skeleton', hs.status === 'loading');
+      if (hs.status !== 'ok') { el.textContent = '—'; return; }
+      const r = hs.data[0], f = el.dataset.field, v = r[f];
+      if (f === 'day') el.textContent = d3.utcFormat('%a %b %-d, %Y')(new Date(v + 'T00:00:00Z')) + ' · forming';
+      else if (f === 'week') el.textContent = v + ' · forming';
+      else { el.textContent = pct(v); signCls(el, v); }
+    });
+
+    if (current === 'daily') {
+      const dr = dash.data('daily_roi');
+      const years = dr.status === 'ok' ? [...new Set(dr.data.map((r) => String(r.year)))].sort().reverse() : [];
+      const picked = dash.params().day_year && years.includes(String(dash.params().day_year)) ? String(dash.params().day_year) : years[0];
+      if (yearSel.options.length !== years.length) yearSel.replaceChildren(...years.map((y) => new Option(y, y)));
+      if (picked) yearSel.value = picked;
+      drawHeat('[data-source="daily_grid"]', 'daily_grid', M_NAMES, dailyFlags(), {
+        filter: (r) => r.year === picked,
+        label: (r) => r.day,
+        cellKey: (r) => r.year + '-' + r.day,
+        keyAttr: (r) => encodeURIComponent(r.year) + ',' + encodeURIComponent(r.day),
+      });
+      const s = dash.data('dow_stats');
+      drawBars(document.querySelector('[data-source="dow_stats"]'), s.status === 'ok' ? s.data : [], 'period', 'avg', seasonLines);
+    } else if (current === 'weekly') {
+      drawHeat('[data-source="weekly_grid"]', 'weekly_grid', d3.range(1, 54).map((i) => 'W' + i), weeklyFlags());
+      const wd = dash.data('weekly_roi');
+      const last = (wd.status === 'ok' ? wd.data : []).slice(-52).map((r) => ({ ...r, label: d3.utcFormat('%b %-d')(new Date(r.week + 'T00:00:00Z')) }));
+      drawBars(document.querySelector('.br-chart[data-source="weekly_roi"]'), last, 'label', 'roi',
+        (r) => [`${r.year} W${r.wk}${r.forming ? ' (in progress)' : ''}`, `ROI ${pct(r.roi)}`, `Close ${usd(r.close)}`]);
+    } else if (current === 'patterns') {
+      const win = dash.params().pattern_window || 'All history';
+      winBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.win === win)));
+      const ps = dash.data('pattern_summary');
+      const row = ps.status === 'ok' ? ps.data.find((r) => r.window === win) : null;
+      const stat = (k) => (row ? `avg ${pct(row[k + '_avg'])} · median ${pct(row[k + '_median'])} · green ${d3.format('.0%')(row[k + '_win'])}` : '');
+      document.querySelectorAll('.br-find [data-k]').forEach((el) => {
+        const k = el.dataset.k;
+        el.classList.toggle('dash-skeleton', ps.status === 'loading');
+        if (k.endsWith('_s')) el.textContent = stat(k.slice(0, -2));
+        else el.textContent = row ? row[k] : '—';
+      });
+      const st = document.querySelector('[data-source="pattern_summary"].br-yt tbody');
+      st.replaceChildren(...(ps.status === 'ok' ? ps.data : []).map((r) => {
+        const tr = document.createElement('tr');
+        [r.window, r.best_day, r.weak_day, r.best_week, r.weak_week].forEach((v, i) => {
+          const td = document.createElement('td'); td.textContent = v;
+          if (i === 1 || i === 3) td.className = 'pos'; if (i === 2 || i === 4) td.className = 'neg';
+          tr.append(td);
+        });
+        return tr;
+      }));
+      [['dow_patterns', 'Day'], ['wom_patterns', 'Days']].forEach(([id]) => {
+        const dd = dash.data(id);
+        const rows = dd.status === 'ok' ? dd.data.filter((r) => r.window === win) : [];
+        drawBars(document.querySelector(`.br-chart[data-source="${id}"]`), rows, 'period', 'avg',
+          (r) => [`Average ${pct(r.avg)}`, `Median ${pct(r.median)}`, `Green ${d3.format('.0%')(r.up_share)} of ${r.n}`, `Rank ${r.rank} of ${rows.length}`]);
+        const tb = document.querySelector(`table[data-source="${id}"] tbody`);
+        tb.replaceChildren(...rows.map((r) => {
+          const tr = document.createElement('tr');
+          tr.dataset.key = encodeURIComponent(r.window) + ',' + encodeURIComponent(r.period);
+          [r.period, pct(r.avg), pct(r.median), d3.format('.0%')(r.up_share), String(r.rank)].forEach((v, i) => {
+            const td = document.createElement('td'); td.textContent = v;
+            if (i === 4 && r.rank === 1) td.className = 'best';
+            if (i === 4 && r.rank === rows.length) td.className = 'worst';
+            tr.append(td);
+          });
+          return tr;
+        }));
+      });
+    } else if (current === 'forecast') {
+      drawForecast();
+    } else if (current === 'plan') {
+      drawPlan();
+    } else if (current === 'monthly') {
+      drawHeat('[data-source="monthly_grid"]', 'monthly_grid', [...M_NAMES, 'Year'], flagsFor('monthly_roi', (r) => M_NAMES[r.mon - 1]));
+      const s = dash.data('season_month');
+      drawBars(document.querySelector('[data-source="season_month"]'), s.status === 'ok' ? s.data : [], 'period', 'avg', seasonLines);
+    } else if (current === 'quarterly') {
+      drawHeat('[data-source="quarterly_grid"]', 'quarterly_grid', ['Q1', 'Q2', 'Q3', 'Q4', 'Year'], flagsFor('quarterly_roi', (r) => 'Q' + r.q));
+      const s = dash.data('season_quarter');
+      drawBars(document.querySelector('[data-source="season_quarter"]'), s.status === 'ok' ? s.data : [], 'period', 'avg', seasonLines);
+    } else {
+      const yd = dash.data('yearly_roi');
+      const rows = yd.status === 'ok' ? yd.data : [];
+      drawBars(document.querySelector('.br-chart[data-source="yearly_roi"]'), rows, 'year', 'roi',
+        (r) => [`ROI ${pct(r.roi)}${r.forming ? ' (YTD)' : ''}`, `${usd(r.base)} → ${usd(r.close)}`]);
+      const tb = document.querySelector('.br-yt tbody');
+      tb.replaceChildren(...rows.slice().reverse().map((r) => {
+        const tr = document.createElement('tr');
+        [r.year, usd(r.base), usd(r.close), usd(r.high), usd(r.low), pct(r.roi), pct(r.drawdown)].forEach((s, i) => {
+          const td = document.createElement('td'); td.textContent = s;
+          if (i === 5) signCls(td, r.roi);
+          if (i === 6 && r.drawdown < 0) td.classList.add('neg');
+          tr.append(td);
+        });
+        return tr;
+      }));
+    }
+  }
+
+
+  dash.onData(draw);
+  const named = location.hash.slice(1);
+  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast'].includes(named)) show(named);
+})();
+</script>
+<script>
+/* Saved snapshot + Refresh, the same pattern as the Breakout Radar:
+   opening the page reads the last snapshot from the page's database and makes no TradingView calls;
+   Refresh pulls each source one at a time, keeps what loaded, and saves it as the new snapshot. */
+(function () {
+  const S = window.__snap;
+  const $ = (id) => document.getElementById(id);
+  const SERVERS = ['Trading View', 'Trading_View'];
+  const GAP_MS = 1500, CHUNK = 1200;
+  const isoDay = (offset) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+  const SOURCES = [
+    ['btc_4h', '4H bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'COINBASE:BTCUSD', interval: '4h', count: 1000, format: 'columns' })],
+    ['btc_daily', 'daily bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'COINBASE:BTCUSD', interval: '1D', count: 8000, format: 'columns' })],
+    ['btc_weekly', 'weekly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'COINBASE:BTCUSD', interval: '1W', count: 2000, format: 'columns' })],
+    ['btc_monthly', 'monthly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'COINBASE:BTCUSD', interval: 'M', count: 500, format: 'columns' })],
+    ['eth_4h', 'ETH 4H bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:ETHUSDT', interval: '4h', count: 1000, format: 'columns' })],
+    ['eth_daily', 'ETH daily bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:ETHUSDT', interval: '1D', count: 8000, format: 'columns' })],
+    ['eth_weekly', 'ETH weekly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:ETHUSDT', interval: '1W', count: 2000, format: 'columns' })],
+    ['eth_monthly', 'ETH monthly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:ETHUSDT', interval: 'M', count: 500, format: 'columns' })],
+    ['econ_cal', 'US macro calendar', 'mcp-tv-get-economic-calendar', () => ({ countries: 'US', min_importance: 1, date_from: isoDay(-1), date_to: isoDay(15) })],
+    ['gauge_usdtd', 'USDT dominance', 'mcp-tv-get-ohlcv', () => ({ symbol: 'CRYPTOCAP:USDT.D', interval: '1D', count: 400, format: 'columns' })],
+    ['gauge_usdcd', 'USDC dominance', 'mcp-tv-get-ohlcv', () => ({ symbol: 'CRYPTOCAP:USDC.D', interval: '1D', count: 400, format: 'columns' })],
+    ['gauge_btcd', 'BTC dominance', 'mcp-tv-get-ohlcv', () => ({ symbol: 'CRYPTOCAP:BTC.D', interval: '1D', count: 400, format: 'columns' })],
+    ['gauge_total2', 'alt market cap (TOTAL2)', 'mcp-tv-get-ohlcv', () => ({ symbol: 'CRYPTOCAP:TOTAL2', interval: '1D', count: 400, format: 'columns' })],
+  ];
+  const dailyBars = ({ answer }) => {
+    const a = typeof answer === 'string' ? JSON.parse(answer) : answer;
+    if (a && a.success === false) throw { code: 'tool_error', message: a.error || a.message || 'TradingView returned success: false' };
+    const b = a && a.bars;
+    if (!b || !Array.isArray(b.t)) throw { code: 'tool_error', message: 'No bars in TradingView answer' };
+    return { data: b.t.map((t, i) => ({ day: new Date(t * 1000).toISOString().slice(0, 10), open: Number(b.o[i]), high: Number(b.h[i]), low: Number(b.l[i]), close: Number(b.c[i]), volume: Number(b.v[i]) })), columns: ['day', 'open', 'high', 'low', 'close', 'volume'] };
+  };
+  const FIX = {
+    needs_reauth: 'TradingView needs reconnecting. Reconnect it in claude.ai Settings → Connectors, then press Refresh again.',
+    server_not_connected: 'TradingView is not connected for you. Add it in claude.ai Settings → Connectors, then press Refresh again.',
+    selection_required: 'You have more than one TradingView connector. Choose one when claude.ai asks, then press Refresh again.',
+    approval_required: 'TradingView access needs your approval. Press Refresh again and allow it when asked.',
+    not_in_manifest: 'TradingView access is turned off for this page. Turn it on in the page permissions, then press Refresh again.',
+    blocked_by_policy: 'Your organization blocks this TradingView tool.',
+  };
+  const isQuota = (e) => /quota|suspend|suspicion|too many/i.test(String(e && e.message));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const when = (iso) => new Date(iso).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  const ago = (iso) => { const m = (Date.now() - Date.parse(iso)) / 6e4; if (m < 1) return 'just now'; if (m < 60) return Math.round(m) + ' min ago'; if (m < 2880) return Math.round(m / 60) + ' h ago'; return Math.round(m / 1440) + ' days ago'; };
+
+  let DB = null, MCP = null, SERVER = null, CAN_WRITE = false, RUNNING = false, META = null, lastAt = null, CG = null, CR = null, CG_ETH = null;
+
+  function banner(msg, kind) { const b = $('rfBanner'); b.hidden = !msg; b.textContent = msg || ''; b.className = 'rf-banner' + (kind ? ' ' + kind : ''); }
+  function showEmpty(title, note) {
+    const box = $('rfEmpty'); box.hidden = !title;
+    document.querySelector('.br').classList.toggle('no-data', !!title);
+    if (title) { $('rfEmptyTitle').textContent = title; $('rfEmptyNote').textContent = note || ''; }
+  }
+  function renderStatus() {
+    const at = META && META.at;
+    $('rfAt').textContent = at ? `Last refresh ${when(at)} · ${ago(at)}` : 'No saved snapshot yet';
+    $('rfAt').className = 'rf-pill ' + (at ? 'acc' : '');
+    const lastDaily = new Date(); lastDaily.setUTCHours(0, 0, 0, 0);
+    const last4h = new Date(); last4h.setUTCHours(Math.floor(last4h.getUTCHours() / 4) * 4, 0, 0, 0);
+    const st = $('rfStale'), t = at ? Date.parse(at) : null;
+    if (t && t < +lastDaily) { st.hidden = false; st.textContent = 'New daily candle since this refresh'; }
+    else if (t && t < +last4h) { st.hidden = false; st.textContent = 'New 4H candle since this refresh'; }
+    else st.hidden = true;
+    const failed = (META && META.failed) || [];
+    $('rfFailed').hidden = !failed.length;
+    $('rfFailed').textContent = failed.length ? `${failed.length} source${failed.length > 1 ? 's' : ''} kept from an older refresh` : '';
+    $('rfCrTime').textContent = CR ? CR : 'not saved yet';
+    $('rfCr').className = 'rf-pill' + (CR ? '' : ' warn');
+    const cg = $('rfCgTime'), cgv = S.asset() === 'ETH' ? CG_ETH : CG;
+    cg.textContent = cgv ? cgv : 'not saved yet';
+    $('rfCg').className = 'rf-pill' + (cgv ? '' : ' warn');
+    $('rfBtn').hidden = !CAN_WRITE; $('rfBtn').disabled = RUNNING;
+    $('rfMissing').hidden = !CAN_WRITE || RUNNING || !failed.length;
+  }
+
+  async function callTool(tool, args) {
+    let lastErr = null;
+    for (let i = 0; i < SERVERS.length; i++) {
+      const name = SERVER || SERVERS[i];
+      try {
+        const res = await MCP.callTool(name, tool, args, { cache: false });
+        SERVER = name;
+        let p = res.payload; if (typeof p === 'string') { try { p = JSON.parse(p); } catch (e) { /* keep text */ } }
+        return p;
+      } catch (e) {
+        lastErr = e;
+        if (!SERVER && (e.code === 'server_not_connected' || e.code === 'not_in_manifest' || e.code === 'server_not_found') && i < SERVERS.length - 1) continue;
+        break;
+      }
+    }
+    throw lastErr;
+  }
+  async function fetchSource(src) {
+    const [id, , tool, args] = src;
+    const answer = await callTool(tool, args());
+    const lid = id.replace(/^eth_/, 'btc_');
+    const out = await (S.LOADERS[lid] ? S.LOADERS[lid].fn : dailyBars)({ answer });
+    const rows = Array.isArray(out) ? out : out.data || out.rows;
+    const columns = (out && out.columns) || (rows[0] ? Object.keys(rows[0]) : []);
+    if (!rows || !rows.length) throw { code: 'tool_error', message: 'TradingView returned no rows' };
+    return { rows, columns };
+  }
+  const round = (v) => (typeof v === 'number' && isFinite(v) ? (Math.abs(v) < 100 ? Math.round(v * 1e4) / 1e4 : Math.round(v * 100) / 100) : v);
+  async function saveSource(id, got, at) {
+    const arr = got.rows.map((r) => got.columns.map((c) => round(r[c])));
+    const parts = Math.max(1, Math.ceil(arr.length / CHUNK));
+    for (let k = 0; k < parts; k++) await DB.doc(`snap/${id}-${k}`).set({ columns: got.columns, rows: arr.slice(k * CHUNK, (k + 1) * CHUNK), part: k, parts, at });
+    return { at, rows: arr.length, parts };
+  }
+  async function loadSource(id, info) {
+    let cols = null; const rows = [];
+    for (let k = 0; k < info.parts; k++) {
+      const s = await DB.doc(`snap/${id}-${k}`).get();
+      if (!s.exists) throw new Error('missing part');
+      const d = s.data(); cols = d.columns;
+      d.rows.forEach((a) => { const o = {}; cols.forEach((c, j) => { o[c] = a[j]; }); rows.push(o); });
+    }
+    return { rows, columns: cols };
+  }
+  async function loadAll(meta) {
+    for (const [id] of SOURCES) {
+      const info = meta.sources && meta.sources[id];
+      if (!info) { S.setMissing(id); continue; }
+      try { const g = await loadSource(id, info); S.setRaw(id, g.rows, g.columns); } catch (e) { S.setMissing(id); }
+    }
+  }
+
+  /* CoinMarketCap global metrics (Fear & Greed, Altcoin Season, market cap, dominance, BTC ETF AUM) */
+  const CMC_SERVERS = ['CoinMarketCap', 'Coinmarketcap', 'CoinMarketCap MCP'];
+  let CMC_SERVER = null;
+  const numOf = (txt) => { const m = String(txt || '').replace(/[,$+]/g, '').match(/(-?[\d.]+)\s*([TBMK])?/); if (!m) return null; return Number(m[1]) * ({ T: 1e12, B: 1e9, M: 1e6, K: 1e3 }[m[2]] || 1); };
+  const pctTxt = (txt) => { const v = parseFloat(String(txt || '').replace(/[+%]/g, '')); return isFinite(v) ? (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2) + '%' : '—'; };
+  const asiLabel = (v) => (v <= 25 ? 'Bitcoin Season' : v >= 75 ? 'Altcoin Season' : 'Neutral');
+  async function fetchCmc() {
+    let lastErr = null, p = null;
+    for (let i = 0; i < CMC_SERVERS.length; i++) {
+      const name = CMC_SERVER || CMC_SERVERS[i];
+      try { const res = await MCP.callTool(name, 'get_global_metrics_latest', {}, { cache: false }); CMC_SERVER = name; p = res.payload; break; }
+      catch (e) { lastErr = e; if (!CMC_SERVER && (e.code === 'server_not_connected' || e.code === 'not_in_manifest' || e.code === 'server_not_found') && i < CMC_SERVERS.length - 1) continue; throw e; }
+    }
+    if (!p) throw lastErr || { code: 'tool_error', message: 'CoinMarketCap returned nothing' };
+    if (typeof p === 'string') p = JSON.parse(p);
+    const fg = p.sentiment && p.sentiment.fear_greed, as = p.rotation && p.rotation.altcoin_season, mc = p.market_size && p.market_size.total_crypto_market_cap_usd, dm = p.dominance || {}, etf = p.trad_fi_flows && p.trad_fi_flows.etf_aum && p.trad_fi_flows.etf_aum.btc;
+    if (!fg || !fg.current || fg.current.index == null) throw { code: 'tool_error', message: 'CoinMarketCap answer had no Fear & Greed index' };
+    const now = new Date(), stamp = now.toLocaleString('en-AU', { timeZone: 'Australia/Sydney', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' AEDT';
+    const fgi = Number(fg.current.index), h = fg.history || {};
+    const rows = [
+      { id: 'as_of', metric: 'Snapshot time', value: stamp, num: null, change: '', note: `CoinMarketCap global metrics (connector). Fear & Greed and Altcoin Season are CMC's daily readings (${p.last_updated || 'latest 00:00 UTC'}); market cap and dominance are intraday.` },
+      { id: 'fng', metric: 'Fear & Greed Index', value: `${fgi} (${fg.current.value || ''})`, num: fgi,
+        change: [h.yesterday && `${h.yesterday.index} yday (${h.yesterday.value})`, h.last_week && `${h.last_week.index} last wk`, h.last_month && `${h.last_month.index} last mo`].filter(Boolean).join(' · '),
+        note: `CoinMarketCap's index, 0 = extreme fear, 100 = extreme greed. Yearly range ${fg.yearly && fg.yearly.min ? fg.yearly.min.index : '?'}–${fg.yearly && fg.yearly.max ? fg.yearly.max.index : '?'}.` },
+    ];
+    if (as && as.current && as.current.index != null) {
+      const ai = Number(as.current.index), ah = as.history || {};
+      rows.push({ id: 'asi', metric: 'Altcoin Season Index', value: `${ai}/100 (${as.current.value || asiLabel(ai)})`, num: ai,
+        change: [ah.yesterday && `${ah.yesterday.index} yday`, ah.last_week && `${ah.last_week.index} last wk`, ah.last_month && `${ah.last_month.index} last mo`].filter(Boolean).join(' · '),
+        note: `CoinMarketCap's index: 0–25 Bitcoin Season, 75–100 Altcoin Season. Yearly range ${as.yearly && as.yearly.min ? as.yearly.min.index : '?'}–${as.yearly && as.yearly.max ? as.yearly.max.index : '?'}.` });
+    }
+    if (mc && mc.current) {
+      const pc = mc.percent_change || {};
+      rows.push({ id: 'mcap', metric: 'Total crypto market cap', value: '$' + String(mc.current).replace(/\s+/g, ''), num: numOf(mc.current),
+        change: `${pctTxt(pc['24h'])} 24h · ${pctTxt(pc['7d'])} 7D · ${pctTxt(pc['30d'])} 30D`,
+        note: `BTC dominance ${String((dm.btc || {}).current || '—').replace('+', '')} (last wk ${String(((dm.btc || {}).history || {}).last_week || '—').replace('+', '')}), ETH ${String((dm.eth || {}).current || '—').replace('+', '')}.` });
+    }
+    if (etf && etf.current) {
+      const eh = etf.history || {};
+      rows.push({ id: 'etf', metric: 'US spot BTC ETF assets', value: '$' + String(etf.current).replace(/\s+/g, ''), num: numOf(etf.current),
+        change: [eh.yesterday && `$${String(eh.yesterday).replace(/\s+/g, '')} yday`, eh.last_week && `$${String(eh.last_week).replace(/\s+/g, '')} last wk`, eh.last_month && `$${String(eh.last_month).replace(/\s+/g, '')} last mo`].filter(Boolean).join(' · '),
+        note: 'Assets held, not flows: changes mix price moves with inflows and outflows.' });
+    }
+    const etfE = (((p.trad_fi_flows || {}).etf_aum || {}).eth) || null;
+    if (etfE && etfE.current) {
+      const eh = etfE.history || {};
+      rows.push({ id: 'etf_eth', metric: 'US spot ETH ETF assets', value: '$' + String(etfE.current).replace(/\s+/g, ''), num: numOf(etfE.current),
+        change: [eh.yesterday && `$${String(eh.yesterday).replace(/\s+/g, '')} yday`, eh.last_week && `$${String(eh.last_week).replace(/\s+/g, '')} last wk`, eh.last_month && `$${String(eh.last_month).replace(/\s+/g, '')} last mo`].filter(Boolean).join(' · '),
+        note: 'Assets held, not flows: changes mix price moves with inflows and outflows.' });
+    }
+    return { as_of: now.toISOString(), source: 'CoinMarketCap connector (get_global_metrics_latest)', rows };
+  }
+
+  async function run(targets) {
+    if (RUNNING || !MCP || !DB) return;
+    RUNNING = true; renderStatus(); banner('');
+    $('rfBtn').textContent = 'Refreshing…';
+    $('rfProgWrap').hidden = false; $('rfText').hidden = false; $('rfProg').style.width = '0';
+    const IN = {}, failed = [];
+    let stopped = null;
+    for (let i = 0; i < targets.length; i++) {
+      const src = targets[i];
+      $('rfText').textContent = `Pulling ${src[1]} from TradingView (${i + 1} of ${targets.length})…`;
+      try { IN[src[0]] = await fetchSource(src); }
+      catch (e) {
+        if (e && e.code === 'server_unavailable' && e.retryable) { await sleep(2500 + Math.random() * 1500); try { IN[src[0]] = await fetchSource(src); } catch (e2) { e = e2; } }
+        if (!IN[src[0]]) {
+          if (FIX[e && e.code]) { stopped = FIX[e.code]; failed.push(...targets.slice(i).map((t) => t[0])); break; }
+          if (isQuota(e)) { stopped = 'TradingView paused access for a minute because of the number of calls. What loaded is saved. Wait at least a minute, then press Fetch missing.'; failed.push(...targets.slice(i).map((t) => t[0])); break; }
+          failed.push(src[0]);
+        }
+      }
+      $('rfProg').style.width = Math.round(100 * (i + 1) / targets.length) + '%';
+      if (i < targets.length - 1) await sleep(GAP_MS);
+    }
+    let cmcFailed = null;
+    if (!stopped && (targets.length === SOURCES.length || (META && (META.failed || []).includes('cmc')))) {
+      $('rfText').textContent = 'Pulling market sentiment from CoinMarketCap…';
+      try { await sleep(GAP_MS); const doc = await fetchCmc(); await DB.doc('snap/sentiment').set(doc); }
+      catch (e) { cmcFailed = (e && (FIX[e.code] ? FIX[e.code].replace(/TradingView/g, 'CoinMarketCap') : e.message)) || 'unknown error'; }
+      if (!cmcFailed && !Object.keys(IN).length && META && (META.failed || []).includes('cmc')) {
+        try { META = Object.assign({}, META, { failed: META.failed.filter((x) => x !== 'cmc') }); await DB.doc('snap/meta').set(META); } catch (e) { /* status only */ }
+      }
+    }
+    const got = Object.keys(IN);
+    if (got.length) {
+      $('rfText').textContent = 'Recalculating and saving…';
+      try {
+        const at = new Date().toISOString();
+        const sources = Object.assign({}, (META && META.sources) || {});
+        for (const id of got) sources[id] = await saveSource(id, IN[id], at);
+        const missing = SOURCES.map((s) => s[0]).filter((id) => !sources[id] || failed.includes(id)).concat(cmcFailed ? ['cmc'] : []);
+        const meta = { at, sources, failed: missing, v: 1 };
+        lastAt = at;
+        await DB.doc('snap/meta').set(meta);
+        META = meta;
+        got.forEach((id) => S.setRaw(id, IN[id].rows, IN[id].columns));
+        showEmpty(null); S.commit();
+      } catch (e) { stopped = stopped || 'Pulled the data but could not save the snapshot. Press Refresh again in a moment.'; }
+    }
+    RUNNING = false; $('rfProgWrap').hidden = true; $('rfText').hidden = true; $('rfProg').style.width = '0'; $('rfBtn').textContent = 'Refresh from TradingView';
+    if (stopped) banner(stopped, 'bad');
+    else if (cmcFailed) banner(`TradingView sources updated, but CoinMarketCap sentiment did not load (${cmcFailed}); it keeps its previous reading. Press Fetch missing to retry it.`, '');
+    else if (failed.length) banner(`${got.length} of ${targets.length} sources updated. ${failed.length} did not load (${failed.map((id) => SOURCES.find((s) => s[0] === id)[1]).join(', ')}); those keep their previous data. Press Fetch missing to retry them.`, '');
+    else if (!got.length) banner('CoinMarketCap sentiment updated and saved.', 'ok');
+    else banner(`All ${got.length} TradingView sources and CoinMarketCap sentiment updated and saved. Every tab is current except the CoinGlass snapshot, which updates when you ask Claude.`, 'ok');
+    renderStatus();
+  }
+
+  async function boot() {
+    const [db, user, mcp] = await Promise.all([claude.use('db'), claude.use('user'), claude.use('mcp')]);
+    DB = db; MCP = mcp;
+    try { CAN_WRITE = user ? !!(await user.isOwner()) || !!(await user.canEdit()) : false; } catch (e) { CAN_WRITE = false; }
+    if (!MCP) CAN_WRITE = false;
+    if (!DB) { showEmpty('Saved data is not available here', 'Open this page in claude.ai to see the last saved snapshot.'); renderStatus(); return; }
+    renderStatus();
+    DB.doc('snap/derivs').onSnapshot((snap) => {
+      const d = snap.exists ? snap.data() : null;
+      if (d && Array.isArray(d.rows)) { S.setRaw('derivs', d.rows, Object.keys(d.rows[0] || {})); const r = d.rows.find((x) => x.id === 'as_of'); CG = r ? r.value : null; }
+      else { S.setMissing('derivs'); CG = null; }
+      if (META) S.commit();
+      renderStatus();
+    }, () => {});
+    DB.doc('snap/derivs_eth').onSnapshot((snap) => {
+      const d = snap.exists ? snap.data() : null;
+      if (d && Array.isArray(d.rows)) { S.setRaw('derivs_eth', d.rows, Object.keys(d.rows[0] || {})); const r = d.rows.find((x) => x.id === 'as_of'); CG_ETH = r ? r.value : null; }
+      else { S.setMissing('derivs_eth'); CG_ETH = null; }
+      if (META) S.commit();
+      renderStatus();
+    }, () => {});
+    DB.doc('snap/sentiment').onSnapshot((snap) => {
+      const d = snap.exists ? snap.data() : null;
+      if (d && Array.isArray(d.rows)) { S.setRaw('cr_sentiment', d.rows, Object.keys(d.rows[0] || {})); const r = d.rows.find((x) => x.id === 'as_of'); CR = r ? r.value : null; }
+      else { S.setMissing('cr_sentiment'); CR = null; }
+      if (META) S.commit();
+      renderStatus();
+    }, () => {});
+    DB.doc('snap/meta').onSnapshot(async (snap) => {
+      const meta = snap.exists ? snap.data() : null;
+      if (!meta) {
+        META = null;
+        showEmpty('No saved snapshot yet', CAN_WRITE ? 'Press Refresh from TradingView to pull the first snapshot. It takes about 20 seconds and is saved for next time.' : 'The owner of this page has not saved a snapshot yet.');
+        renderStatus(); return;
+      }
+      if (meta.at !== lastAt && !RUNNING) {
+        lastAt = meta.at; META = meta;
+        await loadAll(meta);
+        showEmpty(null); S.commit();
+      } else META = meta;
+      renderStatus();
+    }, () => { banner('Lost the connection to the saved snapshot. Reload the page.', 'bad'); });
+    $('rfBtn').addEventListener('click', () => run(SOURCES.slice()));
+    $('rfMissing').addEventListener('click', () => { const ids = (META && META.failed) || []; run(SOURCES.filter((s) => ids.includes(s[0]))); });
+    setInterval(renderStatus, 60000);
+  }
+  /* BTC / ETH switch: every view reads btc_* names; the runtime points them at the chosen coin. */
+  const ASSETS = {
+    BTC: { name: 'Bitcoin', sym: 'BTC', pair: 'Coinbase BTCUSD', exch: 'Coinbase', list: 'Dec 2014', move: '3%' },
+    ETH: { name: 'Ethereum', sym: 'ETH', pair: 'Binance ETHUSDT', exch: 'Binance', list: 'Aug 2017', move: '4%' },
+  };
+  function applyAsset(a) {
+    const A = ASSETS[a] || ASSETS.BTC;
+    const set = (cls, v) => document.querySelectorAll('.' + cls).forEach((el) => { el.textContent = v; });
+    set('a-name', A.name); set('a-sym', A.sym); set('a-pair', A.pair); set('a-exch', A.exch); set('a-list', A.list); set('a-move', A.move);
+    document.querySelectorAll('#assetSw button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.asset === A.sym)));
+    try { document.title = A.name + ' Dashboard'; } catch (e) { /* title not writable */ }
+    S.setAsset(A.sym); renderStatus();
+  }
+  let startAsset = 'BTC';
+  try { const v = localStorage.getItem('bd_asset'); if (v === 'ETH' || v === 'BTC') startAsset = v; } catch (e) { /* storage unavailable */ }
+  document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => {
+    applyAsset(b.dataset.asset);
+    try { localStorage.setItem('bd_asset', b.dataset.asset); } catch (e) { /* storage unavailable */ }
+  }));
+  applyAsset(startAsset);
+  showEmpty('Loading the last saved snapshot…', 'The dashboard shows your last refresh. Nothing is pulled from TradingView until you press Refresh.');
+  if (window.claude && window.claude.use) boot();
+  else showEmpty('Saved data is not available here', 'Open this page in claude.ai to see the last saved snapshot.');
+})();
+</script>
