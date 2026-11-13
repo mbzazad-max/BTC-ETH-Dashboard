@@ -6,6 +6,11 @@
    a Refresh button that asks GitHub to rebuild instead. */
 (function () {
   'use strict';
+  // Fit the page to the screen on phones (the original page grows to ~1155px wide at phone size: its grid column and
+  // the 8-button tab bar don't shrink). The tab bar scrolls sideways instead. The original page itself is unchanged.
+  try { var fit = document.createElement('style');
+    fit.textContent = '.page{grid-template-columns:minmax(0,1fr)} .br-tabs{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch} .br-tabs button{flex:0 0 auto;white-space:nowrap}';
+    document.head.appendChild(fit); } catch (e) { /* layout only */ }
   var all = null;
   function load() {
     if (!all) all = fetch('snapshot.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
