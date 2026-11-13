@@ -14,6 +14,12 @@ Claude only loads data; it does not run the dashboard's logic. Spot only: there 
 - **Address**: none of its own. It opens at `/btc-eth/` on the home site (repo `dashboards`), which holds the one login lock.
 - **Runs**: when market-data gets new candles or readings, once a day as a safety net (01:15 UTC), or when Refresh is pressed. If nothing new arrived, nothing is rebuilt.
 - **Safety**: a source that cannot be built keeps its last good version. It is listed in `public/freshness.json` and the page shows "kept from an older refresh". If validation fails, nothing is written.
+- **Spot buy checklist** (`build/checklist.js`, after the build): four checks per coin added at the end of the CoinGlass table on the Trade plan tab:
+  1. Flush over: long liquidations under $20M in 4h and $5M in 1h.
+  2. Leverage steady: open interest 4h change within ±1%.
+  3. Funding reset: OI-weighted funding at or below 0%.
+  4. Price confirms: the last closed 4H close at or above the floor of the page's own 1D buy zone, with the page's 4H RSI above 30.
+  Thresholds 1–3 are rules of thumb, not backtested. Spot only, not financial advice.
 - **Closed candles only**: prices are the last closed 4H and daily candles. This week, month and year run to the last closed day.
 
 Tests (need `npm i jsdom@24 d3@7.9.0` in some folder):
