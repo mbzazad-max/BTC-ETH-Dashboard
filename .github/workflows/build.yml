@@ -14,7 +14,7 @@ on:
     - cron: '15 1 * * *'   # once a day as a safety net (12:15 Sydney summer time), after the 11:30 TradingView load; data commits trigger it too
   push:
     branches: [main]
-    paths: ['public/index.html', 'public/shim.js', 'public/cloud.js', 'worker/**', 'build/**', 'config/**', 'tools/**', 'wrangler.jsonc', 'reference/**']
+    paths: ['.github/workflows/build.yml', 'public/index.html', 'public/shim.js', 'public/cloud.js', 'worker/**', 'build/**', 'config/**', 'tools/**', 'wrangler.jsonc', 'reference/**']
 permissions:
   contents: write
 concurrency:
