@@ -29,12 +29,15 @@ async function view(asset) {
   const v = { asset, h1: t('h1'), lede: t('#lede'), status: t('#rfAt'), cg: t('#rfCg'), cmc: t('#rfCr'), fc1w: t('#fc-7 .big'), price4h: t('.tp-strip .v'),
     levels: rows('tp_levels'), spot: rows('tp_spot'), derivs: rows('derivs'), signals: rows('fc_signals'), sentiment: rows('mkt_sentiment'), events: rows('fc_events'),
     monthly: rows('monthly_grid'), futures: !!d.getElementById('plan-futures'), refresh_hidden: d.getElementById('rfBtn').hidden && d.getElementById('ghRefresh').hidden,
-    fresh: t('#fresh summary'), errors };
+    fresh: t('#fresh summary'), errors,
+    // the artifact host's head must be there: UTF-8 and "hidden" really hides (else the loading box and empty pills show)
+    loading_box_shown: !d.getElementById('rfEmpty').hidden || !/\[hidden\]:not\(\[hidden=until-found i\]\)\{display:none!important\}/.test(d.head.innerHTML),
+    utf8: d.characterSet === 'UTF-8' && t('#rfAt').indexOf('Â') < 0 };
   w.close(); return v;
 }
 (async () => {
   const out = [await view('BTC'), await view('ETH')];
-  const bad = out.filter((v) => v.errors.length || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || v.spot < 3 || v.derivs < 6 || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || v.futures || !v.refresh_hidden);
+  const bad = out.filter((v) => v.errors.length || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || v.spot < 3 || v.derivs < 6 || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8);
   console.log(JSON.stringify(out, null, 1));
   process.exit(bad.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(2); });
