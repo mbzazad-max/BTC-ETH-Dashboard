@@ -16,6 +16,7 @@ const ROOT = path.resolve(__dirname, '..'), REF = path.join(ROOT, 'reference');
 const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'config/dashboard.json'), 'utf8'));
 const load = (id) => fs.readFileSync(path.join(MD, 'data', id.split('/')[0], id.split('/')[1] + '_' + id.split('/')[2] + '.csv'), 'utf8').trim().split('\n').slice(1)
   .map((x) => { const p = x.split(',').map(Number); return { t: p[0], o: p[1], h: p[2], l: p[3], c: p[4], v: p[5] }; });
+const chain = (a, b) => { const A = load(a); if (!b) return A; const B = load(b), lt = A[A.length - 1].t; return A.concat(B.filter((r) => r.t > lt)); };
 const reading = (id) => JSON.parse(fs.readFileSync(path.join(MD, 'data/snap', id.split('/')[1] + '.json'), 'utf8'));
 const agg = (t, rs) => ({ t, o: rs[0].o, h: Math.max(...rs.map((r) => r.h)), l: Math.min(...rs.map((r) => r.l)), c: rs[rs.length - 1].c, v: rs.reduce((s, r) => s + r.v, 0) });
 const group = (rows, key) => { const o = []; let c = null; for (const r of rows) { const k = key(r.t); if (!c || c.k !== k) { c = { k, rs: [] }; o.push(c); } c.rs.push(r); } return o; };
@@ -26,8 +27,8 @@ const SYMS = { 'COINBASE:BTCUSD': 'btc', 'BINANCE:ETHUSDT': 'eth' }, GAUGE = { '
 function tv(a) {
   if (GAUGE[a.symbol]) { const s = cfg.sources[GAUGE[a.symbol]]; return answer(group(load(s.series_4h), (t) => Math.floor(t / 86400) * 86400).filter((g) => g.rs[g.rs.length - 1].t === g.k + 72000).map((g) => agg(g.k, g.rs)), a.count); }
   const c = SYMS[a.symbol]; if (!c) throw { code: 'tool_error', message: 'no fixture for ' + a.symbol };
-  if (a.interval === '4h') return answer(load(cfg.sources[c + '_4h'].series_4h), a.count);
-  const d = load(cfg.sources[c + '_daily'].series);
+  if (a.interval === '4h') return answer(chain(cfg.sources[c + '_4h'].series_4h, cfg.sources[c + '_4h'].then_4h), a.count);
+  const d = chain(cfg.sources[c + '_daily'].series, cfg.sources[c + '_daily'].then);
   if (a.interval === '1D') return answer(d, a.count);
   if (a.interval === '1W') return answer(group(d, wk).map((g) => agg(g.k, g.rs)), a.count);
   if (a.interval === 'M') return answer(group(d, mo).map((g) => agg(g.k, g.rs)), a.count);

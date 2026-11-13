@@ -40,6 +40,13 @@ function load(id) {                                   // [{t,o,h,l,c,v}] oldest 
   const lines = fs.readFileSync(f, 'utf8').trim().split('\n'); lines.shift();
   return lines.map((ln) => { const p = ln.split(','); return { t: +p[0], o: +p[1], h: +p[2], l: +p[3], c: +p[4], v: +p[5] }; });
 }
+// a stored history followed by a second series for every later candle (BTC: Coinbase history, then Binance BTCUSDT)
+function chain(first, then) {
+  const A = load(first), B = then ? load(then) : null;
+  if (!A) return B; if (!B) return A;
+  const lastT = A[A.length - 1].t;
+  return A.concat(B.filter((r) => r.t > lastT));
+}
 const agg = (t, rs) => ({ t, o: rs[0].o, h: Math.max(...rs.map((r) => r.h)), l: Math.min(...rs.map((r) => r.l)), c: rs[rs.length - 1].c, v: rs.reduce((s, r) => s + r.v, 0) });
 function groupBy(rows, keyOf) { const out = []; let cur = null; for (const r of rows) { const k = keyOf(r.t); if (!cur || cur.k !== k) { cur = { k, rs: [] }; out.push(cur); } cur.rs.push(r); } return out; }
 const weekStart = (t) => { const d = Math.floor(t / 86400) * 86400, wd = (new Date(d * 1000).getUTCDay() + 6) % 7; return d - wd * 86400; };
@@ -99,7 +106,7 @@ function reading(id) { const f = path.join(MD, 'data', 'snap', id.split('/')[1] 
 
 // ---------- inputs and the skip check ----------
 const usedSeries = new Set(), usedReadings = new Set();
-for (const s of Object.values(cfg.sources)) { if (s.series) usedSeries.add(s.series); if (s.series_4h) usedSeries.add(s.series_4h); if (s.reading) usedReadings.add(s.reading); }
+for (const s of Object.values(cfg.sources)) { for (const k of ['series', 'series_4h', 'then', 'then_4h']) if (s[k]) usedSeries.add(s[k]); if (s.reading) usedReadings.add(s.reading); }
 for (const s of Object.values(cfg.readings)) usedReadings.add(s.reading);
 const pageSum = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'reference', 'index.original.html'))).digest('hex');
 const buildSum = crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex');
@@ -133,9 +140,9 @@ function keep(id, why) {
 function rowsFor(s) {
   if (s.use === 'econ') { const r = reading(s.reading); if (!r) throw new Error('no reading ' + s.reading); return { rows: econRows(r.payload), columns: ['id', 'date', 'title', 'importance', 'forecast', 'previous', 'actual', 'unit'] }; }
   let bars;
-  if (s.use === '4H') bars = load(s.series_4h);
+  if (s.use === '4H') bars = chain(s.series_4h, s.then_4h);
   else if (s.use === '1D_from_4H') { const b = load(s.series_4h); bars = b && dailyFrom4h(b); }
-  else { const d = load(s.series); bars = d && (s.use === '1W' ? weekly(d) : s.use === '1M' ? monthly(d) : d); }
+  else { const d = chain(s.series, s.then); bars = d && (s.use === '1W' ? weekly(d) : s.use === '1M' ? monthly(d) : d); }
   if (!bars || bars.length < 30) throw new Error('missing or too few candles (' + (s.series || s.series_4h) + ')');
   bars = bars.slice(-s.last);
   if (!bars.every((b) => b.c > 0 && b.h >= b.l)) throw new Error('invalid candle values');
