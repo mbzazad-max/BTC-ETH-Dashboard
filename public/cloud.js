@@ -16,7 +16,7 @@
   var anchor = $('rfBanner'); if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(strip, anchor.nextSibling);
 
   var t2s = function (s) { if (!s) return '-'; var d = new Date(s * 1000); return d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
-  var NAMES = { 'snap/tv_econ_us': 'US macro calendar (TradingView)', 'snap/cmc_global': 'CoinMarketCap sentiment', 'snap/coinglass_btc': 'CoinGlass BTC', 'snap/coinglass_eth': 'CoinGlass ETH' };
+  var NAMES = { 'snap/tv_econ_us': 'US macro calendar (TradingView)', 'snap/cmc_global': 'CoinMarketCap sentiment', 'snap/coinglass_btc': 'CoinGlass BTC', 'snap/coinglass_eth': 'CoinGlass ETH', 'snap/coinglass_sol': 'CoinGlass SOL', 'snap/coinglass_bnb': 'CoinGlass BNB', 'snap/cmc_quotes': 'CoinMarketCap SOL & BNB' };
   function state(text, kind) { pill.hidden = false; pill.className = 'rf-pill ' + (kind || ''); pill.textContent = text; }
 
   function showFresh(F) {

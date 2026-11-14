@@ -9,7 +9,8 @@
      gauges  -> daily candles built from closed 4H candles (a UTC day is used once its 20:00 candle has closed)
      econ_cal -> the page's econ loader applied to the stored TradingView calendar answer
      sentiment -> the page's fetchCmc() applied to the stored CoinMarketCap answer (stamped with its fetch time)
-     derivs / derivs_eth -> the stored CoinGlass readings, as saved
+     derivs / derivs_eth / derivs_sol / derivs_bnb -> the stored CoinGlass readings, as saved
+     SOL / BNB CoinMarketCap rows -> added to the sentiment document from the stored get_crypto_quotes_latest answer
    usage: node build/build.js <market-data dir> [--force]
    Writes public/snapshot.json and public/freshness.json. A source that cannot be built keeps its last good
    documents and is listed (the page shows "N sources kept from an older refresh"). Nothing is invented.
@@ -102,12 +103,27 @@ function cmcDoc(p, fetchedAt) {
   if (etfE && etfE.current) etfRow('etf_eth', 'US spot ETH ETF assets', etfE);
   return { as_of: now.toISOString(), source: 'CoinMarketCap connector (get_global_metrics_latest)', rows };
 }
+// SOL and BNB (added 14 Nov 2026): one CoinMarketCap row per coin from get_crypto_quotes_latest, shown in the
+// Market sentiment card where BTC and ETH show their US spot ETF assets (no score, like the ETF rows)
+const big = (v) => (v >= 1e12 ? (v / 1e12).toFixed(2) + 'T' : v >= 1e9 ? (v / 1e9).toFixed(2) + 'B' : (v / 1e6).toFixed(2) + 'M');
+const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2) + '%';
+function quoteRows(q) {
+  const h = q.headers, out = [];
+  for (const r of q.rows || []) {
+    const g = (k) => r[h.indexOf(k)], sym = String(g('symbol')), price = Number(g('price'));
+    if (!['SOL', 'BNB'].includes(sym) || !(price > 0)) continue;
+    out.push({ id: 'coin_' + sym.toLowerCase(), metric: `${sym} on CoinMarketCap`, value: `$${price < 100 ? price.toFixed(2) : Math.round(price).toLocaleString('en-US')} · rank #${g('rank')}`, num: price,
+      change: `${sgn(Number(g('percent_change_24h')))} 24h · ${sgn(Number(g('percent_change_7d')))} 7D · ${sgn(Number(g('percent_change_30d')))} 30D`,
+      note: `Market cap $${big(Number(g('market_cap')))} (${Number(g('market_cap_dominance')).toFixed(2)}% of the crypto market), 24h volume $${big(Number(g('volume_24h')))}, ${sgn(Number(g('percent_change_ytd')))} this year. CoinMarketCap quote ${String(g('last_updated_time')).slice(0, 16).replace('T', ' ')} UTC.` });
+  }
+  return out;
+}
 function reading(id) { const f = path.join(MD, 'data', 'snap', id.split('/')[1] + '.json'); return fs.existsSync(f) ? rd(f) : null; }
 
 // ---------- inputs and the skip check ----------
 const usedSeries = new Set(), usedReadings = new Set();
 for (const s of Object.values(cfg.sources)) { for (const k of ['series', 'series_4h', 'then', 'then_4h']) if (s[k]) usedSeries.add(s[k]); if (s.reading) usedReadings.add(s.reading); }
-for (const s of Object.values(cfg.readings)) usedReadings.add(s.reading);
+for (const s of Object.values(cfg.readings)) { usedReadings.add(s.reading); if (s.quotes) usedReadings.add(s.quotes); }
 const pageSum = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'reference', 'index.original.html'))).digest('hex');
 const buildSum = crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex');
 const inputsHash = crypto.createHash('sha256').update(JSON.stringify([pageSum, buildSum, cfg,
@@ -163,6 +179,7 @@ for (const [doc, s] of Object.entries(cfg.readings)) {
   try {
     if (!r) throw new Error('no reading ' + s.reading);
     docs['snap/' + doc] = s.use === 'cmc' ? cmcDoc(r.payload, r.fetched_at) : r.payload;
+    if (s.quotes) { const q = reading(s.quotes); try { if (q) docs['snap/' + doc].rows.push(...quoteRows(q.payload)); else kept.push({ id: s.quotes, why: 'no reading yet' }); } catch (e) { kept.push({ id: s.quotes, why: String(e.message || e) }); } }
   } catch (e) { kept.push({ id: doc, why: String(e.message || e) }); if (prevSnap.docs['snap/' + doc]) docs['snap/' + doc] = prevSnap.docs['snap/' + doc]; }
 }
 docs['snap/meta'] = { at: AT, sources, failed: failed.concat(kept.some((k) => k.id === 'sentiment') ? ['cmc'] : []), v: 1 };

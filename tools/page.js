@@ -5,6 +5,7 @@
         the same way it already does for ETH; the coin's name, pair, listing date and typical daily move
      2. CoinGlass pill and documents per coin (snap/derivs_sol, snap/derivs_bnb); SOL and BNB in the page's source list
      3. wording that listed "BTC and ETH" now lists all four coins
+     3b. Market sentiment card: SOL and BNB show their own CoinMarketCap row where BTC and ETH show ETF assets
      4. the Forecast runs without a CoinGlass reading (its derivatives signal then scores 0)
      5. for SOL and BNB, dollar amounts under $100 show two decimals instead of a whole dollar; $100 and above, and
         everything for BTC and ETH, are formatted exactly as before
@@ -48,6 +49,9 @@ const EDITS = [
   // the Forecast still works for a coin with no CoinGlass reading yet (SOL, BNB): its derivatives signal scores 0, as the model already does for an empty reading
   ["  inputs: ['btc_daily', 'tp_engine', 'derivs', 'econ_cal', 'mkt_sentiment'],\n  optional: ['mkt_sentiment'],",
    "  inputs: ['btc_daily', 'tp_engine', 'derivs', 'econ_cal', 'mkt_sentiment'],\n  optional: ['mkt_sentiment', 'derivs'],", ONE],
+  // Market sentiment card: SOL and BNB show their own CoinMarketCap row (price, rank, % changes) in the place where BTC and ETH show ETF assets
+  ["const isEth = window.__snap && window.__snap.asset() === 'ETH', etf = isEth ? cr.etf_eth : cr.etf;\n    if (etf) out.push({ id: 'etf', gauge: isEth ? 'US spot ETH ETF assets' : 'US spot BTC ETF assets',",
+   "const coinA = window.__snap ? window.__snap.asset() : 'BTC', isEth = coinA === 'ETH', isAlt = coinA === 'SOL' || coinA === 'BNB', etf = isAlt ? cr['coin_' + coinA.toLowerCase()] : isEth ? cr.etf_eth : cr.etf;\n    if (etf) out.push({ id: 'etf', gauge: isAlt ? etf.metric : isEth ? 'US spot ETH ETF assets' : 'US spot BTC ETF assets',", ONE],
   // prices: whole dollars from $100 up (unchanged), two decimals below $100
   [/Math\.round\((\w+)\)\.toLocaleString\('en-US'\)/g, '__px0($1)', 8],
   [/d3\.format\(',\.0f'\)\((\w+)\)/g, '__pxd($1)', 4],

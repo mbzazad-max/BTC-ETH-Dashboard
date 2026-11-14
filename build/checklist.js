@@ -28,7 +28,12 @@ const ROOT = path.resolve(__dirname, '..'), PUB = path.join(ROOT, 'public');
 const SNAP = path.join(PUB, 'snapshot.json');
 const RULES = { flush4h: 20e6, flush1h: 5e6, oiBand: 1, funding: 0, rsi: 30,
   squeeze24h: 50e6, oiPile: 2, fundingHot: 0.03, rsiHot: 70 };
-const usd = (v) => (v >= 1e9 ? '$' + (v / 1e9).toFixed(2) + 'B' : v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + Math.round(v / 1e3) + 'K');
+// SOL and BNB (14 Nov 2026): the dollar limits of checks 1 (flush / squeeze) are scaled to each coin's liquidation size,
+// set from CoinGlass on 14 Nov (24h liquidations: ETH ~$260M, SOL ~$53M, BNB ~$7.5M): SOL x0.25, BNB x0.05 of the BTC/ETH limits.
+const SCALE = { BTC: 1, ETH: 1, SOL: 0.25, BNB: 0.05 };
+const rulesFor = (coin) => { const k = SCALE[coin] || 1; return Object.assign({}, RULES, { flush4h: RULES.flush4h * k, flush1h: RULES.flush1h * k, squeeze24h: RULES.squeeze24h * k }); };
+const usd = (v) => (v >= 1e9 ? '$' + (v / 1e9).toFixed(2) + 'B' : v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : '$' + Math.round(v));
+const lim = (v) => (v >= 1e6 ? '$' + +(v / 1e6).toFixed(2) + 'M' : '$' + +(v / 1e3).toFixed(0) + 'K');   // a checklist limit, e.g. $20M, $1.25M, $250K
 const money = (v) => (Math.abs(v) < 100 ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(v).toLocaleString('en-US'));   // as the page shows prices
 
 function pageNumbers(snapshot) {   // the original page's own spot plan and timeframe table, per coin
@@ -66,6 +71,7 @@ function pageNumbers(snapshot) {   // the original page's own spot plan and time
 }
 
 function rowsFor(coin, cg, px) {
+  const RULES = rulesFor(coin);
   const find = (id) => (cg.rows || []).find((r) => r.id === id) || {};
   const liq = find('liq_btc_24h'), oi = find('oi_total'), fund = find('funding_oiw');
   const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
@@ -74,7 +80,7 @@ function rowsFor(coin, cg, px) {
   const l4 = num(liq.long_4h), l1 = num(liq.long_1h);
   checks.push({ id: 'chk_flush', metric: '1. Flush over', ok: l4 == null || l1 == null ? null : l4 < RULES.flush4h && l1 < RULES.flush1h,
     value: l4 == null || l1 == null ? 'no data yet' : `longs 4h ${usd(l4)} · 1h ${usd(l1)}`,
-    note: `Green when ${coin} long liquidations are under $20M in the last 4h and under $5M in the last hour (CoinGlass).` });
+    note: `Green when ${coin} long liquidations are under ${lim(RULES.flush4h)} in the last 4h and under ${lim(RULES.flush1h)} in the last hour (CoinGlass).` });
   // 2. leverage steady
   const o4 = num(oi.num);
   checks.push({ id: 'chk_oi', metric: '2. Leverage steady', ok: o4 == null ? null : Math.abs(o4) <= RULES.oiBand,
@@ -104,6 +110,7 @@ function rowsFor(coin, cg, px) {
 }
 
 function sellRowsFor(coin, cg, px) {
+  const RULES = rulesFor(coin);
   const find = (id) => (cg.rows || []).find((r) => r.id === id) || {};
   const liq = find('liq_btc_24h'), oi = find('oi_total'), fund = find('funding_oiw');
   const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
@@ -111,7 +118,7 @@ function sellRowsFor(coin, cg, px) {
   const s24 = num(liq.short_24h), s4 = num(liq.short_4h), s1 = num(liq.short_1h);
   checks.push({ id: 'chs_squeeze', metric: '1. Squeeze over', ok: s24 == null || s4 == null || s1 == null ? null : s24 >= RULES.squeeze24h && s4 < RULES.flush4h && s1 < RULES.flush1h,
     value: s24 == null || s4 == null || s1 == null ? 'no data yet' : `shorts 24h ${usd(s24)} · 4h ${usd(s4)} · 1h ${usd(s1)}`,
-    note: `Green when ${coin} short liquidations were large over 24h (at least $50M) and have faded (under $20M in 4h, under $5M in 1h): the squeeze fuel is used up.` });
+    note: `Green when ${coin} short liquidations were large over 24h (at least ${lim(RULES.squeeze24h)}) and have faded (under ${lim(RULES.flush4h)} in 4h, under ${lim(RULES.flush1h)} in 1h): the squeeze fuel is used up.` });
   const o4 = num(oi.num);
   checks.push({ id: 'chs_oi', metric: '2. Leverage piling in', ok: o4 == null ? null : o4 >= RULES.oiPile,
     value: o4 == null ? 'no data yet' : `OI 4h ${o4 > 0 ? '+' : ''}${o4.toFixed(1)}%`,
