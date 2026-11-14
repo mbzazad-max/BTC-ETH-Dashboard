@@ -1,5 +1,5 @@
 /* Render check: public/index.html (the original page + shim.js + cloud.js) opened with the built public/snapshot.json,
-   once with BTC and once with ETH selected. Fails on any page error, a missing number, or a futures section.
+   once with each coin (BTC, ETH, SOL, BNB) selected. Fails on any page error, a missing number, or a futures section.
    usage: node tests/render.js <node_modules dir that has jsdom and d3> */
 'use strict';
 const fs = require('fs'), path = require('path');
@@ -36,8 +36,9 @@ async function view(asset) {
   w.close(); return v;
 }
 (async () => {
-  const out = [await view('BTC'), await view('ETH')];
-  const bad = out.filter((v) => v.errors.length || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || v.spot < 3 || v.derivs < 6 || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || v.checklist < 10 || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8);
+  const out = [await view('BTC'), await view('ETH'), await view('SOL'), await view('BNB')];
+  const noCg = (v) => (v.asset === 'SOL' || v.asset === 'BNB') && /not saved yet/.test(v.cg);   // until the CoinGlass load includes SOL and BNB
+  const bad = out.filter((v) => v.errors.length || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || v.spot < 3 || (v.derivs < 6 && !noCg(v)) || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || (v.checklist < 10 && !noCg(v)) || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8);
   console.log(JSON.stringify(out, null, 1));
   process.exit(bad.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(2); });

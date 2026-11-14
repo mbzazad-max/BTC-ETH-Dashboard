@@ -29,7 +29,7 @@ const SNAP = path.join(PUB, 'snapshot.json');
 const RULES = { flush4h: 20e6, flush1h: 5e6, oiBand: 1, funding: 0, rsi: 30,
   squeeze24h: 50e6, oiPile: 2, fundingHot: 0.03, rsiHot: 70 };
 const usd = (v) => (v >= 1e9 ? '$' + (v / 1e9).toFixed(2) + 'B' : v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + Math.round(v / 1e3) + 'K');
-const money = (v) => Math.round(v).toLocaleString('en-US');
+const money = (v) => (Math.abs(v) < 100 ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(v).toLocaleString('en-US'));   // as the page shows prices
 
 function pageNumbers(snapshot) {   // the original page's own spot plan and timeframe table, per coin
   const { JSDOM } = require(path.join(NM, 'jsdom'));
@@ -48,7 +48,7 @@ function pageNumbers(snapshot) {   // the original page's own spot plan and time
       const ready = w.__snap && w.dash && w.dash.data('tp_spot').status === 'ok';
       if (!ready) { if (++tries > 100) { w.close(); return reject(new Error('page engine did not produce a spot plan')); } return setTimeout(tick, 100); }
       const out = {};
-      for (const a of ['BTC', 'ETH']) {
+      for (const a of ['BTC', 'ETH', 'SOL', 'BNB']) {
         w.__snap.setAsset(a);
         const spot = w.dash.data('tp_spot'), mtf = w.dash.data('tp_mtf'), sum = w.dash.data('tp_summary');
         if (spot.status !== 'ok' || mtf.status !== 'ok' || sum.status !== 'ok') { out[a] = null; continue; }
@@ -139,7 +139,7 @@ function sellRowsFor(coin, cg, px) {
   let px;
   try { px = await pageNumbers(snap); } catch (e) { console.log('::warning::Spot checklists skipped: ' + e.message); return; }
   const report = {};
-  for (const [coin, doc] of [['BTC', 'snap/derivs'], ['ETH', 'snap/derivs_eth']]) {
+  for (const [coin, doc] of [['BTC', 'snap/derivs'], ['ETH', 'snap/derivs_eth'], ['SOL', 'snap/derivs_sol'], ['BNB', 'snap/derivs_bnb']]) {
     const cg = snap.docs[doc];
     if (!cg || !Array.isArray(cg.rows)) { report[coin] = 'no CoinGlass reading'; continue; }
     cg.rows = cg.rows.filter((r) => !/^ch[ks]_/.test(String(r.id))).concat(rowsFor(coin, cg, px[coin]), sellRowsFor(coin, cg, px[coin]));

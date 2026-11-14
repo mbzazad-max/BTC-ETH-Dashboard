@@ -178,8 +178,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
     <div class="rf-top">
       <div>
         <div class="as-head"><h1><span class="a-name">Bitcoin</span> Dashboard</h1>
-          <div class="br-win as-sw" id="assetSw" role="group" aria-label="Coin"><button type="button" data-asset="BTC" aria-pressed="true">BTC</button><button type="button" data-asset="ETH" aria-pressed="false">ETH</button></div></div>
-        <p class="rf-note">BTC (Coinbase BTCUSD) and ETH (Binance ETHUSDT): 4H, daily, weekly and monthly bars, market-sentiment gauges and the US macro calendar, saved as a snapshot each time you refresh. Every tab follows the coin you pick. Spot only.</p>
+          <div class="br-win as-sw" id="assetSw" role="group" aria-label="Coin"><button type="button" data-asset="BTC" aria-pressed="true">BTC</button><button type="button" data-asset="ETH" aria-pressed="false">ETH</button><button type="button" data-asset="SOL" aria-pressed="false">SOL</button><button type="button" data-asset="BNB" aria-pressed="false">BNB</button></div></div>
+        <p class="rf-note">BTC (Coinbase BTCUSD), ETH (Binance ETHUSDT), SOL (Binance SOLUSDT) and BNB (Binance BNBUSDT): 4H, daily, weekly and monthly bars, market-sentiment gauges and the US macro calendar, saved as a snapshot each time you refresh. Every tab follows the coin you pick. Spot only.</p>
       </div>
       <div class="rf-status">
         <span class="rf-pill" id="rfAt">Loading…</span>
@@ -554,7 +554,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
       <li><b>Market sentiment.</b> Refresh also pulls stablecoin dominance (USDT.D + USDC.D), BTC dominance and the alt market cap (TOTAL2) from TradingView. They feed the Market sentiment card and a signal in the Forecast.</li>
       <li><b>CoinMarketCap</b> Fear &amp; Greed, Altcoin Season, market cap, dominance and US spot BTC and ETH ETF assets are pulled through your CoinMarketCap connector at the end of every Refresh (allow it the first time claude.ai asks).</li>
       <li><b>CoinGlass</b> funding, open interest and liquidations for BTC and ETH are read by Claude in your Claude desktop app (also in the daily 11:27am refresh). Say "Refresh the CoinGlass snapshot on my Bitcoin dashboard" in chat.</li>
-      <li><b>BTC / ETH switch.</b> Every tab (ROI, Patterns, spot plan, Forecast, CoinGlass) follows the coin you pick; the market-sentiment gauges are shared. Your pick is remembered on this device.</li>
+      <li><b>BTC / ETH / SOL / BNB switch.</b> Every tab (ROI, Patterns, spot plan, Forecast, CoinGlass) follows the coin you pick; the market-sentiment gauges are shared. Your pick is remembered on this device.</li>
       <li>Rules-based analysis for your own planning, not financial advice.</li>
     </ul>
   </section>
@@ -566,10 +566,13 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
    with `dash` and read data with dash.data(id). Here the raw data comes from the saved snapshot. */
 (function () {
   const LOADERS = {}, CALCS = {}, CBS = [], RAW = {}, CACHE = {};
-  const KNOWN = ['btc_4h', 'btc_daily', 'btc_weekly', 'btc_monthly', 'eth_4h', 'eth_daily', 'eth_weekly', 'eth_monthly', 'econ_cal', 'derivs', 'derivs_eth', 'gauge_usdtd', 'gauge_usdcd', 'gauge_btcd', 'gauge_total2', 'cr_sentiment'];
+  const small = (x) => typeof x === 'number' && isFinite(x) && Math.abs(x) < 100 && ASSET !== 'BTC' && ASSET !== 'ETH';
+  window.__px0 = (x) => (small(x) ? x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(x).toLocaleString("en-US"));
+  window.__pxd = (v) => (small(v) ? d3.format(',.2f')(v) : d3.format(",.0f")(v));
+  const KNOWN = ['btc_4h', 'btc_daily', 'btc_weekly', 'btc_monthly', 'eth_4h', 'eth_daily', 'eth_weekly', 'eth_monthly', 'sol_4h', 'sol_daily', 'sol_weekly', 'sol_monthly', 'bnb_4h', 'bnb_daily', 'bnb_weekly', 'bnb_monthly', 'econ_cal', 'derivs', 'derivs_eth', 'derivs_sol', 'derivs_bnb', 'gauge_usdtd', 'gauge_usdcd', 'gauge_btcd', 'gauge_total2', 'cr_sentiment'];
   let VER = 0, PARAMS = {}, BOOTED = false, ASSET = 'BTC';
   /* The views read btc_* and derivs; with ETH selected those names point at the eth_* bars and derivs_eth. */
-  const rawId = (id) => (ASSET === 'ETH' ? (/^btc_(4h|daily|weekly|monthly)$/.test(id) ? 'eth_' + id.slice(4) : id === 'derivs' ? 'derivs_eth' : id) : id);
+  const rawId = (id) => { const p = ASSET.toLowerCase(); return ASSET !== 'BTC' ? (/^btc_(4h|daily|weekly|monthly)$/.test(id) ? p + '_' + id.slice(4) : id === 'derivs' ? 'derivs_' + p : id) : id; };
   const empty = (status, message) => ({ status, data: [], columns: [], meta: [], message, refreshing: false });
   function data(id) {
     const rid = rawId(id);
@@ -620,7 +623,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
     commit() { BOOTED = true; VER++; emit(); },
     has: (id) => !!(RAW[id] && RAW[id].status === 'ok'),
     asset: () => ASSET,
-    setAsset(a) { ASSET = a === 'ETH' ? 'ETH' : 'BTC'; VER++; emit(); },
+    setAsset(a) { ASSET = ['ETH', 'SOL', 'BNB'].includes(a) ? a : 'BTC'; VER++; emit(); },
   };
 })();
 </script>
@@ -887,7 +890,7 @@ dash.calc('tp_engine', {
     const TF = { '4H': toB(btc_4h, 1000), '1D': toB(btc_daily, 400), '1W': toB(btc_weekly, 160), '1M': toB(btc_monthly, 150) };
     const CFG = { '4H': { L: 420, k: 6, LF: 540, LV: 540 }, '1D': { L: 365, k: 7, LF: 365, LV: 365 }, '1W': { L: 156, k: 3, LF: 156, LV: 156 }, '1M': { L: 120, k: 2, LF: 120, LV: 120 } };
     const TFS = ['4H', '1D', '1W', '1M'];
-    const fmt = (x) => (x == null ? '-' : Math.abs(x) >= 1000 ? Math.round(x).toLocaleString('en-US') : x.toFixed(1));
+    const fmt = (x) => (x == null ? '-' : Math.abs(x) >= 1000 ? __px0(x) : x.toFixed(1));
     const sum = (a) => a.reduce((s, x) => s + x, 0);
     const ema = (c, n) => { if (c.length < n) return null; const k = 2 / (n + 1); let e = sum(c.slice(0, n)) / n; for (const v of c.slice(n)) e = v * k + e * (1 - k); return e; };
     const rsi = (c, n = 14) => {
@@ -1224,7 +1227,7 @@ dash.calc('tp_levels', {
   description: 'Up to 3 resistance and 3 support zones where more than 2 methods agree; resistance ascending from price, support descending, strongest cluster flagged.',
   inputs: ['tp_engine'],
   fn: (tp_engine) => {
-    const e = tp_engine[0], f = (x) => Math.round(x).toLocaleString('en-US');
+    const e = tp_engine[0], f = (x) => __px0(x);
     const NAMES = { SWING: 'Swing / equal highs-lows', SHELF: 'Breakout-retest shelf', EMA: 'EMA', FIB: 'Fib', FVG: 'FVG', OB: 'Order block', HVN: 'Volume node' };
     const R = e.zones.filter((z) => z.role === 'R').sort((a, b) => a.lo - b.lo);
     const S = e.zones.filter((z) => z.role === 'S').sort((a, b) => b.hi - a.hi);
@@ -1249,7 +1252,7 @@ dash.calc('tp_summary', {
   description: 'Spot, bias score, regime, volatility and the bull/bear trigger levels from the level engine.',
   inputs: ['tp_engine'],
   fn: (tp_engine) => {
-    const e = tp_engine[0], f = (x) => (x == null ? '—' : Math.round(x).toLocaleString('en-US'));
+    const e = tp_engine[0], f = (x) => (x == null ? '—' : __px0(x));
     return [{
       spot: e.spot, bias: e.bias, bias_score: e.bias_score, status: e.status, trend_state: e.trend_state, vol_state: e.vol_state,
       atr_d: e.ad, atr_d_pct: e.ad_pct, atr_pctile: e.atr_pctile, rv30: e.rv30, hi365: e.hi365, lo365: e.lo365, from_hi: e.from_hi, from_lo: e.from_lo,
@@ -1264,7 +1267,7 @@ dash.calc('tp_spot', {
   description: 'Buy zone (nearest support on that timeframe), sell zone (nearest resistance), trigger, invalidation, stop = zone floor minus an ATR multiple of that timeframe, and two targets at the first confluence zones at least 2R away.',
   inputs: ['tp_engine'],
   fn: (tp_engine) => {
-    const e = tp_engine[0], f = (x) => (x == null ? '—' : Math.round(x).toLocaleString('en-US'));
+    const e = tp_engine[0], f = (x) => (x == null ? '—' : __px0(x));
     return e.spot_setups.filter((s) => s.entry != null).map((s) => ({
       tf: s.tf,
       buy_zone: `${f(s.buy_lo)}–${f(s.buy_hi)} (${s.buy_count} methods${s.weak ? ', weak' : ''})`,
@@ -1286,7 +1289,7 @@ dash.calc('tp_mtf', {
   inputs: ['tp_engine'],
   fn: (tp_engine) => tp_engine[0].mtf.map((m) => ({
     tf: m.tf, trend: m.trend, rsi: m.rsi, macd_state: m.macd_state, atr_pct: m.atr_pct,
-    ema_txt: [['20', m.ema20], ['50', m.ema50], ['200', m.ema200]].filter(([, v]) => v != null).map(([k, v]) => `${k}: ${Math.round(v).toLocaleString('en-US')}`).join(' · '),
+    ema_txt: [['20', m.ema20], ['50', m.ema50], ['200', m.ema200]].filter(([, v]) => v != null).map(([k, v]) => `${k}: ${__px0(v)}`).join(' · '),
   })),
 });
 
@@ -1368,14 +1371,14 @@ dash.calc('fc_model', {
   title: 'Forecast model',
   description: 'Volatility cone from blended 30-day and 1-year realized volatility, scaled by how far BTC actually moved after past periods with similar volatility, shifted by a weighted score of trend, momentum, structure, seasonality and derivatives signals; scenario odds are the chance of finishing above the nearest resistance, inside the range, or below the nearest support. Includes an out-of-sample check of the bands against history.',
   inputs: ['btc_daily', 'tp_engine', 'derivs', 'econ_cal', 'mkt_sentiment'],
-  optional: ['mkt_sentiment'],
+  optional: ['mkt_sentiment', 'derivs'],
   fn: (btc_daily, tp_engine, derivs, econ_cal, mkt_sentiment) => {
     const E = tp_engine[0], spot = E.spot;
     const sum = (a) => a.reduce((s, x) => s + x, 0);
     const sd = (a) => { const m = sum(a) / a.length; return Math.sqrt(sum(a.map((x) => (x - m) ** 2)) / (a.length - 1)); };
     const med = (a) => { const s = a.slice().sort((x, y) => x - y), k = s.length >> 1; return s.length % 2 ? s[k] : (s[k - 1] + s[k]) / 2; };
     const Phi = (x) => { const t = 1 / (1 + 0.2316419 * Math.abs(x)), d = 0.3989423 * Math.exp(-x * x / 2); const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return x > 0 ? 1 - p : p; };
-    const f = (x) => Math.round(x).toLocaleString('en-US');
+    const f = (x) => __px0(x);
     const D = btc_daily.slice(0, -1); // completed days only
     const C = D.map((r) => r.close), days = D.map((r) => r.day);
     const lr = C.map((c, i) => (i ? Math.log(c / C[i - 1]) : 0)).slice(1);
@@ -1526,7 +1529,7 @@ dash.calc('fc_horizons', {
   description: 'Most likely price, 68% and 90% ranges, chance of being higher, and bull/base/bear odds for 1 and 2 weeks.',
   inputs: ['fc_model'],
   fn: (fc_model) => {
-    const m = fc_model[0], f = (x) => '$' + Math.round(x).toLocaleString('en-US');
+    const m = fc_model[0], f = (x) => '$' + __px0(x);
     return m.horizons.map((h) => ({
       h: h.label, target_date: h.target_date, median: h.median,
       range68: `${f(h.lo68)} – ${f(h.hi68)}`, range90: `${f(h.lo90)} – ${f(h.hi90)}`,
@@ -1542,7 +1545,7 @@ dash.calc('fc_scenarios', {
   description: 'Bull (close above the nearest resistance top), base (stays inside the range) and bear (close below the nearest support floor), with odds per horizon and targets from the confluence zones.',
   inputs: ['fc_model'],
   fn: (fc_model) => {
-    const m = fc_model[0], f = (x) => Math.round(x).toLocaleString('en-US'), pc = (x) => Math.round(x * 100) + '%';
+    const m = fc_model[0], f = (x) => __px0(x), pc = (x) => Math.round(x * 100) + '%';
     const h1 = m.horizons[0], h2 = m.horizons[1];
     return [
       { id: 'bull', scenario: 'Bull – breakout', p7: pc(h1.p_bull), p14: pc(h2.p_bull), trigger: `Daily close above ${f(m.up)}, the top of the ${m.up_zone} resistance`, targets: m.bull_targets.join(', then ') || 'Open air above', watch: 'Open interest rising with funding near 0.01% (real buyers, not just short covering); a calm or dovish FOMC reaction' },
@@ -1736,7 +1739,7 @@ dash.calc('headline', {
   const isoDay = (d) => d.toISOString().slice(0, 10);
   dash.setParams({ cal_from: isoDay(new Date(Date.now() - 864e5)), cal_to: isoDay(new Date(Date.now() + 15 * 864e5)) });
   const pct = d3.format('+,.1%');
-  const usd = (v) => '$' + d3.format(',.0f')(v);
+  const usd = (v) => '$' + __pxd(v);
   const monthName = (s) => d3.utcFormat('%b %Y')(new Date(s + '-01T00:00:00Z'));
   const signCls = (el, v) => { el.classList.remove('pos', 'neg'); if (v > 0) el.classList.add('pos'); else if (v < 0) el.classList.add('neg'); };
 
@@ -1886,7 +1889,7 @@ dash.calc('headline', {
 
 
   const FMT = {
-    usd: (v) => '$' + d3.format(',.0f')(v),
+    usd: (v) => '$' + __pxd(v),
     pct: (v) => d3.format('+.1%')(v),
     pct2u: (v) => d3.format('.2%')(v),
     pct0u: (v) => d3.format('.0%')(v),
@@ -1985,7 +1988,7 @@ dash.calc('headline', {
     const yMin = d3.min([...fc.map((r) => r.lo90), ...act.map((r) => r.close)]), yMax = d3.max([...fc.map((r) => r.hi90), ...act.map((r) => r.close)]);
     const y = d3.scaleLinear([yMin * 0.99, yMax * 1.01], [H - bottom, top]).nice();
     const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
-    const ticks = y.ticks(6), fmtY = (v) => '$' + d3.format(',.0f')(v);
+    const ticks = y.ticks(6), fmtY = (v) => '$' + __pxd(v);
     const probe = svg.append('text').attr('font-size', 12).text(fmtY(ticks[ticks.length - 1]));
     const left = Math.ceil(probe.node().getComputedTextLength()) + 10; probe.remove();
     const x = d3.scaleUtc(d3.extent(rows, (r) => r.t), [left, W - right]);
@@ -2035,7 +2038,7 @@ dash.calc('headline', {
       if (h.status !== 'ok') { el.textContent = '—'; return; }
       const r = h.data[0], f = el.dataset.field, v = r[f];
       if (f === 'price' || f === 'ath') el.textContent = usd(v);
-      else if (f === 'first_open') el.textContent = d3.format(',.0f')(v);
+      else if (f === 'first_open') el.textContent = __pxd(v);
       else if (f === 'as_of') el.textContent = monthName(v);
       else if (f === 'quarter' || f === 'year') el.textContent = String(v);
       else { el.textContent = pct(v); signCls(el, v); }
@@ -2167,6 +2170,14 @@ dash.calc('headline', {
     ['eth_daily', 'ETH daily bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:ETHUSDT', interval: '1D', count: 8000, format: 'columns' })],
     ['eth_weekly', 'ETH weekly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:ETHUSDT', interval: '1W', count: 2000, format: 'columns' })],
     ['eth_monthly', 'ETH monthly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:ETHUSDT', interval: 'M', count: 500, format: 'columns' })],
+    ['sol_4h', 'SOL 4H bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:SOLUSDT', interval: '4h', count: 1000, format: 'columns' })],
+    ['sol_daily', 'SOL daily bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:SOLUSDT', interval: '1D', count: 8000, format: 'columns' })],
+    ['sol_weekly', 'SOL weekly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:SOLUSDT', interval: '1W', count: 2000, format: 'columns' })],
+    ['sol_monthly', 'SOL monthly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:SOLUSDT', interval: 'M', count: 500, format: 'columns' })],
+    ['bnb_4h', 'BNB 4H bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:BNBUSDT', interval: '4h', count: 1000, format: 'columns' })],
+    ['bnb_daily', 'BNB daily bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:BNBUSDT', interval: '1D', count: 8000, format: 'columns' })],
+    ['bnb_weekly', 'BNB weekly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:BNBUSDT', interval: '1W', count: 2000, format: 'columns' })],
+    ['bnb_monthly', 'BNB monthly bars', 'mcp-tv-get-ohlcv', () => ({ symbol: 'BINANCE:BNBUSDT', interval: 'M', count: 500, format: 'columns' })],
     ['econ_cal', 'US macro calendar', 'mcp-tv-get-economic-calendar', () => ({ countries: 'US', min_importance: 1, date_from: isoDay(-1), date_to: isoDay(15) })],
     ['gauge_usdtd', 'USDT dominance', 'mcp-tv-get-ohlcv', () => ({ symbol: 'CRYPTOCAP:USDT.D', interval: '1D', count: 400, format: 'columns' })],
     ['gauge_usdcd', 'USDC dominance', 'mcp-tv-get-ohlcv', () => ({ symbol: 'CRYPTOCAP:USDC.D', interval: '1D', count: 400, format: 'columns' })],
@@ -2193,7 +2204,7 @@ dash.calc('headline', {
   const when = (iso) => new Date(iso).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
   const ago = (iso) => { const m = (Date.now() - Date.parse(iso)) / 6e4; if (m < 1) return 'just now'; if (m < 60) return Math.round(m) + ' min ago'; if (m < 2880) return Math.round(m / 60) + ' h ago'; return Math.round(m / 1440) + ' days ago'; };
 
-  let DB = null, MCP = null, SERVER = null, CAN_WRITE = false, RUNNING = false, META = null, lastAt = null, CG = null, CR = null, CG_ETH = null;
+  let DB = null, MCP = null, SERVER = null, CAN_WRITE = false, RUNNING = false, META = null, lastAt = null, CG = null, CR = null, CG_ETH = null, CG_SOL = null, CG_BNB = null;
 
   function banner(msg, kind) { const b = $('rfBanner'); b.hidden = !msg; b.textContent = msg || ''; b.className = 'rf-banner' + (kind ? ' ' + kind : ''); }
   function showEmpty(title, note) {
@@ -2216,7 +2227,7 @@ dash.calc('headline', {
     $('rfFailed').textContent = failed.length ? `${failed.length} source${failed.length > 1 ? 's' : ''} kept from an older refresh` : '';
     $('rfCrTime').textContent = CR ? CR : 'not saved yet';
     $('rfCr').className = 'rf-pill' + (CR ? '' : ' warn');
-    const cg = $('rfCgTime'), cgv = S.asset() === 'ETH' ? CG_ETH : CG;
+    const cg = $('rfCgTime'), cgv = { ETH: CG_ETH, SOL: CG_SOL, BNB: CG_BNB }[S.asset()] || (S.asset() === 'BTC' ? CG : null);
     cg.textContent = cgv ? cgv : 'not saved yet';
     $('rfCg').className = 'rf-pill' + (cgv ? '' : ' warn');
     $('rfBtn').hidden = !CAN_WRITE; $('rfBtn').disabled = RUNNING;
@@ -2243,7 +2254,7 @@ dash.calc('headline', {
   async function fetchSource(src) {
     const [id, , tool, args] = src;
     const answer = await callTool(tool, args());
-    const lid = id.replace(/^eth_/, 'btc_');
+    const lid = id.replace(/^(eth|sol|bnb)_/, 'btc_');
     const out = await (S.LOADERS[lid] ? S.LOADERS[lid].fn : dailyBars)({ answer });
     const rows = Array.isArray(out) ? out : out.data || out.rows;
     const columns = (out && out.columns) || (rows[0] ? Object.keys(rows[0]) : []);
@@ -2405,6 +2416,13 @@ dash.calc('headline', {
       if (META) S.commit();
       renderStatus();
     }, () => {});
+    [['derivs_sol', (v) => { CG_SOL = v; }], ['derivs_bnb', (v) => { CG_BNB = v; }]].forEach(([doc, put]) => DB.doc('snap/' + doc).onSnapshot((snap) => {
+      const d = snap.exists ? snap.data() : null;
+      if (d && Array.isArray(d.rows)) { S.setRaw(doc, d.rows, Object.keys(d.rows[0] || {})); const r = d.rows.find((x) => x.id === 'as_of'); put(r ? r.value : null); }
+      else { S.setMissing(doc); put(null); }
+      if (META) S.commit();
+      renderStatus();
+    }, () => {}));
     DB.doc('snap/sentiment').onSnapshot((snap) => {
       const d = snap.exists ? snap.data() : null;
       if (d && Array.isArray(d.rows)) { S.setRaw('cr_sentiment', d.rows, Object.keys(d.rows[0] || {})); const r = d.rows.find((x) => x.id === 'as_of'); CR = r ? r.value : null; }
@@ -2434,6 +2452,8 @@ dash.calc('headline', {
   const ASSETS = {
     BTC: { name: 'Bitcoin', sym: 'BTC', pair: 'Coinbase BTCUSD', exch: 'Coinbase', list: 'Dec 2014', move: '3%' },
     ETH: { name: 'Ethereum', sym: 'ETH', pair: 'Binance ETHUSDT', exch: 'Binance', list: 'Aug 2017', move: '4%' },
+    SOL: { name: 'Solana', sym: 'SOL', pair: 'Binance SOLUSDT', exch: 'Binance', list: 'Aug 2020', move: '5%' },
+    BNB: { name: 'BNB', sym: 'BNB', pair: 'Binance BNBUSDT', exch: 'Binance', list: 'Nov 2017', move: '4%' },
   };
   function applyAsset(a) {
     const A = ASSETS[a] || ASSETS.BTC;
@@ -2444,7 +2464,7 @@ dash.calc('headline', {
     S.setAsset(A.sym); renderStatus();
   }
   let startAsset = 'BTC';
-  try { const v = localStorage.getItem('bd_asset'); if (v === 'ETH' || v === 'BTC') startAsset = v; } catch (e) { /* storage unavailable */ }
+  try { const v = localStorage.getItem('bd_asset'); if (['BTC', 'ETH', 'SOL', 'BNB'].includes(v)) startAsset = v; } catch (e) { /* storage unavailable */ }
   document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => {
     applyAsset(b.dataset.asset);
     try { localStorage.setItem('bd_asset', b.dataset.asset); } catch (e) { /* storage unavailable */ }
