@@ -41,7 +41,7 @@
     strip.innerHTML = '<details><summary>' + head + '</summary>' +
       (kept ? '<p style="margin:8px 0 4px">These show their last good version:</p><ul style="margin:0 0 8px">' + kept + '</ul>' : '') +
       '<table style="margin-top:8px;border-collapse:collapse;font-size:12.5px"><thead><tr><th style="text-align:left">Input</th><th style="text-align:left">Last closed candle / reading (your time)</th><th style="text-align:left">Status</th></tr></thead><tbody>' + body + '</tbody></table>' +
-      '<p style="margin:8px 0 0">' + esc(F.last_result || '') + ' Only closed candles are used: prices are the last closed 4H and daily candles, and this week, month and year run to the last closed day. Candles come from your Binance upload and the daily 11:30 TradingView load; CoinGlass from the daily CoinGlass load.</p></details>';
+      '<p style="margin:8px 0 0">' + esc(F.last_result || '') + ' Only closed candles are used: prices are the last closed 4H and daily candles, and this week, month and year run to the last closed day. Candles come from your Binance upload and the daily 11:30 TradingView load; CoinGlass from the daily CoinGlass load. Coinbase BTCUSD is stored BTC history; newer BTC candles come from Binance.</p></details>';
   }
   function loadFresh() {
     return fetch('freshness.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (F) { if (F) showFresh(F); }).catch(function () {});
