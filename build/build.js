@@ -129,9 +129,11 @@ const buildSum = crypto.createHash('sha256').update(fs.readFileSync(__filename))
 const inputsHash = crypto.createHash('sha256').update(JSON.stringify([pageSum, buildSum, cfg,
   [...usedSeries].sort().map((id) => [id, manifest[id] && manifest[id].last_open, manifest[id] && manifest[id].rows]),
   [...usedReadings].sort().map((id) => [id, readings[id] && readings[id].fetched_at])])).digest('hex');
+// Stored history that newer candles continue from another series (Coinbase BTCUSD -> Binance BTCUSDT): never fetched again.
+const historyOnly = new Set(Object.values(cfg.sources).flatMap((s) => [s.then && s.series, s.then_4h && s.series_4h]).filter(Boolean));
 function freshnessRows() {
   return [...usedSeries].sort().map((id) => { const m = manifest[id] || null;
-    return { id, source: id.split('/')[0], symbol: m ? m.symbol : id.split('/')[1], tf: id.split('/')[2], period_s: m ? m.period_s : null,
+    return { id, history_only: historyOnly.has(id) || undefined, source: id.split('/')[0], symbol: m ? m.symbol : id.split('/')[1], tf: id.split('/')[2], period_s: m ? m.period_s : null,
       last_open: m ? m.last_open : null, last_close: m ? m.last_close : null, fetched_at: m ? m.fetched_at : null, rows: m ? m.rows : 0 }; });
 }
 const readingRows = () => [...usedReadings].sort().map((id) => ({ id, fetched_at: readings[id] ? readings[id].fetched_at : null }));
