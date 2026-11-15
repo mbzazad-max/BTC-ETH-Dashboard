@@ -20,12 +20,16 @@ Claude only loads data; it does not run the dashboard's logic. Spot only: there 
   2. Leverage steady: open interest 4h change within ±1%.
   3. Funding reset: OI-weighted funding at or below 0%.
   4. Price confirms: the last closed 4H close at or above the floor of the page's own 1D buy zone, with the page's 4H RSI above 30.
+  5. Structure shift (added 15 Nov 2026, **required**): a bullish 4H market structure shift (`build/structure.js`): price swept a swing low inside the 1D buy zone, then a 4H candle closed above the last lower high, with displacement (a fair value gap, or a candle body of 1.2× ATR). It shows the entry (middle of the FVG, or a retest of the broken level) and the stop (below the sweep low), and stays valid 5 days unless a 4H close goes below the sweep low.
+  Verdict: no structure shift = **Wait** (a tiny starter only when 3+ other checks are green and the weekly trend is up). With it: 3–4 green = starter buy at the MSS entry, 5/5 = main buy; half size when the 1D trend is down.
   Below it, a mirror **spot sell / trim checklist** (take some profit, never short):
   1. Squeeze over: short liquidations of at least $50M in 24h that have faded below $20M in 4h and $5M in 1h.
   2. Leverage piling in: open interest up 2% or more in 4h.
   3. Funding hot: funding at or above 0.03%.
   4. Price stalls: a 4H close at or above the floor of the page's 1D sell zone, with 4H RSI at or above 70.
+  5. Structure breaks: a bearish 4H MSS from the sell zone; a bigger profit needs it (5/5).
   Thresholds 1–3 of both lists are rules of thumb, not backtested: free open-interest and funding history isn't available, and the daily CoinGlass readings kept in market-data build that history. Spot only, not financial advice.
+- **Structure test** (`build/structure_test.js`, before the checklist): replays two ways of buying the page's own 1D buy zone on closed 4H candles since 1 Jan 2025: *zone only* (limit buy at the middle of the zone, the page's stop) and *zone + MSS* (buy only after a 4H structure shift whose sweep reached the zone, at its FVG entry, stop below the sweep low), both to the page's Target 1. Each day's zone, stop and target are what the original page's engine showed that day (run in jsdom on that day's closed candles; checked identical to the build's own documents). Day plans are kept in `history/plans.json`, so a build only works out new days. Results (win rate to Target 1, average R, and the average without the single best trade) are shown as "Structure test" rows under the checklists. First run, 15 Nov 2026, all 4 coins: zone + MSS 25% to T1, avg +0.91R (24 trades; +0.18R without its best trade) vs zone only 7%, −0.06R (180 trades). The MSS sample is small: a lean, not proof.
 - **Closed candles only**: prices are the last closed 4H and daily candles. This week, month and year run to the last closed day.
 
 Tests (need `npm i jsdom@24 d3@7.9.0` in some folder):
