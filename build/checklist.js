@@ -7,22 +7,33 @@
      4. Price confirms  the page's own engine: last closed 4H close at or above the floor of the 1D spot buy zone
                         (Trade plan "Spot setup by timeframe", 1D row) and 4H RSI back above 30 (Trade plan, timeframe table)
 
+     5. Structure shift a bullish 4H market structure shift (build/structure.js: sweep of a swing low, close above the
+                        last lower high, with displacement) whose sweep low reached the 1D buy zone (added 15 Nov 2026).
+                        Required: without it the verdict is Wait (a tiny starter only when 3+ other checks and the weekly
+                        trend are up). With it: 3-4 green = starter buy at the MSS entry (middle of its FVG), 5 = main buy;
+                        against a down 1D trend the size is halved. Its entry and stop replace the zone's while it stands.
+
    A mirror SPOT SELL / TRIM checklist (spot only: it means take some profit, never short) is added below it:
      1. Squeeze over    CoinGlass: short liquidations were large in 24h (>= $50M) and have faded (4h < $20M, 1h < $5M)
      2. Leverage piling OI 4h change >= +2% (late longs piling in)
      3. Funding hot     OI-weighted funding >= 0.03% (3x the 0.01% baseline)
      4. Price stalls    last closed 4H close at or above the floor of the page's 1D sell zone and 4H RSI >= 70
+     5. Structure breaks a bearish 4H MSS whose sweep high reached the 1D sell zone; a bigger profit needs it (5/5)
 
    Thresholds 1-3 of both lists are rules of thumb chosen with the owner (not backtested: free open-interest and
    funding history is not available; the daily CoinGlass readings kept in market-data build that history). Check 4 reads the numbers the page itself
    shows: the original page runs in jsdom on the snapshot this build just wrote, so the buy zone and RSI are the page's.
    A check whose input is missing shows "no data" and is not counted as green. Spot only; not financial advice.
 
+   Below both, the Structure test rows: zone only vs zone + MSS replayed since 2025 (build/structure_test.js, read
+   from history/structure_test.json when it is there).
+
    usage: node build/checklist.js <node_modules dir with jsdom and d3>   (after build/build.js; edits public/snapshot.json)
    If anything fails, the snapshot is left exactly as build.js wrote it (no checklist rows) and the script exits 0
    with a warning, so the dashboard still deploys. */
 'use strict';
 const fs = require('fs'), path = require('path');
+const ST = require('./structure.js');
 const NM = path.resolve(process.argv[2] || 'node_modules');
 const ROOT = path.resolve(__dirname, '..'), PUB = path.join(ROOT, 'public');
 const SNAP = path.join(PUB, 'snapshot.json');
@@ -35,6 +46,17 @@ const rulesFor = (coin) => { const k = SCALE[coin] || 1; return Object.assign({}
 const usd = (v) => (v >= 1e9 ? '$' + (v / 1e9).toFixed(2) + 'B' : v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : '$' + Math.round(v));
 const lim = (v) => (v >= 1e6 ? '$' + +(v / 1e6).toFixed(2) + 'M' : '$' + +(v / 1e3).toFixed(0) + 'K');   // a checklist limit, e.g. $20M, $1.25M, $250K
 const money = (v) => (Math.abs(v) < 100 ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(v).toLocaleString('en-US'));   // as the page shows prices
+
+// the 4H market structure of a coin from the snapshot's own 4H candles (the ones the page shows)
+function structureOf(snapshot, coin) {
+  const d = snapshot.docs['snap/' + coin.toLowerCase() + '_4h-0'];
+  if (!d || !Array.isArray(d.rows) || d.rows.length < 60) return null;
+  const r = d.rows, B = { t: r.map((x) => x[0]), o: r.map((x) => x[1]), h: r.map((x) => x[2]), l: r.map((x) => x[3]), c: r.map((x) => x[4]) };
+  const ev = ST.detect(B), at = (e) => e && Object.assign(e, { when: B.t[e.conf_i].replace('T', ' ') + ' UTC' });
+  return { bull: at(ST.activeAt(B, ev, 1)), bear: at(ST.activeAt(B, ev, -1)), last: at(ev[ev.length - 1] || null) };
+}
+const mssTxt = (e) => `${e.dir > 0 ? 'closed above' : 'closed below'} ${money(e.level)} after a sweep to ${money(e.sweep)} (${e.when}, ${e.age} candles ago) · entry ${money(e.entry)}` +
+  (e.fvg ? ` (FVG ${money(e.fvg.lo)}–${money(e.fvg.hi)})` : ' (retest of the broken level)') + ` · stop ${money(e.stop)}`;
 
 function pageNumbers(snapshot) {   // the original page's own spot plan and timeframe table, per coin
   const { JSDOM } = require(path.join(NM, 'jsdom'));
@@ -62,7 +84,8 @@ function pageNumbers(snapshot) {   // the original page's own spot plan and time
         const ms = d1 && String(d1.sell_zone).match(/([\d,.]+)\s*[–-]\s*([\d,.]+)/);   // first sell zone ("A–B then C–D")
         out[a] = { lo: m ? Number(m[1].replace(/,/g, '')) : null, hi: m ? Number(m[2].replace(/,/g, '')) : null, zone: d1 ? d1.buy_zone : null,
           slo: ms ? Number(ms[1].replace(/,/g, '')) : null, shi: ms ? Number(ms[2].replace(/,/g, '')) : null,
-          close4h: sum.data[0].spot, rsi4h: h4 ? h4.rsi : null };
+          close4h: sum.data[0].spot, rsi4h: h4 ? h4.rsi : null,
+          trend1d: (mtf.data.find((r) => r.tf === '1D') || {}).trend || null, trend1w: (mtf.data.find((r) => r.tf === '1W') || {}).trend || null };
       }
       w.close(); resolve(out);
     };
@@ -70,7 +93,7 @@ function pageNumbers(snapshot) {   // the original page's own spot plan and time
   });
 }
 
-function rowsFor(coin, cg, px) {
+function rowsFor(coin, cg, px, st) {
   const RULES = rulesFor(coin);
   const find = (id) => (cg.rows || []).find((r) => r.id === id) || {};
   const liq = find('liq_btc_24h'), oi = find('oi_total'), fund = find('funding_oiw');
@@ -97,19 +120,30 @@ function rowsFor(coin, cg, px) {
     value: okPx ? `RSI ${px.rsi4h.toFixed(0)} · 4H ${money(px.close4h)} · zone ${money(px.lo)}–${money(px.hi)}` : 'no data yet',
     note: 'Green when the last closed 4H candle is at or above the floor of the 1D spot buy zone (Trade plan tab) and 4H RSI is back above 30.' +
       (okPx && px.close4h > px.hi ? ' Price is above the zone: a pullback toward it is the better entry.' : '') });
+  // 5. structure shift (required for a buy)
+  const b = st && st.bull, inZone = b && px && px.hi != null && b.sweep <= px.hi + 0.25 * b.atr;
+  const okS = !st || !px || px.hi == null ? null : !!inZone;
+  checks.push({ id: 'chk_mss', metric: '5. Structure shift', ok: okS,
+    value: okS == null ? 'no data yet' : inZone ? '4H MSS: ' + mssTxt(b) : b ? `4H MSS at ${money(b.level)}, but its sweep (${money(b.sweep)}) never reached the buy zone` :
+      st.bear ? `no bullish MSS: 4H shifted bearish below ${money(st.bear.level)} (${st.bear.when})` : 'no bullish MSS in the last 5 days: 4H structure has not turned up',
+    note: 'Green when a 4H candle closed above the last lower high after price swept a swing low inside the 1D buy zone, with displacement (a fair value gap or a candle body of 1.2× ATR). ' +
+      'Required for a buy: without a structure shift the zone may still be failing. Buy at the entry shown (middle of the FVG), stop below the sweep low. Stays valid 5 days unless a 4H close goes below the sweep low.' });
   const greens = checks.filter((c) => c.ok === true).length, known = checks.filter((c) => c.ok !== null).length;
-  const verdict = greens === 4 ? 'All green: main buy' : greens >= 2 ? 'Starter buy at the zone floor only' : 'Wait';
-  const sum = { group: 'Spot buy checklist', id: 'chk_sum', metric: 'Spot buy checklist', value: `${greens} / 4 green` + (known < 4 ? ` (${4 - known} no data)` : ''),
-    num: greens, signal: verdict,
+  const others = checks.slice(0, 4).filter((c) => c.ok === true).length, mss = okS === true;
+  let verdict = mss ? (greens === 5 ? 'All green: main buy' : greens >= 3 ? 'Starter buy at the MSS entry' : 'Wait: structure is up, other checks not yet')
+    : others >= 3 && px && px.trend1w === 'Up' ? 'Tiny starter only: no structure shift yet' : 'Wait: no structure shift yet';
+  if (mss && greens >= 3 && px && px.trend1d === 'Down') verdict += ' (half size: 1D trend down)';
+  const sum = { group: 'Spot buy checklist', id: 'chk_sum', metric: 'Spot buy checklist', value: '', num: greens, signal: verdict,
     note: checks.map((c) => c.metric.replace(/^\d\. /, '') + (c.ok === true ? ' ✓' : c.ok === false ? ' ✗' : ' –')).join(' · ') +
-      '. 0–1 green: wait. 2–3: a small starter buy at the bottom of the buy zone. 4: add the main part. A daily close below the plan\'s stop means the zone failed. Rules of thumb, spot only, not financial advice.' };
+      '. A 4H structure shift (check 5) is required. Without it: wait (a tiny starter only if 3+ other checks are green and the weekly trend is up). ' +
+      'With it: 3–4 green = a starter buy at the MSS entry, 5 = add the main part; half size when the 1D trend is down. A 4H close below the sweep low or a daily close below the plan\'s stop means the setup failed. Rules of thumb, spot only, not financial advice.' };
   // the mark and verdict lead the value, so they show on a phone without scrolling the table sideways
-  sum.value = `${greens}/4 green · ${verdict}` + (known < 4 ? ` (${4 - known} no data)` : '');
+  sum.value = `${greens}/5 green · ${verdict}` + (known < 5 ? ` (${5 - known} no data)` : '');
   return [sum].concat(checks.map((c) => ({ group: 'Spot buy checklist', id: c.id, metric: c.metric, value: (c.ok === true ? '✓ ' : c.ok === false ? '✗ ' : '– ') + c.value, num: c.ok === null ? null : c.ok ? 1 : 0,
     signal: c.ok === true ? '✓ Green' : c.ok === false ? '✗ Not yet' : '– No data', note: c.note })));
 }
 
-function sellRowsFor(coin, cg, px) {
+function sellRowsFor(coin, cg, px, st) {
   const RULES = rulesFor(coin);
   const find = (id) => (cg.rows || []).find((r) => r.id === id) || {};
   const liq = find('liq_btc_24h'), oi = find('oi_total'), fund = find('funding_oiw');
@@ -131,14 +165,38 @@ function sellRowsFor(coin, cg, px) {
   checks.push({ id: 'chs_price', metric: '4. Price stalls', ok: okPx ? px.close4h >= px.slo && px.rsi4h >= RULES.rsiHot : null,
     value: okPx ? `RSI ${px.rsi4h.toFixed(0)} · 4H ${money(px.close4h)} · sell zone ${money(px.slo)}–${money(px.shi)}` : 'no data yet',
     note: 'Green when the last closed 4H candle is at or above the floor of the 1D sell zone (Trade plan tab) and 4H RSI is 70 or higher.' });
+  const e = st && st.bear, inZ = e && px && px.slo != null && e.sweep >= px.slo - 0.25 * e.atr;
+  const okS = !st || !px || px.slo == null ? null : !!inZ;
+  checks.push({ id: 'chs_mss', metric: '5. Structure breaks', ok: okS,
+    value: okS == null ? 'no data yet' : inZ ? '4H bearish MSS: ' + mssTxt(e) : e ? `4H bearish MSS at ${money(e.level)}, but its sweep (${money(e.sweep)}) never reached the sell zone` : 'no bearish MSS from the sell zone in the last 5 days',
+    note: 'Green when a 4H candle closed below the last higher low after price swept a swing high inside the 1D sell zone, with displacement. Needed for the bigger profit (5/5). Spot only: it means selling some of what you hold, never shorting.' });
   const greens = checks.filter((c) => c.ok === true).length, known = checks.filter((c) => c.ok !== null).length;
-  const verdict = greens === 4 ? 'All green: take a bigger profit' : greens >= 2 ? 'Trim a little' : 'Hold';
-  const sum = { group: 'Spot sell / trim checklist', id: 'chs_sum', metric: 'Spot sell / trim checklist', value: `${greens}/4 green · ${verdict}` + (known < 4 ? ` (${4 - known} no data)` : ''),
+  const verdict = greens === 5 ? 'All green: take a bigger profit' : greens >= 2 ? 'Trim a little' : 'Hold';
+  const sum = { group: 'Spot sell / trim checklist', id: 'chs_sum', metric: 'Spot sell / trim checklist', value: `${greens}/5 green · ${verdict}` + (known < 5 ? ` (${5 - known} no data)` : ''),
     num: greens, signal: verdict,
     note: checks.map((c) => c.metric.replace(/^\d\. /, '') + (c.ok === true ? ' ✓' : c.ok === false ? ' ✗' : ' –')).join(' · ') +
-      '. 0–1 green: hold. 2–3: trim a little (take partial profit) into the sell zone. 4: take a bigger profit; don\'t buy here. Spot only: this means selling some of what you hold, never shorting. Rules of thumb, not financial advice.' };
+      '. 0–1 green: hold. 2–4: trim a little (take partial profit) into the sell zone. 5, including a 4H bearish structure shift: take a bigger profit; don\'t buy here. Spot only: this means selling some of what you hold, never shorting. Rules of thumb, not financial advice.' };
   return [sum].concat(checks.map((c) => ({ group: 'Spot sell / trim checklist', id: c.id, metric: c.metric, value: (c.ok === true ? '✓ ' : c.ok === false ? '✗ ' : '– ') + c.value, num: c.ok === null ? null : c.ok ? 1 : 0,
     signal: c.ok === true ? '✓ Green' : c.ok === false ? '✗ Not yet' : '– No data', note: c.note })));
+}
+
+// the replay of zone only vs zone + MSS (history/structure_test.json), as rows under the checklists
+function testRows(coin, T) {
+  if (!T || !T.coins || !T.coins[coin]) return [];
+  const pct = (x) => (x == null ? '–' : Math.round(x * 100) + '%'), r = (x) => (x == null ? '–' : (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(2) + 'R');
+  const line = (s) => `${pct(s.win_rate)} hit Target 1 · avg ${r(s.avg_r)} (${s.trades} trades: ${s.t1} T1, ${s.stop} stopped, ${s.timeout} timed out)`;
+  const c = T.coins[coin], a = T.all, g = 'Structure test';
+  const better = (x, y) => x.avg_r != null && y.avg_r != null && x.trades >= 5 ? (x.avg_r > y.avg_r ? 'MSS better' : 'Zone only better') : 'Too few trades';
+  const how = `Replayed on closed 4H candles from ${T.from} to ${T.to}, using the buy zone, stop and Target 1 the page itself showed each day. Zone only: limit buy at the middle of the 1D buy zone with the page's stop. ` +
+    'Zone + MSS: buy only after a 4H structure shift whose sweep reached the zone, at its FVG entry, stop below the sweep low. One trade at a time; a candle touching stop and target counts as a loss; trades close after 10 days. Past results do not promise future ones.';
+  return [
+    { group: g, id: 'stt_mss', metric: `Structure test: zone + MSS (${coin})`, value: line(c.mss), num: c.mss.avg_r, signal: better(c.mss, c.zone),
+      note: (c.mss.trades > 1 ? `Without its single best trade (${r(c.mss.best_r)}): avg ${r(c.mss.avg_r_ex_best)}. ` : '') + how },
+    { group: g, id: 'stt_zone', metric: `Structure test: zone only (${coin})`, value: line(c.zone), num: c.zone.avg_r, signal: '–', note: how },
+    { group: g, id: 'stt_all', metric: 'Structure test: all 4 coins', value: `MSS ${pct(a.mss.win_rate)} to T1, avg ${r(a.mss.avg_r)} (${a.mss.trades}) · zone only ${pct(a.zone.win_rate)}, avg ${r(a.zone.avg_r)} (${a.zone.trades})`,
+      num: a.mss.avg_r, signal: better(a.mss, a.zone),
+      note: `BTC, ETH, SOL and BNB together. Without the single best MSS trade (${r(a.mss.best_r)}) the MSS average is ${r(a.mss.avg_r_ex_best)}; zone only without its best: ${r(a.zone.avg_r_ex_best)}. The MSS sample is small, so treat it as a lean, not proof.` },
+  ];
 }
 
 (async () => {
@@ -146,11 +204,13 @@ function sellRowsFor(coin, cg, px) {
   let px;
   try { px = await pageNumbers(snap); } catch (e) { console.log('::warning::Spot checklists skipped: ' + e.message); return; }
   const report = {};
+  const TF = path.join(ROOT, 'history', 'structure_test.json'), T = fs.existsSync(TF) ? JSON.parse(fs.readFileSync(TF, 'utf8')) : null;
   for (const [coin, doc] of [['BTC', 'snap/derivs'], ['ETH', 'snap/derivs_eth'], ['SOL', 'snap/derivs_sol'], ['BNB', 'snap/derivs_bnb']]) {
     const cg = snap.docs[doc];
     if (!cg || !Array.isArray(cg.rows)) { report[coin] = 'no CoinGlass reading'; continue; }
-    cg.rows = cg.rows.filter((r) => !/^ch[ks]_/.test(String(r.id))).concat(rowsFor(coin, cg, px[coin]), sellRowsFor(coin, cg, px[coin]));
-    report[coin] = cg.rows.filter((r) => /^ch[ks]_/.test(r.id)).map((r) => r.metric + ': ' + r.value + ' [' + r.signal + ']');
+    let st = null; try { st = structureOf(snap, coin); } catch (e) { console.log('::warning::' + coin + ' structure skipped: ' + e.message); }
+    cg.rows = cg.rows.filter((r) => !/^(ch[ks]|stt)_/.test(String(r.id))).concat(rowsFor(coin, cg, px[coin], st), sellRowsFor(coin, cg, px[coin], st), testRows(coin, T));
+    report[coin] = cg.rows.filter((r) => /^(ch[ks]|stt)_/.test(r.id)).map((r) => r.metric + ': ' + r.value + ' [' + r.signal + ']');
   }
   fs.writeFileSync(SNAP, JSON.stringify(snap));
   console.log(JSON.stringify(report, null, 1));
