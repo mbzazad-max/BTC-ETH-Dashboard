@@ -12,6 +12,9 @@
                         Required: without it the verdict is Wait (a tiny starter only when 3+ other checks and the weekly
                         trend are up). With it: 3-4 green = starter buy at the MSS entry (middle of its FVG), 5 = main buy;
                         against a down 1D trend the size is halved. Its entry and stop replace the zone's while it stands.
+   When the page finds no support zone below price ("No qualified support", e.g. SOL at new lows on 15 Nov 2026) there is
+   no 1D plan: checks 4 and 5 are red with that reason and the verdict is Wait, and the sell list uses the nearest
+   resistance zone of the page's engine instead of the 1D sell zone.
 
    A mirror SPOT SELL / TRIM checklist (spot only: it means take some profit, never short) is added below it:
      1. Squeeze over    CoinGlass: short liquidations were large in 24h (>= $50M) and have faded (4h < $20M, 1h < $5M)
@@ -82,8 +85,14 @@ function pageNumbers(snapshot) {   // the original page's own spot plan and time
         const d1 = spot.data.find((r) => r.tf === '1D'), h4 = mtf.data.find((r) => r.tf === '4H');
         const m = d1 && String(d1.buy_zone).match(/([\d,.]+)\s*[–-]\s*([\d,.]+)/);
         const ms = d1 && String(d1.sell_zone).match(/([\d,.]+)\s*[–-]\s*([\d,.]+)/);   // first sell zone ("A–B then C–D")
-        out[a] = { lo: m ? Number(m[1].replace(/,/g, '')) : null, hi: m ? Number(m[2].replace(/,/g, '')) : null, zone: d1 ? d1.buy_zone : null,
-          slo: ms ? Number(ms[1].replace(/,/g, '')) : null, shi: ms ? Number(ms[2].replace(/,/g, '')) : null,
+        // no 1D plan row: the page found no support zone below price ("No qualified support"); the sell zone is then the
+        // nearest resistance zone of the page's own engine (its Key levels), so the sell checklist still works
+        const eng = w.dash.data('tp_engine'), E0 = eng.status === 'ok' ? eng.data[0] : null;
+        const noZone = !m && !!E0 && !(E0.zones || []).some((z) => z.role === 'S' && z.lo <= E0.spot);
+        const nr = !ms && E0 ? (E0.zones || []).filter((z) => z.role === 'R' && z.hi >= E0.spot).sort((x, y) => x.lo - y.lo)[0] : null;
+        out[a] = { lo: m ? Number(m[1].replace(/,/g, '')) : null, hi: m ? Number(m[2].replace(/,/g, '')) : null, zone: d1 ? d1.buy_zone : null, noZone,
+          lo365: E0 ? E0.lo365 : null,
+          slo: ms ? Number(ms[1].replace(/,/g, '')) : nr ? nr.lo : null, shi: ms ? Number(ms[2].replace(/,/g, '')) : nr ? nr.hi : null,
           close4h: sum.data[0].spot, rsi4h: h4 ? h4.rsi : null,
           trend1d: (mtf.data.find((r) => r.tf === '1D') || {}).trend || null, trend1w: (mtf.data.find((r) => r.tf === '1W') || {}).trend || null };
       }
@@ -116,22 +125,24 @@ function rowsFor(coin, cg, px, st) {
     note: 'Green at or below 0%: negative funding while price holds means shorts are crowding in, the classic spot-entry setup.' });
   // 4. price confirms
   const okPx = px && px.lo != null && px.close4h != null && px.rsi4h != null;
-  checks.push({ id: 'chk_price', metric: '4. Price confirms', ok: okPx ? px.close4h >= px.lo && px.rsi4h > RULES.rsi : null,
-    value: okPx ? `RSI ${px.rsi4h.toFixed(0)} · 4H ${money(px.close4h)} · zone ${money(px.lo)}–${money(px.hi)}` : 'no data yet',
+  const noZone = !!(px && px.noZone);
+  checks.push({ id: 'chk_price', metric: '4. Price confirms', ok: okPx ? px.close4h >= px.lo && px.rsi4h > RULES.rsi : noZone ? false : null,
+    value: okPx ? `RSI ${px.rsi4h.toFixed(0)} · 4H ${money(px.close4h)} · zone ${money(px.lo)}–${money(px.hi)}` :
+      noZone ? `no buy zone: 4H ${money(px.close4h)} is below every support zone the page finds` : 'no data yet',
     note: 'Green when the last closed 4H candle is at or above the floor of the 1D spot buy zone (Trade plan tab) and 4H RSI is back above 30.' +
       (okPx && px.close4h > px.hi ? ' Price is above the zone: a pullback toward it is the better entry.' : '') });
   // 5. structure shift (required for a buy)
   const b = st && st.bull, inZone = b && px && px.hi != null && b.sweep <= px.hi + 0.25 * b.atr;
-  const okS = !st || !px || px.hi == null ? null : !!inZone;
+  const okS = !st || !px ? null : noZone ? false : px.hi == null ? null : !!inZone;
   checks.push({ id: 'chk_mss', metric: '5. Structure shift', ok: okS,
-    value: okS == null ? 'no data yet' : inZone ? '4H MSS: ' + mssTxt(b) : b ? `4H MSS at ${money(b.level)}, but its sweep (${money(b.sweep)}) never reached the buy zone` :
+    value: okS == null ? 'no data yet' : noZone ? (b ? `4H MSS: ${mssTxt(b)}. With no support zone below, this may be a new base forming: not a buy until the page finds a zone` : 'no buy zone to confirm, and no bullish 4H MSS: price is still making new lows') : inZone ? '4H MSS: ' + mssTxt(b) : b ? `4H MSS at ${money(b.level)}, but its sweep (${money(b.sweep)}) never reached the buy zone` :
       st.bear ? `no bullish MSS: 4H shifted bearish below ${money(st.bear.level)} (${st.bear.when})` : 'no bullish MSS in the last 5 days: 4H structure has not turned up',
     note: 'Green when a 4H candle closed above the last lower high after price swept a swing low inside the 1D buy zone, with displacement (a fair value gap or a candle body of 1.2× ATR). ' +
       'Required for a buy: without a structure shift the zone may still be failing. Buy at the entry shown (middle of the FVG), stop below the sweep low. Stays valid 5 days unless a 4H close goes below the sweep low.' });
   const greens = checks.filter((c) => c.ok === true).length, known = checks.filter((c) => c.ok !== null).length;
   const others = checks.slice(0, 4).filter((c) => c.ok === true).length, mss = okS === true;
   let verdict = mss ? (greens === 5 ? 'All green: main buy' : greens >= 3 ? 'Starter buy at the MSS entry' : 'Wait: structure is up, other checks not yet')
-    : others >= 3 && px && px.trend1w === 'Up' ? 'Tiny starter only: no structure shift yet' : 'Wait: no structure shift yet';
+    : noZone ? 'Wait: no support zone below price' : others >= 3 && px && px.trend1w === 'Up' ? 'Tiny starter only: no structure shift yet' : 'Wait: no structure shift yet';
   if (mss && greens >= 3 && px && px.trend1d === 'Down') verdict += ' (half size: 1D trend down)';
   const sum = { group: 'Spot buy checklist', id: 'chk_sum', metric: 'Spot buy checklist', value: '', num: greens, signal: verdict,
     note: checks.map((c) => c.metric.replace(/^\d\. /, '') + (c.ok === true ? ' ✓' : c.ok === false ? ' ✗' : ' –')).join(' · ') +
@@ -164,7 +175,8 @@ function sellRowsFor(coin, cg, px, st) {
   const okPx = px && px.slo != null && px.close4h != null && px.rsi4h != null;
   checks.push({ id: 'chs_price', metric: '4. Price stalls', ok: okPx ? px.close4h >= px.slo && px.rsi4h >= RULES.rsiHot : null,
     value: okPx ? `RSI ${px.rsi4h.toFixed(0)} · 4H ${money(px.close4h)} · sell zone ${money(px.slo)}–${money(px.shi)}` : 'no data yet',
-    note: 'Green when the last closed 4H candle is at or above the floor of the 1D sell zone (Trade plan tab) and 4H RSI is 70 or higher.' });
+    note: 'Green when the last closed 4H candle is at or above the floor of the 1D sell zone (Trade plan tab) and 4H RSI is 70 or higher.' +
+      (px && px.noZone ? ' With no 1D plan (no support below), the sell zone is the nearest resistance zone in Key levels.' : '') });
   const e = st && st.bear, inZ = e && px && px.slo != null && e.sweep >= px.slo - 0.25 * e.atr;
   const okS = !st || !px || px.slo == null ? null : !!inZ;
   checks.push({ id: 'chs_mss', metric: '5. Structure breaks', ok: okS,
