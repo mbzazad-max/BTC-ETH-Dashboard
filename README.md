@@ -22,6 +22,7 @@ Claude only loads data; it does not run the dashboard's logic. Spot only: there 
   4. Price confirms: the last closed 4H close at or above the floor of the page's own 1D buy zone, with the page's 4H RSI above 30.
   5. Structure shift (added 15 Nov 2026, **required**): a bullish 4H market structure shift (`build/structure.js`): price swept a swing low inside the 1D buy zone, then a 4H candle closed above the last lower high, with displacement (a fair value gap, or a candle body of 1.2× ATR). It shows the entry (middle of the FVG, or a retest of the broken level) and the stop (below the sweep low), and stays valid 5 days unless a 4H close goes below the sweep low.
   Verdict: no structure shift = **Wait** (a tiny starter only when 3+ other checks are green and the weekly trend is up). With it: 3–4 green = starter buy at the MSS entry, 5/5 = main buy; half size when the 1D trend is down.
+  When the page finds no support zone below price ("No qualified support", e.g. SOL at new lows), there is no 1D plan: checks 4 and 5 turn red with that reason and the verdict is **Wait: no support zone below price**; the sell list then uses the nearest resistance zone from Key levels.
   Below it, a mirror **spot sell / trim checklist** (take some profit, never short):
   1. Squeeze over: short liquidations of at least $50M in 24h that have faded below $20M in 4h and $5M in 1h.
   2. Leverage piling in: open interest up 2% or more in 4h.
