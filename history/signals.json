@@ -1,0 +1,219 @@
+{
+ "_about": "Spot checklist signal history (build/signals.js): every change of score or green checks that touches 3 or more. Times are UTC build times.",
+ "level": 3,
+ "last": {
+  "BTC|buy": {
+   "score": 4,
+   "of": 5,
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Funding reset",
+    "Price confirms"
+   ],
+   "at": "2026-11-16T00:51:54.474Z"
+  },
+  "BTC|sell": {
+   "score": 1,
+   "of": 5,
+   "green": [
+    "Squeeze over"
+   ],
+   "at": "2026-11-16T00:51:54.474Z"
+  },
+  "ETH|buy": {
+   "score": 3,
+   "of": 5,
+   "green": [
+    "Flush over",
+    "Funding reset",
+    "Price confirms"
+   ],
+   "at": "2026-11-16T00:51:54.474Z"
+  },
+  "ETH|sell": {
+   "score": 1,
+   "of": 5,
+   "green": [
+    "Squeeze over"
+   ],
+   "at": "2026-11-16T00:51:54.474Z"
+  },
+  "SOL|buy": {
+   "score": 3,
+   "of": 5,
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Funding reset"
+   ],
+   "at": "2026-11-16T00:51:54.474Z"
+  },
+  "SOL|sell": {
+   "score": 0,
+   "of": 5,
+   "green": [],
+   "at": "2026-11-16T00:51:54.474Z"
+  },
+  "BNB|buy": {
+   "score": 3,
+   "of": 5,
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "at": "2026-11-16T00:51:54.474Z"
+  },
+  "BNB|sell": {
+   "score": 0,
+   "of": 5,
+   "green": [],
+   "at": "2026-11-16T00:51:54.474Z"
+  }
+ },
+ "log": [
+  {
+   "at": "2026-11-14T00:48:51Z",
+   "coin": "ETH",
+   "list": "buy",
+   "score": 3,
+   "of": 4,
+   "prev": 1,
+   "prev_of": 4,
+   "verdict": "Starter buy at the zone floor only",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 1953.98,
+   "candle": "2026-11-13T16:00 UTC",
+   "kind": "up"
+  },
+  {
+   "at": "2026-11-14T01:58:23Z",
+   "coin": "BNB",
+   "list": "buy",
+   "score": 3,
+   "of": 4,
+   "prev": null,
+   "prev_of": null,
+   "verdict": "Starter buy at the zone floor only",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 638.62,
+   "candle": "2026-11-13T16:00 UTC",
+   "kind": "up"
+  },
+  {
+   "at": "2026-11-14T05:17:24Z",
+   "coin": "ETH",
+   "list": "buy",
+   "score": 1,
+   "of": 4,
+   "prev": 3,
+   "prev_of": 4,
+   "verdict": "Wait",
+   "green": [
+    "Price confirms"
+   ],
+   "price": 1953.98,
+   "candle": "2026-11-13T16:00 UTC",
+   "kind": "end"
+  },
+  {
+   "at": "2026-11-14T05:17:24Z",
+   "coin": "BNB",
+   "list": "buy",
+   "score": 1,
+   "of": 4,
+   "prev": 3,
+   "prev_of": 4,
+   "verdict": "Wait",
+   "green": [
+    "Price confirms"
+   ],
+   "price": 638.62,
+   "candle": "2026-11-13T16:00 UTC",
+   "kind": "end"
+  },
+  {
+   "at": "2026-11-16T00:41:43Z",
+   "coin": "BTC",
+   "list": "buy",
+   "score": 4,
+   "of": 5,
+   "prev": 1,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Funding reset",
+    "Price confirms"
+   ],
+   "price": 65351.05,
+   "candle": "2026-11-15T20:00 UTC",
+   "kind": "up"
+  },
+  {
+   "at": "2026-11-16T00:41:43Z",
+   "coin": "ETH",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 2,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Funding reset",
+    "Price confirms"
+   ],
+   "price": 1835.35,
+   "candle": "2026-11-15T20:00 UTC",
+   "kind": "up"
+  },
+  {
+   "at": "2026-11-16T00:41:43Z",
+   "coin": "SOL",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 1,
+   "prev_of": 5,
+   "verdict": "Wait: no support zone below price",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Funding reset"
+   ],
+   "price": 72.77,
+   "candle": "2026-11-15T20:00 UTC",
+   "kind": "up"
+  },
+  {
+   "at": "2026-11-16T00:41:43Z",
+   "coin": "BNB",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 1,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 596.79,
+   "candle": "2026-11-15T20:00 UTC",
+   "kind": "up"
+  }
+ ],
+ "from": "2026-11-13"
+}
