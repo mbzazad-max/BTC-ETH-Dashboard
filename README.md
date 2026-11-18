@@ -36,3 +36,7 @@ Claude only loads data; it does not run the dashboard's logic. Spot only: there 
 Tests (need `npm i jsdom@24 d3@7.9.0` in some folder):
 - Parity, the original page's own Refresh vs build.js on identical data: `node tests/parity.js <market-data dir> <node_modules dir>`. 13 Nov 2026: all 20 saved documents identical.
 - Render, the Cloudflare page for BTC and ETH: `node tests/render.js <node_modules dir>`.
+
+## Bull case / Bear case email alerts (18 Nov 2026)
+
+`build/levels.js` runs on every build after `signals.js`. For BTC, ETH, SOL and BNB it runs the original page's engine (in jsdom, like `structure_test.js`) on the candles closed by the end of each UTC day and stores the Trade plan's two lines with their exact levels in `history/levels.json`. When a new daily candle closes **above the Bull case level** or **below the Bear case level** that the page showed the day before, the case is logged as active and the workflow opens a GitHub issue that mentions the owner, so GitHub emails it (same as the checklist alerts). One email per coin, side and day; the first run only sets the starting point. Test: `node tests/levels.js <node_modules> <market-data>`.
