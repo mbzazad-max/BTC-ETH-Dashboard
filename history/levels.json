@@ -1,0 +1,126 @@
+{
+ "_about": "Bull case / Bear case levels the page showed at the end of each UTC day, and every daily close beyond them (build/levels.js).",
+ "page": "d8bf30ca06aafe38",
+ "days": {
+  "2026-11-16": {
+   "BTC": {
+    "spot": 64882.87,
+    "bull": "A daily close above 70,937 (top of the 69,063–70,937 resistance, 5 methods) hands control to buyers; next stop 71,196–73,069.",
+    "bear": "A daily close below 62,216 (floor of the 62,216–64,089 support, 4 methods) hands control to sellers; next support 47,303–49,177.",
+    "bull_level": 70936.65361296134,
+    "bull_zone": [
+     69063.34638703866,
+     70936.65361296134
+    ],
+    "bear_level": 62216.191283071814,
+    "bear_zone": [
+     62216.191283071814,
+     64089.498508994475
+    ]
+   },
+   "ETH": {
+    "spot": 1820.67,
+    "bull": "A daily close above 1,963 (top of the 1,889–1,963 resistance, 6 methods) hands control to buyers; next stop 2,061–2,135.",
+    "bear": "A daily close below 1,742 (floor of the 1,742–1,816 support, 4 methods) hands control to sellers; no qualified support below, so risk is open until a new base forms.",
+    "bull_level": 1963.3006341836392,
+    "bull_zone": [
+     1888.7943562334328,
+     1963.3006341836392
+    ],
+    "bear_level": 1741.8740175539292,
+    "bear_zone": [
+     1741.8740175539292,
+     1816.3802955041356
+    ]
+   },
+   "SOL": {
+    "spot": 71.58,
+    "bull": "A daily close above 78.6 (top of the 75.3–78.6 resistance, 4 methods) hands control to buyers; next stop 82.9–86.2.",
+    "bear": "No qualified support below: a new base has to form first.",
+    "bull_level": 78.63032368351718,
+    "bull_zone": [
+     75.29967631648283,
+     78.63032368351718
+    ],
+    "bear_level": null,
+    "bear_zone": null
+   },
+   "BNB": {
+    "spot": 591.23,
+    "bull": "A daily close above 672.2 (top of the 653.9–672.2 resistance, 6 methods) hands control to buyers; next stop 678.7–696.9.",
+    "bear": "A daily close below 580.5 (floor of the 580.5–598.8 support, 3 methods) hands control to sellers; next support 549.6–567.8.",
+    "bull_level": 672.1589423170552,
+    "bull_zone": [
+     653.9012917868871,
+     672.1589423170552
+    ],
+    "bear_level": 580.541174734916,
+    "bear_zone": [
+     580.541174734916,
+     598.7988252650841
+    ]
+   }
+  },
+  "2026-11-17": {
+   "BTC": {
+    "spot": 64947.35,
+    "bull": "A daily close above 67,501 (top of the 65,656–67,501 resistance, 4 methods) hands control to buyers; next stop 69,242–71,087.",
+    "bear": "A daily close below 63,245 (floor of the 63,245–65,090 support, 4 methods) hands control to sellers; next support 47,317–49,163.",
+    "bull_level": 67500.85978346407,
+    "bull_zone": [
+     65655.81021653592,
+     67500.85978346407
+    ],
+    "bear_level": 63245.18649648973,
+    "bear_zone": [
+     63245.18649648973,
+     65090.236063417884
+    ]
+   },
+   "ETH": {
+    "spot": 1824.88,
+    "bull": "A daily close above 1,961 (top of the 1,888–1,961 resistance, 6 methods) hands control to buyers; next stop 1,962–2,023.",
+    "bear": "A daily close below 1,743 (floor of the 1,743–1,816 support, 4 methods) hands control to sellers; no qualified support below, so risk is open until a new base forms.",
+    "bull_level": 1961.4121778092967,
+    "bull_zone": [
+     1887.6227768555368,
+     1961.4121778092967
+    ],
+    "bear_level": 1742.5386274807238,
+    "bear_zone": [
+     1742.5386274807238,
+     1816.3280284344837
+    ]
+   },
+   "SOL": {
+    "spot": 75.19,
+    "bull": "A daily close above 96.6 (top of the 93.3–96.6 resistance, 6 methods) hands control to buyers; next stop 99.4–102.7.",
+    "bear": "No qualified support below: a new base has to form first.",
+    "bull_level": 96.57842971656925,
+    "bull_zone": [
+     93.25018573289469,
+     96.57842971656925
+    ],
+    "bear_level": null,
+    "bear_zone": null
+   },
+   "BNB": {
+    "spot": 597.47,
+    "bull": "A daily close above 626.2 (top of the 608.3–626.2 resistance, 5 methods) hands control to buyers; next stop 654.3–672.2.",
+    "bear": "A daily close below 549.7 (floor of the 549.7–567.6 support, 3 methods) hands control to sellers; no qualified support below, so risk is open until a new base forms.",
+    "bull_level": 626.2227663175769,
+    "bull_zone": [
+     608.3372336824231,
+     626.2227663175769
+    ],
+    "bear_level": 549.7372336824232,
+    "bear_zone": [
+     549.7372336824232,
+     567.622766317577
+    ]
+   }
+  }
+ },
+ "log": [],
+ "checked": "2026-11-17"
+}
