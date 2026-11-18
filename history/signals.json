@@ -9,64 +9,60 @@
     "Flush over",
     "Price confirms"
    ],
-   "at": "2026-11-18T00:36:16.675Z"
+   "at": "2026-11-18T00:40:35.235Z"
   },
   "BTC|sell": {
-   "score": 1,
+   "score": 0,
    "of": 5,
-   "green": [
-    "Squeeze over"
-   ],
-   "at": "2026-11-18T00:36:16.675Z"
+   "green": [],
+   "at": "2026-11-18T00:40:35.235Z"
   },
   "ETH|buy": {
-   "score": 4,
+   "score": 3,
    "of": 5,
    "green": [
     "Flush over",
     "Leverage steady",
-    "Funding reset",
     "Price confirms"
    ],
-   "at": "2026-11-18T00:36:16.675Z"
+   "at": "2026-11-18T00:40:35.235Z"
   },
   "ETH|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-18T00:36:16.675Z"
+   "at": "2026-11-18T00:40:35.235Z"
   },
   "SOL|buy": {
-   "score": 3,
+   "score": 1,
    "of": 5,
    "green": [
-    "Flush over",
-    "Leverage steady",
-    "Funding reset"
+    "Flush over"
    ],
-   "at": "2026-11-18T00:36:16.675Z"
+   "at": "2026-11-18T00:40:35.235Z"
   },
   "SOL|sell": {
-   "score": 0,
+   "score": 1,
    "of": 5,
-   "green": [],
-   "at": "2026-11-18T00:36:16.675Z"
+   "green": [
+    "Leverage piling in"
+   ],
+   "at": "2026-11-18T00:40:35.235Z"
   },
   "BNB|buy": {
-   "score": 3,
+   "score": 2,
    "of": 5,
    "green": [
     "Flush over",
-    "Leverage steady",
     "Price confirms"
    ],
-   "at": "2026-11-18T00:36:16.675Z"
+   "at": "2026-11-18T00:40:35.235Z"
   },
   "BNB|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-18T00:36:16.675Z"
+   "at": "2026-11-18T00:40:35.235Z"
   }
  },
  "log": [
@@ -246,6 +242,57 @@
    "price": 1823.79,
    "candle": "2026-11-16T16:00 UTC",
    "kind": "up"
+  },
+  {
+   "at": "2026-11-18T00:40:35.235Z",
+   "coin": "ETH",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 4,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 1824.88,
+   "candle": "2026-11-17T20:00 UTC",
+   "kind": "down"
+  },
+  {
+   "at": "2026-11-18T00:40:35.235Z",
+   "coin": "SOL",
+   "list": "buy",
+   "score": 1,
+   "of": 5,
+   "prev": 3,
+   "prev_of": 5,
+   "verdict": "Wait: no support zone below price",
+   "green": [
+    "Flush over"
+   ],
+   "price": 75.19,
+   "candle": "2026-11-17T20:00 UTC",
+   "kind": "end"
+  },
+  {
+   "at": "2026-11-18T00:40:35.235Z",
+   "coin": "BNB",
+   "list": "buy",
+   "score": 2,
+   "of": 5,
+   "prev": 3,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Price confirms"
+   ],
+   "price": 597.47,
+   "candle": "2026-11-17T20:00 UTC",
+   "kind": "end"
   }
  ],
  "from": "2026-11-13"
