@@ -9,29 +9,28 @@
     "Flush over",
     "Price confirms"
    ],
-   "at": "2026-11-18T12:11:44.032Z"
+   "at": "2026-11-18T16:12:01.473Z"
   },
   "BTC|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-18T12:11:44.032Z"
+   "at": "2026-11-18T16:12:01.473Z"
   },
   "ETH|buy": {
-   "score": 3,
+   "score": 2,
    "of": 5,
    "green": [
     "Flush over",
-    "Leverage steady",
-    "Price confirms"
+    "Leverage steady"
    ],
-   "at": "2026-11-18T12:11:44.032Z"
+   "at": "2026-11-18T16:12:01.473Z"
   },
   "ETH|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-18T12:11:44.032Z"
+   "at": "2026-11-18T16:12:01.473Z"
   },
   "SOL|buy": {
    "score": 1,
@@ -39,7 +38,7 @@
    "green": [
     "Flush over"
    ],
-   "at": "2026-11-18T12:11:44.032Z"
+   "at": "2026-11-18T16:12:01.473Z"
   },
   "SOL|sell": {
    "score": 1,
@@ -47,7 +46,7 @@
    "green": [
     "Leverage piling in"
    ],
-   "at": "2026-11-18T12:11:44.032Z"
+   "at": "2026-11-18T16:12:01.473Z"
   },
   "BNB|buy": {
    "score": 2,
@@ -56,13 +55,13 @@
     "Flush over",
     "Price confirms"
    ],
-   "at": "2026-11-18T12:11:44.032Z"
+   "at": "2026-11-18T16:12:01.473Z"
   },
   "BNB|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-18T12:11:44.032Z"
+   "at": "2026-11-18T16:12:01.473Z"
   }
  },
  "log": [
@@ -292,6 +291,23 @@
    ],
    "price": 597.47,
    "candle": "2026-11-17T20:00 UTC",
+   "kind": "end"
+  },
+  {
+   "at": "2026-11-18T16:12:01.473Z",
+   "coin": "ETH",
+   "list": "buy",
+   "score": 2,
+   "of": 5,
+   "prev": 3,
+   "prev_of": 5,
+   "verdict": "Wait: no support zone below price",
+   "green": [
+    "Flush over",
+    "Leverage steady"
+   ],
+   "price": 1768.59,
+   "candle": "2026-11-18T12:00 UTC",
    "kind": "end"
   }
  ],
