@@ -1,7 +1,8 @@
 /* Test for build/levels.js on a copy of the repo: replays the last 14 closed days and checks that
    1. every stored level is the exact number the page's own Bull / Bear line shows (same rounding);
    2. a case is logged as active exactly when that day's daily close is beyond the PREVIOUS day's level;
-   3. alerts are made only for the newest closed day, and never on the very first run.
+   3. an email only when a case became active on the newest daily close (the cases in the title, only those coins in the
+      body), never on the first run, never twice for the same close.
    usage: node tests/levels.js <node_modules dir with jsdom and d3> <market-data dir> */
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os'), assert = require('assert/strict'), { execFileSync } = require('child_process');
@@ -31,8 +32,15 @@ for (let t = Date.parse(from + 'T00:00:00Z') / 1000 + DAY; dayOf(t) <= last; t +
 }
 assert.deepEqual(L.log.map((e) => e.day + ' ' + e.coin + ' ' + e.side).sort(), expect.sort(), 'logged triggers differ from the daily closes');
 const alerts = fs.existsSync(AL) ? JSON.parse(fs.readFileSync(AL, 'utf8')) : [];
-assert.equal(alerts.length, L.log.filter((e) => e.day === last).length, 'alerts must be exactly the newest day\'s triggers');
+const lastHits = L.log.filter((e) => e.day === last);
+assert.equal(alerts.length, lastHits.length ? 1 : 0, 'an email only when a case became active on the newest close');
+// the email for the busiest day in the replay
+const { dailyEmail } = require(path.join(REPO, 'build/levels.js'));
+const busy = Object.entries(L.log.reduce((m, e) => ((m[e.day] = (m[e.day] || 0) + 1), m), {})).sort((a, b) => b[1] - a[1])[0][0];
+const mail = dailyEmail(busy, L, H), hitsB = L.log.filter((e) => e.day === busy);
+for (const e of hitsB) { assert(mail.title.includes(e.coin + ' ' + (e.side === 'bull' ? 'Bull' : 'Bear') + ' case active'), 'trigger missing from the title'); assert(mail.body.includes(e.case_text), 'broken line missing'); }
+for (const C of ['BTC', 'ETH', 'SOL', 'BNB']) assert.equal(mail.body.includes('### ' + C), hitsB.some((e) => e.coin === C), C + ': only active coins belong in the email');
 // running again on the same data sends nothing new
 run(); assert(!fs.existsSync(AL), 'the same trigger was sent twice');
 fs.rmSync(tmp, { recursive: true, force: true });
-console.log(JSON.stringify({ ok: true, days_checked: Object.keys(L.days).length, lines_matched_page_text: checked, triggers_last_14_days: L.log.map((e) => `${e.day} ${e.coin} ${e.side} (close ${e.close} vs ${Math.round(e.level * 100) / 100})`), newest_day_alerts: alerts.map((a) => a.title) }, null, 1));
+console.log(JSON.stringify({ ok: true, days_checked: Object.keys(L.days).length, lines_matched_page_text: checked, triggers_last_14_days: L.log.map((e) => `${e.day} ${e.coin} ${e.side} (close ${e.close} vs ${Math.round(e.level * 100) / 100})`), example_email_title: mail.title, example_email_body: mail.body }, null, 1));

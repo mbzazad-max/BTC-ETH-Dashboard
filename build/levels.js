@@ -12,9 +12,11 @@
        page changes);
      - for each newly closed day D: close(D) > bull level of D-1 -> "Bull case active"; close(D) < bear level of D-1 ->
        "Bear case active"; logged in history/levels.json;
-     - writes an alert for each new trigger of the newest closed day to /tmp/level_alerts.json; the workflow opens a GitHub
-       issue that mentions the owner and GitHub emails it (same as the checklist signal alerts). The very first run only
-       sets the starting point and sends nothing.
+     - ONLY when at least one case became active on the newest daily close (owner's choice), writes ONE email to
+       /tmp/level_alerts.json: the active cases in the title (e.g. "BTC Bear case active, ETH Bear case active (14 Nov 2026
+       daily close)"), and for each such coin the close, the line it broke and the new Bull / Bear lines. Quiet days send
+       nothing. The workflow opens a GitHub issue that mentions the owner and GitHub emails it (same as the checklist
+       alerts). Never twice for the same close; the very first run only sets the starting point.
    Daily candles are the dashboard's own (BTC: stored Coinbase history, then Binance; others: Binance), closed only.
    Any failure exits 0 with a warning, so the dashboard still deploys.
 
@@ -64,6 +66,26 @@ function pageLevels(NM, snapshot) {
   });
 }
 
+// the email for a daily close on which at least one case became active: those cases in the title; for each such coin the
+// close, the level it broke, the line it came from, and the new Bull / Bear lines
+function dailyEmail(D, L, H) {
+  const prevD = dayOf(Date.parse(D + 'T00:00:00Z') / 1000 - DAY), now = L.days[D] || {}, before = L.days[prevD] || {};
+  const hits = L.log.filter((e) => e.day === D), parts = [];
+  const move = (a, b) => (a == null && b == null ? 'none' : a == null ? 'new ' + fmt(b) : b == null ? 'gone (was ' + fmt(a) + ')' : fmt(a) === fmt(b) ? 'unchanged at ' + fmt(b) : fmt(a) + ' → ' + fmt(b));
+  for (const C of Object.keys(COINS)) {
+    const x = now[C], p = before[C], c = H[C] && H[C].d1.find((r) => dayOf(r.t) === D); if (!x || !hits.some((e) => e.coin === C)) continue;
+    const act = hits.filter((e) => e.coin === C).map((e) => (e.side === 'bull' ? '🟢 **Bull case became active**: closed ' + fmt(e.close) + ' above ' + fmt(e.level) : '🔴 **Bear case became active**: closed ' + fmt(e.close) + ' below ' + fmt(e.level)));
+    parts.push(`### ${C}${c ? ' — daily close ' + fmt(c.c) : ''}\n` + (act.length ? act.join('\n\n') + '\n\n' : '') +
+      hits.filter((e) => e.coin === C).map((e) => `What the Trade plan said before this close:\n> ${e.case_text}`).join('\n\n') + '\n\n' +
+      `The Trade plan now says:\n- **Bull case:** ${x.bull}\n- **Bear case:** ${x.bear}\n\n` +
+      `Bull level ${move(p && p.bull_level, x.bull_level)} · Bear level ${move(p && p.bear_level, x.bear_level)}`);
+  }
+  const tag = hits.map((e) => e.coin + ' ' + (e.side === 'bull' ? 'Bull' : 'Bear') + ' case active').join(', ');
+  return { title: `${tag} (${nice(D)} daily close)`,
+    body: `A case becomes active when a daily candle closes beyond the level the Trade plan showed the day before. ${nice(D)} daily close (11 AM Sydney):\n\n` +
+      parts.join('\n\n---\n\n') + `\n\nDashboard: https://dashboards.mbzazad.workers.dev/btc-eth/ (Trade plan)\n\nSpot only. Not financial advice.` };
+}
+
 async function main() {
   const NM = path.resolve(process.argv[2] || 'node_modules'), MD = path.resolve(process.argv[3] || '../market-data');
   const H = histories(MD);
@@ -77,7 +99,7 @@ async function main() {
   const start = L.checked ? Date.parse(L.checked + 'T00:00:00Z') / 1000 : Date.parse(lastDay + 'T00:00:00Z') / 1000;
   for (let t = start - DAY; dayOf(t) <= lastDay; t += DAY) if (!L.days[dayOf(t)]) need.push(dayOf(t));
   for (const D of need.slice(-15)) L.days[D] = await pageLevels(NM, docsAt(H, D));
-  const alerts = [];
+  const alerts = []; let digest = null;
   for (let t = start + (L.checked ? DAY : 0); dayOf(t) <= lastDay; t += DAY) {
     const D = dayOf(t), prev = L.days[dayOf(t - DAY)];
     if (!prev) continue;
@@ -89,28 +111,20 @@ async function main() {
       if (p.bear_level != null && c.c < p.bear_level) hits.push({ side: 'bear', level: p.bear_level, zone: p.bear_zone, text: p.bear });
       for (const h of hits) {
         if (L.log.some((e) => e.day === D && e.coin === C && e.side === h.side)) continue;
-        const e = { day: D, coin: C, side: h.side, close: c.c, level: h.level, zone: h.zone, case_text: h.text, at: iso(Math.floor(Date.now() / 1000)) };
-        L.log.push(e);
-        if (!first && D === lastDay) {
-          const now = L.days[D] && L.days[D][C], word = h.side === 'bull' ? 'Bull' : 'Bear', dir = h.side === 'bull' ? 'above' : 'below';
-          alerts.push({ title: `${C} ${word} case active: daily close ${fmt(c.c)} ${dir} ${fmt(h.level)} (${nice(D)})`,
-            body: `**${C} ${word} case is now active.**\n\nThe ${nice(D)} daily candle closed at **${fmt(c.c)}**, ${dir} **${fmt(h.level)}** ` +
-              `(${h.side === 'bull' ? 'top of the ' + fmt(h.zone[0]) + '–' + fmt(h.zone[1]) + ' resistance' : 'floor of the ' + fmt(h.zone[0]) + '–' + fmt(h.zone[1]) + ' support'}).\n\n` +
-              `What the Trade plan said before this close:\n> ${h.text}\n\n` +
-              (now ? `The Trade plan now says:\n- Bull case: ${now.bull}\n- Bear case: ${now.bear}\n\n` : '') +
-              `Dashboard: https://dashboards.mbzazad.workers.dev/btc-eth/ (Trade plan → ${C})\n\nSpot only. Not financial advice.` });
-        }
+        L.log.push({ day: D, coin: C, side: h.side, close: c.c, level: h.level, zone: h.zone, case_text: h.text, at: iso(Math.floor(Date.now() / 1000)) });
       }
     }
+    if (D === lastDay && !first) digest = D;
   }
+  if (digest && L.log.some((e) => e.day === digest)) alerts.push(dailyEmail(digest, L, H));   // only when a case became active
   L.checked = lastDay;
   const keepFrom = dayOf(Date.parse(lastDay + 'T00:00:00Z') / 1000 - KEEP_DAYS * DAY);
   for (const D of Object.keys(L.days)) if (D < keepFrom) delete L.days[D];
   fs.mkdirSync(HIST, { recursive: true }); fs.writeFileSync(LOGF, JSON.stringify(L, null, 1));
   if (alerts.length) fs.writeFileSync(ALERTS, JSON.stringify(alerts));
-  console.log(`levels: checked to ${lastDay}; ${alerts.length} new alert(s)${first ? ' (first run: starting point only, no email)' : ''}`);
+  console.log(`levels: checked to ${lastDay}; ${alerts.length ? 'daily email: ' + alerts[0].title : 'no email'}${first ? ' (first run: starting point only, no email)' : ''}`);
   for (const C of Object.keys(COINS)) { const x = L.days[lastDay] && L.days[lastDay][C]; if (x) console.log(`  ${C}: bull above ${fmt(x.bull_level)}, bear below ${fmt(x.bear_level)}`); }
 }
 
 if (require.main === module) main().catch((e) => { console.log('::warning::Bull/Bear alerts skipped: ' + (e && e.stack || e)); process.exit(0); });
-module.exports = { pageLevels };
+module.exports = { pageLevels, dailyEmail };
