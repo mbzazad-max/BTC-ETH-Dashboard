@@ -3,21 +3,6 @@
  "level": 3,
  "last": {
   "BTC|buy": {
-   "score": 2,
-   "of": 5,
-   "green": [
-    "Flush over",
-    "Price confirms"
-   ],
-   "at": "2026-11-19T07:38:41.960Z"
-  },
-  "BTC|sell": {
-   "score": 0,
-   "of": 5,
-   "green": [],
-   "at": "2026-11-19T07:38:41.960Z"
-  },
-  "ETH|buy": {
    "score": 3,
    "of": 5,
    "green": [
@@ -25,13 +10,28 @@
     "Leverage steady",
     "Price confirms"
    ],
-   "at": "2026-11-19T07:38:41.960Z"
+   "at": "2026-11-19T07:43:05.972Z"
+  },
+  "BTC|sell": {
+   "score": 0,
+   "of": 5,
+   "green": [],
+   "at": "2026-11-19T07:43:05.972Z"
+  },
+  "ETH|buy": {
+   "score": 2,
+   "of": 5,
+   "green": [
+    "Flush over",
+    "Price confirms"
+   ],
+   "at": "2026-11-19T07:43:05.972Z"
   },
   "ETH|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-19T07:38:41.960Z"
+   "at": "2026-11-19T07:43:05.972Z"
   },
   "SOL|buy": {
    "score": 1,
@@ -39,30 +39,29 @@
    "green": [
     "Flush over"
    ],
-   "at": "2026-11-19T07:38:41.960Z"
+   "at": "2026-11-19T07:43:05.972Z"
   },
   "SOL|sell": {
-   "score": 1,
+   "score": 0,
    "of": 5,
-   "green": [
-    "Leverage piling in"
-   ],
-   "at": "2026-11-19T07:38:41.960Z"
+   "green": [],
+   "at": "2026-11-19T07:43:05.972Z"
   },
   "BNB|buy": {
-   "score": 2,
+   "score": 3,
    "of": 5,
    "green": [
     "Flush over",
+    "Leverage steady",
     "Price confirms"
    ],
-   "at": "2026-11-19T07:38:41.960Z"
+   "at": "2026-11-19T07:43:05.972Z"
   },
   "BNB|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-19T07:38:41.960Z"
+   "at": "2026-11-19T07:43:05.972Z"
   }
  },
  "log": [
@@ -326,6 +325,59 @@
     "Price confirms"
    ],
    "price": 1793.88,
+   "candle": "2026-11-19T00:00 UTC",
+   "kind": "up"
+  },
+  {
+   "at": "2026-11-19T07:43:05.972Z",
+   "coin": "BTC",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 2,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 63205.64,
+   "candle": "2026-11-19T00:00 UTC",
+   "kind": "up"
+  },
+  {
+   "at": "2026-11-19T07:43:05.972Z",
+   "coin": "ETH",
+   "list": "buy",
+   "score": 2,
+   "of": 5,
+   "prev": 3,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Price confirms"
+   ],
+   "price": 1793.88,
+   "candle": "2026-11-19T00:00 UTC",
+   "kind": "end"
+  },
+  {
+   "at": "2026-11-19T07:43:05.972Z",
+   "coin": "BNB",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 2,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 584.05,
    "candle": "2026-11-19T00:00 UTC",
    "kind": "up"
   }
