@@ -63,6 +63,10 @@ const EDITS = [
   ["bull_targets: bullT.map((z) => `${f(z.lo)}–${f(z.hi)}`), bear_targets: bearT.map((z) => `${f(z.lo)}–${f(z.hi)}`),",
    "bull_targets: bullT.length ? bullT.map((z) => `${f(z.lo)}–${f(z.hi)}`) : (E.minor_r || []).filter((z) => z.lo > up).slice(0, 2).map((z) => z.txt + ', minor'), bear_targets: bearT.length ? bearT.map((z) => `${f(z.lo)}–${f(z.hi)}`) : (E.minor_s || []).filter((z) => z.hi < dn).slice(0, 2).map((z) => z.txt + ', minor'),", ONE],
   // prices: whole dollars from $100 up (unchanged), two decimals below $100
+  // Market sentiment card: USDT.D on its own (owner, 20 Nov 2026), next to the USDT.D + USDC.D row, same columns and the same
+  // 90-day-range read; context only (score 0), so the tilt sum and the Forecast are unchanged and stablecoin dominance is not counted twice
+  ["      out[out.length - 1].range_pos = pos;\n    }\n",
+   "      out[out.length - 1].range_pos = pos;\n    }\n    if (gauge_usdtd.length) {\n      const ut = gauge_usdtd.map((x) => ({ day: x.day, close: x.close }));\n      const w = ut.slice(-90).map((x) => x.close), hi = Math.max(...w), lo = Math.min(...w), pos = hi > lo ? (w[w.length - 1] - lo) / (hi - lo) : 0.5;\n      const pp = Math.round(pos * 100) + '% of its 90-day range';\n      row('usdtd', 'USDT dominance (USDT.D)', ut[ut.length - 1].close.toFixed(2) + '%', ut,\n        (pos >= 0.85 ? `Near the top (${pp}): cash parked in USDT, fear high.` : pos <= 0.15 ? `Near the bottom (${pp}): little USDT on the sidelines.` : `Mid-range (${pp}).`) + ' Context only: scored through stablecoin dominance above.', 0);\n      out[out.length - 1].range_pos = pos;\n    }\n", ONE],
   [/Math\.round\((\w+)\)\.toLocaleString\('en-US'\)/g, '__px0($1)', 8],
   [/d3\.format\(',\.0f'\)\((\w+)\)/g, '__pxd($1)', 4],
 ];

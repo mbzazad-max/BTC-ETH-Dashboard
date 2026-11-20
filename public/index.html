@@ -1384,6 +1384,14 @@ dash.calc('mkt_sentiment', {
             : `Mid-range (${pp}). Its weekly change mostly mirrors BTC's own move, so no extra signal until it reaches the top or bottom of its range.`, sc);
       out[out.length - 1].range_pos = pos;
     }
+    if (gauge_usdtd.length) {
+      const ut = gauge_usdtd.map((x) => ({ day: x.day, close: x.close }));
+      const w = ut.slice(-90).map((x) => x.close), hi = Math.max(...w), lo = Math.min(...w), pos = hi > lo ? (w[w.length - 1] - lo) / (hi - lo) : 0.5;
+      const pp = Math.round(pos * 100) + '% of its 90-day range';
+      row('usdtd', 'USDT dominance (USDT.D)', ut[ut.length - 1].close.toFixed(2) + '%', ut,
+        (pos >= 0.85 ? `Near the top (${pp}): cash parked in USDT, fear high.` : pos <= 0.15 ? `Near the bottom (${pp}): little USDT on the sidelines.` : `Mid-range (${pp}).`) + ' Context only: scored through stablecoin dominance above.', 0);
+      out[out.length - 1].range_pos = pos;
+    }
     let t2D7 = null;
     if (gauge_total2.length) {
       t2D7 = chg(gauge_total2, 7);
