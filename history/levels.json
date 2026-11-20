@@ -175,6 +175,62 @@
      567.5497472948928
     ]
    }
+  },
+  "2026-11-19": {
+   "BTC": {
+    "spot": 61986.73,
+    "bull": "A daily close above 66,656 (top of the 64,796–66,656 resistance, 5 methods) hands control to buyers; next stop 69,218–71,078.",
+    "bear": "A daily close below 47,310 (floor of the 47,310–49,170 support, 3 methods) hands control to sellers; no qualified support below, so risk is open until a new base forms.",
+    "bull_level": 66655.94404711471,
+    "bull_zone": [
+     64795.977507263415,
+     66655.94404711471
+    ],
+    "bear_level": 47310.016730074356,
+    "bear_zone": [
+     47310.016730074356,
+     49169.983269925644
+    ]
+   },
+   "ETH": {
+    "spot": 1757.32,
+    "bull": "A daily close above 1,962 (top of the 1,890–1,962 resistance, 5 methods) hands control to buyers; next stop 1,998–2,027.",
+    "bear": "No qualified support below: a new base has to form first.",
+    "bull_level": 1962.4908485792457,
+    "bull_zone": [
+     1890.4491355119762,
+     1962.4908485792457
+    ],
+    "bear_level": null,
+    "bear_zone": null
+   },
+   "SOL": {
+    "spot": 73.15,
+    "bull": "A daily close above 96.6 (top of the 93.4–96.6 resistance, 6 methods) hands control to buyers; next stop 98.3–101.5.",
+    "bear": "No qualified support below: a new base has to form first.",
+    "bull_level": 96.58726195339268,
+    "bull_zone": [
+     93.38028627359186,
+     96.58726195339268
+    ],
+    "bear_level": null,
+    "bear_zone": null
+   },
+   "BNB": {
+    "spot": 580.25,
+    "bull": "A daily close above 617.6 (top of the 600.2–617.6 resistance, 5 methods) hands control to buyers; next stop 644.0–658.0.",
+    "bear": "A daily close below 550.0 (floor of the 550.0–567.4 support, 3 methods) hands control to sellers; no qualified support below, so risk is open until a new base forms.",
+    "bull_level": 617.5567261474112,
+    "bull_zone": [
+     600.1698383140392,
+     617.5567261474112
+    ],
+    "bear_level": 549.9865560833141,
+    "bear_zone": [
+     549.9865560833141,
+     567.373443916686
+    ]
+   }
   }
  },
  "log": [
@@ -192,5 +248,5 @@
    "at": "2026-11-19T00:16:19.000Z"
   }
  ],
- "checked": "2026-11-18"
+ "checked": "2026-11-19"
 }
