@@ -14,7 +14,7 @@ on:
     - cron: '15 1 * * *'   # once a day as a safety net (12:15 Sydney summer time), after the 11:30 TradingView load; data commits trigger it too
   push:
     branches: [main]
-    paths: ['.github/workflows/build.yml', 'public/index.html', 'public/shim.js', 'public/cloud.js', 'worker/**', 'build/**', 'config/**', 'tools/**', 'wrangler.jsonc', 'reference/**']
+    paths: ['.github/workflows/build.yml', 'public/index.html', 'public/shim.js', 'public/cloud.js', 'public/usdtd.js', 'history/total2es_1d.csv', 'worker/**', 'build/**', 'config/**', 'tools/**', 'wrangler.jsonc', 'reference/**']
 permissions:
   contents: write
   issues: write   # build/signals.js: a GitHub issue per new 3/5+ checklist signal, which GitHub emails to the owner
@@ -60,6 +60,8 @@ jobs:
         run: node build/usdtd.js md
       - name: BTC cycle tab, BTC vs its 20/50/100/200 SMAs, top/bottom watch and every BTC swing (keeps the last good file if it fails)
         run: node build/usdtd.js md --asset=btc
+      - name: TOTAL2ES tab, altcoin market cap vs its 20/50/100/200 SMAs, top/bottom watch and every swing (keeps the last good file if it fails)
+        run: node build/usdtd.js md --asset=total2es
       - name: Save the new snapshot (one commit)
         run: |
           git config user.name "github-actions[bot]"
@@ -69,6 +71,8 @@ jobs:
           [ -f history/usdtd_log.json ] && git add history/usdtd_log.json
           [ -f public/btccycle.json ] && git add public/btccycle.json
           [ -f history/btc_log.json ] && git add history/btc_log.json
+          [ -f public/total2es.json ] && git add public/total2es.json
+          [ -f history/total2es_log.json ] && git add history/total2es_log.json
           if git diff --cached --quiet; then echo "Nothing changed."; exit 0; fi
           git commit -q -m "Dashboard build $(node -p "require('./public/freshness.json').generated")"
           for i in 1 2 3 4 5; do git push -q origin HEAD:main && exit 0; git pull -q --rebase origin main; sleep $((i*2)); done

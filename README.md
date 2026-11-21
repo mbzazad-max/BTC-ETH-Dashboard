@@ -76,3 +76,8 @@ Owner's request: the same analysis as the USDT.D tab, for BTC itself, in a "BTC 
 ## Swing vs cycle (21 Nov 2026)
 
 The slower layer of each watch is now called **Swing confirmation**: it fires on every 90-day swing (BTC about 2.4 a year, USDT.D about 3 a year since 2017), and only 5 of 21 BTC swings were cycle tops or bottoms. Its statuses read "Swing top/bottom likely in". Each watch now has a **Cycle** line from the weekly read: whether a confirmed swing here could also be the cycle turn, and which weekly closes would show it (e.g. after the Nov 2022 low: 20W Jan 2023, 50W Mar 2023, 100W Oct 2023). The swings table tags the BTC cycle tops and bottoms (Dec 2017, Dec 2018, Nov 2021, Nov 2022, Oct 2025).
+
+## TOTAL2ES tab (22 Nov 2026)
+
+A "TOTAL2ES" tab after "BTC cycle": the same engine and renderer (`build/usdtd.js --asset=total2es`, `window.__total2` in `public/usdtd.js`) on TradingView CRYPTOCAP:TOTAL2ES, the altcoin market cap without BTC and stablecoins. It reads like BTC (up = bullish): weekly read (below the 100W = Bear, …), bottom watch first while it makes lows, top watch, fast early warning, every swing since 2015 (permanent log `history/total2es_log.json`), SMA behaviour by BTC market, weekly crosses, past bears, turning points. BTC stays as the context column.
+Data: the daily history from Apr 2014 was fetched once from TradingView and stored in `history/total2es_1d.csv` (to 20 Nov 2026); new days are made from the closed 4H candles the PC uploads to market-data (`tv/CRYPTOCAP_TOTAL2ES/4H`). Output `public/total2es.json`. Engine flags: `UP` (price-like direction, BTC and TOTAL2ES), `IS_BTC`, `IS_T2`; renderer: `B` (price-like), `OB` (BTC itself), `T2`.
