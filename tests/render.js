@@ -40,7 +40,7 @@ async function view(asset) {
 (async () => {
   const out = [await view('BTC'), await view('ETH'), await view('SOL'), await view('BNB')];
   const noCg = (v) => (v.asset === 'SOL' || v.asset === 'BNB') && /not saved yet/.test(v.cg);   // until the CoinGlass load includes SOL and BNB
-  const bad = out.filter((v) => v.errors.length || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || (v.spot < 3 && !/no buy zone/.test(v.chk4)) || (v.derivs < 6 && !noCg(v)) || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || (v.checklist < 15 && !noCg(v)) || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8 || v.usdtd.cards < 7 || v.usdtd.lines < 5 || !/This week's read/.test(v.usdtd.now));
+  const bad = out.filter((v) => v.errors.length || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || (v.spot < 3 && !/no buy zone/.test(v.chk4)) || (v.derivs < 6 && !noCg(v)) || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || (v.checklist < 15 && !noCg(v)) || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8 || v.usdtd.cards < 9 || v.usdtd.lines < 5 || !/This week's read/.test(v.usdtd.now));
   console.log(JSON.stringify(out, null, 1));
   process.exit(bad.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(2); });

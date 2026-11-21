@@ -63,6 +63,35 @@
     return c;
   }
 
+  // ---------- 0b. top watch / bottom watch ----------
+  function watchCard(w) {
+    if (!w) return null;
+    const top = w.kind === 'top', X = w.extreme;
+    const c = card(top ? 'Top watch: has USDT.D peaked? <span style="font-weight:400;color:var(--muted);font-size:13px">(USDT.D top = crypto bottom or relief rally)</span>'
+      : 'Bottom watch: has USDT.D bottomed? <span style="font-weight:400;color:var(--muted);font-size:13px">(USDT.D bottom = crypto top or pullback)</span>',
+    `Tracks the signs after the latest USDT.D 90-day ${top ? 'high' : 'low'}: <b>${f2(X.v)}</b> on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}, BTC ${usd(X.btc)}. Signs usually fire in this order; each is counted from that ${top ? 'high' : 'low'}.`);
+    const col = /likely in|confirmed/.test(w.status) ? (top ? 'var(--up)' : 'var(--dn)') : /warning|setup/.test(w.status) ? 'var(--warn)' : 'var(--muted)';
+    c.append(el('p', null, `<b style="color:${col}">${w.status}.</b> ${w.fired} of 6 signs fired.`));
+    const rows = w.steps.map((s) => [
+      s.label + (s.level != null ? ` <span style="color:var(--muted)">(${f2(s.level)})</span>` : ''),
+      s.fired ? `<b style="color:${top ? 'var(--up)' : 'var(--dn)'}">✓ ${dd(s.fired)}</b>${s.on_now ? '' : ' <span style="color:var(--muted)">(since reversed)</span>'}` : '<span style="color:var(--muted)">not yet</span>',
+      s.n ? `${s.moved}%` : '—', s.n ? `${s.stayed}%` : '—', s.n ? `${s.days} d` : '—', s.n || '—'
+    ]);
+    c.append(table(['Sign', 'Fired since the ' + (top ? 'high' : 'low'), `USDT.D then moved 20%+ ${top ? 'down' : 'up'}`, `That ${top ? 'high' : 'low'} stayed the ${top ? 'top' : 'bottom'} (4 months)`, 'Typically fires', 'Times seen'], rows));
+    const d = w.divergence;
+    if (d) {
+      const what = top
+        ? `Weekly RSI: strongest prior week ${dd(d.prev_week)} closed ${f2(d.prev_close)} with RSI ${d.prev_rsi}; week of ${dd(d.week)}${d.forming ? ' (forming)' : ''} ${f2(d.close)} with RSI ${d.rsi}. ` +
+          (d.divergence ? '<b style="color:var(--up)">Bearish divergence</b>: near or above the prior peak on weaker momentum, the clue that marked the final top in Nov 2022 (RSI 83.8 in Jun 2022 vs 65.5 at the higher Nov 2022 peak).'
+            : d.near ? 'Near the prior peak but momentum is not weaker: no divergence.' : `Not near the prior peak yet (within 3% would be ${f2(d.prev_close * 0.97)}+). A move there with RSI still under ${d.prev_rsi} would be a divergence like Nov 2022.`)
+        : `Weekly RSI: weakest prior week ${dd(d.prev_week)} closed ${f2(d.prev_close)} with RSI ${d.prev_rsi}; week of ${dd(d.week)}${d.forming ? ' (forming)' : ''} ${f2(d.close)} with RSI ${d.rsi}. ` +
+          (d.divergence ? '<b style="color:var(--dn)">Bullish divergence for USDT.D</b>: near or below the prior low on stronger momentum (crypto top warning).' : d.near ? 'Near the prior low but momentum is not stronger: no divergence.' : 'Not near the prior low: no divergence check yet.');
+      c.append(el('p', { className: 'rf-note' }, what));
+    }
+    c.append(el('p', { className: 'rf-note' }, `How to read it: the early daily signs are good at calling a USDT.D ${top ? 'pullback (crypto relief rally)' : 'bounce (crypto pullback)'} but often not THE ${top ? 'top' : 'bottom'}: ${top ? 'in bears USDT.D tops in waves (Jun 2022 then Nov 2022; Jun 2026 then now)' : 'in bulls USDT.D bottoms in waves (Mar 2024 then Dec 2024)'}. The weekly signs are later but surer (weekly dates = the Sunday the week closed). Past record = every USDT.D 90-day ${top ? 'high' : 'low'} since Apr 2019.`));
+    return c;
+  }
+
   // ---------- 1. now ----------
   function nowCard() {
     const N = J.now, L = N.last, up100 = N.weekly[100].pct > 0;
@@ -216,7 +245,7 @@
     const R = root(); if (!R) return;
     if (!J) { R.replaceChildren(el('div', { className: 'br-card' }, '<p class="note">Loading USDT.D analysis…</p>')); return; }
     const foot = el('p', { className: 'rf-note' }, `Built ${J.generated}. ${J.source} BTC cycle dates (closes): top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025. Patterns from past cycles, not a forecast; not financial advice.`);
-    R.replaceChildren(...[readCard()].filter(Boolean), nowCard(), chartCard(), behaveCard(), signalsCard(), analogCard(), turnCard(), foot);
+    R.replaceChildren(...[readCard(), watchCard(J.top_watch), watchCard(J.bottom_watch)].filter(Boolean), nowCard(), chartCard(), behaveCard(), signalsCard(), analogCard(), turnCard(), foot);
   }
   let rs = null;
   window.addEventListener('resize', () => { clearTimeout(rs); rs = setTimeout(() => { const R = root(); if (J && R && !R.closest('[hidden]')) render(); }, 200); });
