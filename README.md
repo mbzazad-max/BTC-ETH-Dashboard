@@ -72,3 +72,7 @@ Owner's request: the same analysis as the USDT.D tab, for BTC itself, in a "BTC 
 - BTC weekly read: below the 100W = Bear; in a Bear, holding near the prior year's low with a daily close back above the 20D or 50D = Bear, possibly ending (fired Dec 2018 at $3.9k, Jul–Nov 2022 at $17–21k, Jun 2026); below the 50W but above the 100W = Turning bear; above both with the 50W under the 100W = Turning bull; else Bull.
 - Look-ahead fix for both tabs (21 Nov 2026): "possibly ending" compares with the prior year's peak (USDT.D) / low (BTC) as known on each day, not with peaks found later. The USDT.D record now shows more of these (2 hits since 2021, several false alarms).
 - `public/usdtd.js` is one renderer for both tabs (`window.__usdtd`, `window.__btccyc`); the ★ fast sign is the one with the best record on each side. tools/page.js edits add the tab, its section and the draw() hook. `tests/render.js` opens both tabs.
+
+## Swing vs cycle (21 Nov 2026)
+
+The slower layer of each watch is now called **Swing confirmation**: it fires on every 90-day swing (BTC about 2.4 a year, USDT.D about 3 a year since 2017), and only 5 of 21 BTC swings were cycle tops or bottoms. Its statuses read "Swing top/bottom likely in". Each watch now has a **Cycle** line from the weekly read: whether a confirmed swing here could also be the cycle turn, and which weekly closes would show it (e.g. after the Nov 2022 low: 20W Jan 2023, 50W Mar 2023, 100W Oct 2023). The swings table tags the BTC cycle tops and bottoms (Dec 2017, Dec 2018, Nov 2021, Nov 2022, Oct 2025).

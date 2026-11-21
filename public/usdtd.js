@@ -102,13 +102,31 @@ function make(A) {
     return box;
   }
 
+  // the cycle level for a watch: is a confirmed swing here also the cycle turn? Only the weekly read can say (owner, 21 Nov 2026)
+  function cycleLine(top) {
+    const R = J.read, v = R ? R.verdict : '', N = J.now.weekly, w50 = f2(N[50].sma), w100 = f2(N[100].sma);
+    const bear = /^Bear/.test(v), bull = v === 'Bull';
+    let t;
+    if (B) t = top
+      ? (bull ? `BTC is above its 50W (${w50}) and 100W (${w100}) (read: Bull): a confirmed top here is a swing top until BTC closes weeks below the 50W, then the 100W (the Nov 2021 top: 50W lost Dec 2021, 100W May 2022).`
+        : `the weekly read is already ${v}: a top here would be a relief-rally top inside the bear, not the cycle top.`)
+      : (bear ? `BTC is still below its 100W (${w100}) (read: ${v}): a confirmed low here is a swing low until BTC closes weeks back above the 50W (${w50}) and then the 100W. The Nov 2022 low turned into the cycle low that way: 20W back in Jan 2023, 50W Mar 2023, 100W Oct 2023.`
+        : `the weekly read is ${v}: a low here would be a dip inside the uptrend, not a cycle low.`);
+    else t = top
+      ? (bear || /Turning bear/.test(v) ? `USDT.D is still above its 100W (${w100}) (read: ${v}): a confirmed USDT.D top here is a swing top (crypto relief rally) until USDT.D closes weeks below the 50W (${w50}) and then the 100W. After the Nov 2022 peak that took until Jan 2023 (50W) and Oct 2023 (100W).`
+        : `the weekly read is ${v}: USDT.D is already in the bull pattern, so a top here is a pause in a crypto uptrend.`)
+      : (bull || /Turning bull/.test(v) ? `USDT.D is below its 100W (${w100}) (read: ${v}): a confirmed USDT.D low here is a swing low (crypto pullback) until USDT.D closes weeks back above the 50W (${w50}) and the 100W, as after the Nov 2021 and Oct 2025 tops.`
+        : `the weekly read is already ${v}: a USDT.D low here marks the top of a crypto relief rally inside the bear, not the cycle top.`);
+    return '<b style="color:var(--ink)">Cycle:</b> ' + t;
+  }
+
   function watchCard(w) {
     if (!w) return null;
     const top = w.kind === 'top', X = w.extreme;
     const c = card(B ? (top ? 'Top watch: has BTC peaked? <span style="font-weight:400;color:var(--muted);font-size:13px">(time to protect profits)</span>' : 'Bottom watch: has BTC bottomed? <span style="font-weight:400;color:var(--muted);font-size:13px">(where buyers step in)</span>')
       : top ? 'Top watch: has USDT.D peaked? <span style="font-weight:400;color:var(--muted);font-size:13px">(USDT.D top = crypto bottom or relief rally)</span>'
       : 'Bottom watch: has USDT.D bottomed? <span style="font-weight:400;color:var(--muted);font-size:13px">(USDT.D bottom = crypto top or pullback)</span>',
-    `Two layers: a fast daily early warning (30-day ${top ? 'highs' : 'lows'}) and the slower cycle confirmation (90-day ${top ? 'highs' : 'lows'}, daily and weekly signs). Use the first for timing, the second to judge whether it is the real turn. Signs usually fire in the order listed.`);
+    `Two layers: a fast daily early warning (30-day ${top ? 'highs' : 'lows'}) and the slower swing confirmation (90-day ${top ? 'highs' : 'lows'}, daily and weekly signs, about 2–3 swings a year). Use the first for timing, the second to confirm a swing ${top ? 'top' : 'low'}; whether it is the cycle ${top ? 'top' : 'low'} is shown by the weekly read (the "Cycle" line). Signs usually fire in the order listed.`);
     const col = /likely in|confirmed/.test(w.status) ? tc(top) : /warning|setup/.test(w.status) ? 'var(--warn)' : 'var(--muted)';
     if (w.fast) c.append(fastSection(w.fast, top));
     const T2 = w.since_turn, opp = top ? 'low' : 'high', own = top ? 'high' : 'low';
@@ -116,8 +134,9 @@ function make(A) {
     const track = w.mode === 'waiting' ? `nothing to track yet: ${NM} made a new 90-day ${opp} on ${dd(T2.day)} (${f2(T2.v)}${bt(T2.btc)})`
       : w.mode === 'since_turn' ? `the ${own} since the ${dd(T2.day)} ${NM} ${opp} (${f2(T2.v)}): <b>${f2(X.v)}</b> on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}${bt(X.btc)}`
       : `the latest ${NM} <b>90-day ${own}</b>: ${f2(X.v)} on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}${bt(X.btc)}`;
-    c.append(el('p', { className: 'rf-note' }, `<b style="color:var(--ink);font-size:14px">🧭 Cycle confirmation (daily + weekly)</b> · slower signs after ${track}. Is it turning into the real cycle ${top ? 'top' : 'bottom'}? (It restarts by itself after each opposite turn.)`));
+    c.append(el('p', { className: 'rf-note' }, `<b style="color:var(--ink);font-size:14px">🧭 Swing confirmation (daily + weekly)</b> · slower signs after ${track}. Is it a swing ${top ? 'top' : 'low'}, the kind that comes 2–3 times a year? (It restarts by itself after each opposite turn.)`));
     c.append(el('p', null, `<b style="color:${col}">${w.status}.</b> ${w.fired} of 6 signs fired.` + (X ? ` <span style="color:var(--muted)">BTC: ${usd(X.btc)} at the ${B ? '' : 'USDT.D '}${own} → ${usd(w.btc_now)} now (<span class="${cls(w.btc_now_chg)}">${sp(w.btc_now_chg)}</span>).</span>` : '')));
+    c.append(el('p', { className: 'rf-note', style: 'border-left:3px solid var(--acc);padding-left:8px' }, cycleLine(top)));
     if (w.previous) { const P = w.previous; c.append(el('p', { className: 'rf-note' }, `Previous episode: ${NM} ${own} ${f2(P.extreme.v)} on ${dd(P.extreme.day)}${B ? '' : ` (BTC ${usd(P.extreme.btc)})`}, ${P.fired} of 6 signs fired, ended as: ${P.status}. Full record in "Every ${NM} top and bottom" below.`)); }
     const rows = w.steps.map((s) => [
       `<span style="white-space:nowrap">${s.label}${s.level != null ? ` <span style="color:var(--muted)">(${f2(s.level)})</span>` : ''}</span>`,
@@ -146,8 +165,8 @@ function make(A) {
   function swingsCard() {
     const SW = J.swings; if (!SW || !SW.length) return null;
     const c = card(`Every ${NM} top and bottom since ${B ? '2015' : '2017'}`,
-      B ? 'Each swing between a BTC 90-day high and the next 90-day low (and back). For each: the extreme, when the best early sign and the cycle signs fired (BTC change since the extreme), and what happened up to the next swing. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/btc_log.json).'
-        : 'Each swing between a USDT.D 90-day high and the next 90-day low (and back). <b>USDT.D top</b> = crypto low, <b>USDT.D bottom</b> = crypto high. For each: the extreme with BTC that day, when the best early sign and the cycle signs fired (BTC change since the extreme), and what happened up to the next swing. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/usdtd_log.json).');
+      B ? 'Each swing between a BTC 90-day high and the next 90-day low (and back). For each: the extreme, when the best early sign and the swing signs fired (BTC change since the extreme), and what happened up to the next swing. Swings come 2–3 times a year; the few that were BTC cycle tops or bottoms are tagged. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/btc_log.json).'
+        : 'Each swing between a USDT.D 90-day high and the next 90-day low (and back). <b>USDT.D top</b> = crypto low, <b>USDT.D bottom</b> = crypto high. For each: the extreme with BTC that day, when the best early sign and the swing signs fired (BTC change since the extreme), and what happened up to the next swing. Swings come 2–3 times a year; the few that were BTC cycle tops or bottoms are tagged. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/usdtd_log.json).');
     const STAR = { top: starOf(J.top_watch && J.top_watch.fast), bottom: starOf(J.bottom_watch && J.bottom_watch.fast) };
     const ds = (x) => { const d = new Date(x + 'T00:00:00Z'); return d.getUTCDate() + ' ' + MON[d.getUTCMonth()] + " '" + String(d.getUTCFullYear()).slice(2); };
     const sg = (w, id, layer) => { const x = (layer === 'fast' ? w.fast : w.slow).find((y) => y.id === id); if (!x || !x.day) return '<span style="color:var(--muted)">—</span>'; const live = w.live && w.live[layer + '|' + id]; return `${ds(x.day)} <span class="${cls(x.btc_chg)}">${sp(x.btc_chg)}</span>${live ? ' <span title="logged live ' + live + '" style="color:var(--acc)">●</span>' : ''}`; };
@@ -159,11 +178,14 @@ function make(A) {
         : w.next ? `→ ${dd(w.next.day)} (${w.next.days} d): USDT.D <span class="${top ? 'pos' : 'neg'}">${sp(w.next.usdtd_chg)}</span>, BTC <span class="${cls(w.next.btc_chg)}">${sp(w.next.btc_chg)}</span>`
         : `<b>open</b>, ${w.so_far.days} d so far: USDT.D ${sp(w.so_far.usdtd_chg)}, BTC <span class="${cls(w.so_far.btc_chg)}">${sp(w.so_far.btc_chg)}</span>`;
       const st = STAR[w.kind];
-      return [pill + (w.open ? ' <b style="color:var(--warn)">now</b>' : ''), `<b>${dd(E.day)}</b><br>${B ? usd(E.btc) : `${f2(E.usdtd)}% · BTC ${usd(E.btc)}`}`,
+      const CY = { '2017-12-16': 'top', '2018-12-15': 'bottom', '2021-11-08': 'top', '2022-11-21': 'bottom', '2025-10-06': 'top' };
+      const cy = Object.keys(CY).find((k) => Math.abs(Date.parse(k) - Date.parse(E.day)) <= 21 * 864e5);
+      const cyTag = cy ? `<br><span class="rf-pill" style="margin-top:3px">BTC cycle ${CY[cy]}</span>` : '';
+      return [pill + (w.open ? ' <b style="color:var(--warn)">now</b>' : '') + cyTag, `<b>${dd(E.day)}</b><br>${B ? usd(E.btc) : `${f2(E.usdtd)}% · BTC ${usd(E.btc)}`}`,
         `★ ${st ? sg(w, st.id, 'fast') : '—'}<br><span style="color:var(--muted)">${nFast}/6 fast signs</span>`,
         ['d20', 'd50', 'w20', 'w50'].map((id) => `<span style="color:var(--muted)">${id.replace('d', '').replace('w', '') + (id[0] === 'd' ? 'D' : 'W')}</span> ${sg(w, id, 'slow')}`).join('<br>'), after];
     });
-    const head = ['Swing', B ? 'Extreme' : 'Extreme (BTC that day)', 'Early ★ (daily)', 'Cycle signs: 20D · 50D · 20W · 50W', 'Then (to the next swing)'];
+    const head = ['Swing', B ? 'Extreme' : 'Extreme (BTC that day)', 'Early ★ (daily)', 'Swing signs: 20D · 50D · 20W · 50W', 'Then (to the next swing)'];
     c.append(table(head, rows.slice(0, 10)));
     if (rows.length > 10) { const d = el('details'); d.append(el('summary', { className: 'rf-note' }, `Show all ${rows.length} swings since ${B ? '2015' : '2017'}`)); d.append(table(head, rows.slice(10))); c.append(d); }
     c.append(el('p', { className: 'rf-note' }, `★ = the fast sign with the best record: for ${NM} tops, ${STAR.top ? STAR.top.label.charAt(0).toLowerCase() + STAR.top.label.slice(1) : '—'}; for ${NM} bottoms, ${STAR.bottom ? STAR.bottom.label.charAt(0).toLowerCase() + STAR.bottom.label.slice(1) : '—'}. Signs are crosses (${NM} had to be on the other side of the level after the extreme).${B ? '' : ' Dates before 2020 are in the USDT launch years.'}`));
