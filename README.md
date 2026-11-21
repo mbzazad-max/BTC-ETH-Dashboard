@@ -46,3 +46,13 @@ Tests (need `npm i jsdom@24 d3@7.9.0` in some folder):
 ## USDT.D row (20 Nov 2026)
 
 Owner's request: USDT.D on its own in the Market sentiment card, right under Stablecoin dominance (USDT + USDC), same columns (now, 1D/7D/30D change, trend, 90-day range read). Context only (tilt 0), so the overall tilt and the Forecast are unchanged and stablecoin dominance is not counted twice. One edit in tools/page.js; data is the gauge_usdtd series the page already loads.
+
+## USDT.D tab (21 Nov 2026)
+
+Owner's request: a tab after Forecast that shows how USDT.D behaves around its 20/50/100/200 SMAs on the daily and weekly charts in BTC bull and bear markets (2020–21 bull, 2022 bear, 2023–25 bull, the bear since Oct 2025), and 2022 vs now.
+
+- `build/usdtd.js` (every build, after levels.js) writes `public/usdtd.json` from market-data only: USDT.D daily = the stored `tv/CRYPTOCAP_USDT.D/1D` history, then days made from closed `tv/CRYPTOCAP_USDT.D/4H` candles (same rule as build.js); weekly = Monday weeks of those days (the current week shown as forming); BTC closes (Coinbase BTCUSD, then Binance BTCUSDT) for context. It writes nothing when the result is unchanged, and keeps the last good file on any failure.
+- Regimes are fixed BTC cycle dates (closes): top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025; the last one runs to today until a new date is added to `REGIMES`.
+- Measures: share of closes above each SMA; "support held" / "resistance held" (a bar that came from one side and reached the SMA, low/high within 1%, then closed back on its side); weekly 50W/100W/200W closes and SMA crosses since 2020; swing lows (bears) and highs (bulls) with the nearest SMA; stretch over the SMAs at the 2022 peak and today; how the 2022 peak unwound.
+- `public/usdtd.js` draws it (d3 chart with Daily/Weekly and 1Y/3Y/since-2020). `tools/page.js` edits: the tab button, the page section, draw() hands the tab to `window.__usdtd`, `#usdtd` opens it. The original page is unchanged.
+- `tests/render.js` now also opens the USDT.D tab for every coin.

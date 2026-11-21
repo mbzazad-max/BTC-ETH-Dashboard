@@ -228,7 +228,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
     <button id="patterns" role="tab" aria-selected="false">Patterns</button>
     <button id="plan" role="tab" aria-selected="false">Trade plan</button>
     <button id="forecast" role="tab" aria-selected="false">Forecast</button>
+    <button id="usdtd" role="tab" aria-selected="false">USDT.D</button>
   </nav>
+
+  <section class="br-page" data-page="usdtd" hidden><div id="usdtd-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div><script src="usdtd.js"></script></section>
 
   <section class="br-page" data-page="daily" hidden>
     <div class="br-card" id="daily-heatmap">
@@ -2178,6 +2181,8 @@ dash.calc('headline', {
       drawHeat('[data-source="quarterly_grid"]', 'quarterly_grid', ['Q1', 'Q2', 'Q3', 'Q4', 'Year'], flagsFor('quarterly_roi', (r) => 'Q' + r.q));
       const s = dash.data('season_quarter');
       drawBars(document.querySelector('[data-source="season_quarter"]'), s.status === 'ok' ? s.data : [], 'period', 'avg', seasonLines);
+    } else if (current === 'usdtd') {
+      if (window.__usdtd) window.__usdtd();
     } else {
       const yd = dash.data('yearly_roi');
       const rows = yd.status === 'ok' ? yd.data : [];
@@ -2200,7 +2205,7 @@ dash.calc('headline', {
 
   dash.onData(draw);
   const named = location.hash.slice(1);
-  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast'].includes(named)) show(named);
+  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'usdtd'].includes(named)) show(named);
 })();
 </script>
 <script>
