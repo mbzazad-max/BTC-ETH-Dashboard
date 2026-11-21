@@ -67,15 +67,16 @@ const EDITS = [
   // 90-day-range read; context only (score 0), so the tilt sum and the Forecast are unchanged and stablecoin dominance is not counted twice
   ["      out[out.length - 1].range_pos = pos;\n    }\n",
    "      out[out.length - 1].range_pos = pos;\n    }\n    if (gauge_usdtd.length) {\n      const ut = gauge_usdtd.map((x) => ({ day: x.day, close: x.close }));\n      const w = ut.slice(-90).map((x) => x.close), hi = Math.max(...w), lo = Math.min(...w), pos = hi > lo ? (w[w.length - 1] - lo) / (hi - lo) : 0.5;\n      const pp = Math.round(pos * 100) + '% of its 90-day range';\n      row('usdtd', 'USDT dominance (USDT.D)', ut[ut.length - 1].close.toFixed(2) + '%', ut,\n        (pos >= 0.85 ? `Near the top (${pp}): cash parked in USDT, fear high.` : pos <= 0.15 ? `Near the bottom (${pp}): little USDT on the sidelines.` : `Mid-range (${pp}).`) + ' Context only: scored through stablecoin dominance above.', 0);\n      out[out.length - 1].range_pos = pos;\n    }\n", ONE],
+  // BTC cycle tab (owner, 21 Nov 2026): the same renderer (public/usdtd.js, window.__btccyc) on public/btccycle.json.
   // USDT.D tab (owner, 21 Nov 2026): a tab after Forecast that shows public/usdtd.json (build/usdtd.js) through public/usdtd.js;
   // the page's own show() already switches any .br-page, draw() hands the new tab to window.__usdtd, and #usdtd opens it
   ['    <button id="forecast" role="tab" aria-selected="false">Forecast</button>\n',
-   '    <button id="forecast" role="tab" aria-selected="false">Forecast</button>\n    <button id="usdtd" role="tab" aria-selected="false">USDT.D</button>\n', ONE],
+   '    <button id="forecast" role="tab" aria-selected="false">Forecast</button>\n    <button id="usdtd" role="tab" aria-selected="false">USDT.D</button>\n    <button id="btccyc" role="tab" aria-selected="false">BTC cycle</button>\n', ONE],
   ['  <section class="br-page" data-page="daily" hidden>',
-   '  <section class="br-page" data-page="usdtd" hidden><div id="usdtd-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div><script src="usdtd.js"></script></section>\n\n  <section class="br-page" data-page="daily" hidden>', ONE],
+   '  <section class="br-page" data-page="usdtd" hidden><div id="usdtd-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div><script src="usdtd.js"></script></section>\n\n  <section class="br-page" data-page="btccyc" hidden><div id="btccyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="daily" hidden>', ONE],
   ["    } else {\n      const yd = dash.data('yearly_roi');",
-   "    } else if (current === 'usdtd') {\n      if (window.__usdtd) window.__usdtd();\n    } else {\n      const yd = dash.data('yearly_roi');", ONE],
-  ["'patterns', 'plan', 'forecast'].includes(named)", "'patterns', 'plan', 'forecast', 'usdtd'].includes(named)", ONE],
+   "    } else if (current === 'usdtd') {\n      if (window.__usdtd) window.__usdtd();\n    } else if (current === 'btccyc') {\n      if (window.__btccyc) window.__btccyc();\n    } else {\n      const yd = dash.data('yearly_roi');", ONE],
+  ["'patterns', 'plan', 'forecast'].includes(named)", "'patterns', 'plan', 'forecast', 'usdtd', 'btccyc'].includes(named)", ONE],
   [/Math\.round\((\w+)\)\.toLocaleString\('en-US'\)/g, '__px0($1)', 8],
   [/d3\.format\(',\.0f'\)\((\w+)\)/g, '__pxd($1)', 4],
 ];

@@ -24,13 +24,14 @@ async function view(asset) {
   } });
   const w = dom.window, d = w.document, sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(2500);
-  for (const tab of ['patterns', 'plan', 'forecast', 'usdtd']) { d.getElementById(tab).click(); await sleep(400); }
+  for (const tab of ['patterns', 'plan', 'forecast', 'usdtd', 'btccyc']) { d.getElementById(tab).click(); await sleep(400); }
   const t = (s) => { const e = d.querySelector(s); return e ? e.textContent.trim().replace(/\s+/g, ' ') : ''; };
   const rows = (src) => [...d.querySelectorAll(`table[data-source="${src}"] tbody tr`)].length;
   const v = { asset, h1: t('h1'), lede: t('#lede'), status: t('#rfAt'), cg: t('#rfCg'), cmc: t('#rfCr'), fc1w: t('#fc-7 .big'), price4h: t('.tp-strip .v'),
     levels: rows('tp_levels'), spot: rows('tp_spot'), derivs: rows('derivs'), signals: rows('fc_signals'), sentiment: rows('mkt_sentiment'), events: rows('fc_events'),
     monthly: rows('monthly_grid'), checklist: [...d.querySelectorAll('table[data-source="derivs"] tbody tr')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()).filter((x) => /checklist|Flush over|Leverage steady|Funding reset|Price confirms|Squeeze over|Leverage piling in|Funding hot|Price stalls|Structure shift|Structure breaks|Structure test/.test(x)).length, futures: !!d.getElementById('plan-futures'), chk4: [...d.querySelectorAll('table[data-source="derivs"] tbody tr')].map((r) => r.textContent).find((x) => /^\s*4\. Price confirms/.test(x)) || '', refresh_hidden: d.getElementById('rfBtn').hidden && d.getElementById('ghRefresh').hidden,
     fresh: t('#fresh summary'), errors,
+    btccyc: { cards: d.querySelectorAll('#btccyc-root .br-card').length, lines: d.querySelectorAll('#btccyc-root svg path').length, now: t('#btccyc-root h2') },
     usdtd: { cards: d.querySelectorAll('#usdtd-root .br-card').length, lines: d.querySelectorAll('#usdtd-root svg path').length, now: t('#usdtd-root h2'), tables: d.querySelectorAll('#usdtd-root table').length },
     // the artifact host's head must be there: UTF-8 and "hidden" really hides (else the loading box and empty pills show)
     loading_box_shown: !d.getElementById('rfEmpty').hidden || !/\[hidden\]:not\(\[hidden=until-found i\]\)\{display:none!important\}/.test(d.head.innerHTML),
@@ -40,7 +41,7 @@ async function view(asset) {
 (async () => {
   const out = [await view('BTC'), await view('ETH'), await view('SOL'), await view('BNB')];
   const noCg = (v) => (v.asset === 'SOL' || v.asset === 'BNB') && /not saved yet/.test(v.cg);   // until the CoinGlass load includes SOL and BNB
-  const bad = out.filter((v) => v.errors.length || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || (v.spot < 3 && !/no buy zone/.test(v.chk4)) || (v.derivs < 6 && !noCg(v)) || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || (v.checklist < 15 && !noCg(v)) || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8 || v.usdtd.cards < 10 || v.usdtd.lines < 5 || !/This week's read/.test(v.usdtd.now));
+  const bad = out.filter((v) => v.errors.length || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || (v.spot < 3 && !/no buy zone/.test(v.chk4)) || (v.derivs < 6 && !noCg(v)) || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || (v.checklist < 15 && !noCg(v)) || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8 || v.usdtd.cards < 10 || v.btccyc.cards < 10 || v.btccyc.lines < 5 || !/This week's read for BTC/.test(v.btccyc.now) || v.usdtd.lines < 5 || !/This week's read/.test(v.usdtd.now));
   console.log(JSON.stringify(out, null, 1));
   process.exit(bad.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(2); });

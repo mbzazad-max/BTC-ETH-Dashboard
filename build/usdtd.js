@@ -17,14 +17,22 @@
      crosses     weekly closes through the 50W / 100W / 200W, and the 20W/50W, 50W/100W, 20W/100W and 50D/200D crosses
      turning pts daily swing lows in bears / highs in bulls (10 days each side) and weekly (3 weeks), with the nearest SMA
    usage: node build/usdtd.js <market-data dir>   -> public/usdtd.json
-   Any failure keeps the last good public/usdtd.json and exits 0 with a warning, so the dashboard still deploys. */
+   Any failure keeps the last good public/usdtd.json and exits 0 with a warning, so the dashboard still deploys.
+   BTC cycle tab (owner, 21 Nov 2026): the same engine run with --asset=btc on BTC itself (Coinbase BTCUSD daily from Dec 2014,
+   then Binance BTCUSDT) -> public/btccycle.json and history/btc_log.json. For BTC the "bear side" of an SMA is BELOW it (for
+   USDT.D it is ABOVE), the weekly read has its own rules (below the 100W = Bear), and past bears compare BTC's bottoms.
+   usage: node build/usdtd.js <market-data dir> [--asset=btc] */
 'use strict';
 const fs = require('fs'), path = require('path');
-const ROOT = path.resolve(__dirname, '..'), OUT = process.env.USDTD_OUT || path.join(ROOT, 'public', 'usdtd.json');
-const MD = path.resolve(process.argv[2] || '../market-data');
+const ASSET = ((process.argv.find((a) => a.startsWith('--asset=')) || '--asset=usdtd').slice(8)) === 'btc' ? 'btc' : 'usdtd';
+const IS_BTC = ASSET === 'btc';
+const ROOT = path.resolve(__dirname, '..'), OUT = process.env.USDTD_OUT || path.join(ROOT, 'public', IS_BTC ? 'btccycle.json' : 'usdtd.json');
+const MD = path.resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) || '../market-data');
 const DAY = 86400, NS = [20, 50, 100, 200], TOL = 0.01;
+const NAME = IS_BTC ? 'BTC' : 'USDT.D';
+const START = IS_BTC ? '2015-09-01' : '2017-06-01';            // tests and records start here (USDT.D: first year with a 100W)
 const LAUNCH = 'USDT launch years: USDT supply grew many times over, which pushed USDT.D up whatever crypto prices did (USDT.D never closed a week below its 100W from 2017 to Dec 2020).';
-const REGIMES = [
+const REGIMES_USDTD = [
   { id: 'bull17', name: 'Bull 2017', kind: 'bull', from: '2017-03-01', to: '2017-12-16', caveat: LAUNCH },
   { id: 'bear18', name: 'Bear 2018', kind: 'bear', from: '2017-12-16', to: '2018-12-15', caveat: LAUNCH + ' The bear pattern still showed (above the 100W every week, peak on the day BTC bottomed), but 2018 stretch figures run high.' },
   { id: 'rally19', name: 'Rally 2019', kind: 'bull', from: '2018-12-15', to: '2019-06-26', caveat: LAUNCH },
@@ -33,6 +41,17 @@ const REGIMES = [
   { id: 'bull23', name: 'Bull 2023–25', kind: 'bull', from: '2022-11-21', to: '2025-10-06' },
   { id: 'bear26', name: 'Bear 2025–26 (so far)', kind: 'bear', from: '2025-10-06', to: null }
 ];
+const REGIMES_BTC = [
+  { id: 'bull17', name: 'Bull 2015–17', kind: 'bull', from: '2015-01-14', to: '2017-12-16' },
+  { id: 'bear18', name: 'Bear 2018', kind: 'bear', from: '2017-12-16', to: '2018-12-15' },
+  { id: 'rally19', name: 'Rally 2019', kind: 'bull', from: '2018-12-15', to: '2019-06-26' },
+  { id: 'drop20', name: 'Drop 2019–20', kind: 'bear', from: '2019-06-26', to: '2020-03-12' },
+  { id: 'bull21', name: 'Bull 2020–21', kind: 'bull', from: '2020-03-12', to: '2021-11-08' },
+  { id: 'bear22', name: 'Bear 2022', kind: 'bear', from: '2021-11-08', to: '2022-11-21' },
+  { id: 'bull23', name: 'Bull 2023–25', kind: 'bull', from: '2022-11-21', to: '2025-10-06' },
+  { id: 'bear26', name: 'Bear 2025–26 (so far)', kind: 'bear', from: '2025-10-06', to: null }
+];
+const REGIMES = IS_BTC ? REGIMES_BTC : REGIMES_USDTD;
 // past bears for the "past bears vs now" comparison (BTC closes): 2018 (USDT launch years, see the caveat) and 2022
 const PASTS = [{ top: '2017-12-16', bottom: '2018-12-15', label: '2018' }, { top: '2021-11-08', bottom: '2022-11-21', label: '2022' }];
 const ANALOG = { past: PASTS[1], now: { top: '2025-10-06', label: 'now' } };
@@ -54,13 +73,18 @@ const weekStart = (t) => { const d = Math.floor(t / DAY) * DAY; return d - ((new
 function sma(rows, n) { let s = 0; return rows.map((r, i) => { s += r.c; if (i >= n) s -= rows[i - n].c; return i >= n - 1 ? s / n : null; }); }
 
 function build() {
-  const d1 = load('tv/CRYPTOCAP_USDT.D/1D'), h4 = load('tv/CRYPTOCAP_USDT.D/4H');
-  const last1 = d1[d1.length - 1].t;
-  const fromH4 = groupBy(h4, (t) => Math.floor(t / DAY) * DAY).filter((g) => g.rs[g.rs.length - 1].t === g.k + 72000 && g.k > last1).map((g) => agg(g.k, g.rs));
-  let D = d1.concat(fromH4);
-  if (process.env.USDTD_ASOF) D = D.filter((r) => r.t <= T(process.env.USDTD_ASOF));   // replay: build as it would have looked on that day
+  let D, last1;
   const btcA = load('tv/COINBASE_BTCUSD/1D'), btcB = load('binance/BTCUSDT/1D');
-  const btc = new Map(btcA.concat(btcB.filter((r) => r.t > btcA[btcA.length - 1].t)).map((r) => [r.t, r.c]));
+  const btcAll = btcA.concat(btcB.filter((r) => r.t > btcA[btcA.length - 1].t));
+  if (IS_BTC) { D = btcAll.map((r) => ({ ...r })); last1 = btcA[btcA.length - 1].t; }
+  else {
+    const d1 = load('tv/CRYPTOCAP_USDT.D/1D'), h4 = load('tv/CRYPTOCAP_USDT.D/4H');
+    last1 = d1[d1.length - 1].t;
+    const fromH4 = groupBy(h4, (t) => Math.floor(t / DAY) * DAY).filter((g) => g.rs[g.rs.length - 1].t === g.k + 72000 && g.k > last1).map((g) => agg(g.k, g.rs));
+    D = d1.concat(fromH4);
+  }
+  if (process.env.USDTD_ASOF) D = D.filter((r) => r.t <= T(process.env.USDTD_ASOF));   // replay: build as it would have looked on that day
+  const btc = new Map(btcAll.map((r) => [r.t, r.c]));
   const lastDay = D[D.length - 1].t;
   const Wall = groupBy(D, weekStart).map((g) => agg(g.k, g.rs));
   const formingWeek = Wall[Wall.length - 1].t + 7 * DAY - DAY > lastDay;     // its Sunday has not closed yet
@@ -98,7 +122,7 @@ function build() {
   });
 
   // crosses since 2020: price through 50W/100W/200W, SMA vs SMA (weekly), 50D vs 200D
-  const since = T('2017-01-01');
+  const since = T(IS_BTC ? '2015-01-01' : '2017-01-01');
   function crossList(X, a, b) {
     const out = []; let prev = null;
     for (const r of X) {
@@ -117,7 +141,7 @@ function build() {
 
   // turning points: swing lows in bears (USDT.D dips = BTC relief tops), swing highs in bulls (USDT.D spikes = BTC dips)
   function pivots(X, R, k) {
-    const s = inR(X, R), lowK = R.kind === 'bear', col = lowK ? 'l' : 'h', out = [];
+    const s = inR(X, R), lowK = IS_BTC ? R.kind === 'bull' : R.kind === 'bear', col = lowK ? 'l' : 'h', out = [];
     for (let i = k; i < s.length - k; i++) {
       const w = s.slice(i - k, i + k + 1).map((r) => r[col]), v = s[i][col];
       if (v !== (lowK ? Math.min(...w) : Math.max(...w))) continue;
@@ -128,7 +152,7 @@ function build() {
     }
     return out;
   }
-  const turning = REGIMES.filter((R) => ['bear18', 'bear22', 'bull23', 'bear26'].includes(R.id) && inR(D, R).length).map((R) => ({ id: R.id, name: R.name, kind: R.kind, daily: pivots(D, R, 10), weekly: pivots(W, R, 3) }));
+  const turning = REGIMES.filter((R) => (IS_BTC ? ['bear18', 'bull21', 'bear22', 'bull23', 'bear26'] : ['bear18', 'bear22', 'bull23', 'bear26']).includes(R.id) && inR(D, R).length).map((R) => ({ id: R.id, name: R.name, kind: R.kind, daily: pivots(D, R, 10), weekly: pivots(W, R, 3) }));
 
   // stretch at the big turns: % above/below each SMA on the day (daily) and vs the last closed week's SMAs (weekly)
   const stretchAt = (d) => {
@@ -138,19 +162,23 @@ function build() {
     NS.forEach((n) => { o.d[n] = pc(r.c, r['s' + n]); o.w[n] = pc(r.c, wk['s' + n]); });
     return o;
   };
-  const maxIn = (a, b) => { const s = D.filter((r) => r.t >= T(a) && (!b || r.t < T(b))); if (!s.length) return null; return day(s.reduce((x, r) => (r.c > x.c ? r : x), s[0]).t); };
+  // the bear-market extreme: USDT.D peaks (highest close), BTC bottoms (lowest close)
+  const BX = IS_BTC ? -1 : 1;
+  const maxIn = (a, b) => { const s = D.filter((r) => r.t >= T(a) && (!b || r.t < T(b))); if (!s.length) return null; return day(s.reduce((x, r) => (BX * r.c > BX * x.c ? r : x), s[0]).t); };
   const peak22 = maxIn('2022-01-01', '2023-01-01'), peak26 = maxIn('2025-10-06'), peak18 = maxIn('2017-12-16', '2019-01-15');
+  const XW = IS_BTC ? 'BTC low' : 'USDT.D peak';
   const marks = [
-    ['BTC top Dec 2017', '2017-12-16'], ['USDT.D peak 2018 (BTC bottom)', peak18],
-    ['BTC top Nov 2021', '2021-11-08'], ['USDT.D peak 2022', peak22], ['BTC bottom Nov 2022', '2022-11-21'],
-    ['BTC top Oct 2025', '2025-10-06'], ['USDT.D peak since Oct 2025', peak26]
+    ['BTC top Dec 2017', '2017-12-16'], [XW + ' 2018' + (IS_BTC ? '' : ' (BTC bottom)'), peak18],
+    ['BTC top Nov 2021', '2021-11-08'], [XW + ' 2022', peak22], ['BTC bottom Nov 2022', '2022-11-21'],
+    ['BTC top Oct 2025', '2025-10-06'], [XW + ' since Oct 2025', peak26]
   ].map(([label, d]) => ({ label, ...stretchAt(d) })).filter((x) => x.day);
 
-  // how the 2022 peak unwound: first daily close below each SMA after the peak, then the weekly ones
+  // how the bear extreme unwound: first daily close back through each SMA after it (USDT.D: below; BTC: above), then weekly
   const after = (pk) => {
+    if (!pk) return {};
     const o = {}, s = D.filter((r) => r.t > T(pk)), w = W.filter((r) => r.t > weekStart(T(pk)));
-    NS.forEach((n) => { const x = s.find((r) => r['s' + n] != null && r.c < r['s' + n]); o['d' + n] = x ? day(x.t) : null; });
-    NS.forEach((n) => { const x = w.find((r) => r['s' + n] != null && r.c < r['s' + n]); o['w' + n] = x ? day(x.t) : null; });
+    NS.forEach((n) => { const x = s.find((r) => r['s' + n] != null && BX * (r.c - r['s' + n]) < 0); o['d' + n] = x ? day(x.t) : null; });
+    NS.forEach((n) => { const x = w.find((r) => r['s' + n] != null && BX * (r.c - r['s' + n]) < 0); o['w' + n] = x ? day(x.t) : null; });
     return o;
   };
 
@@ -165,11 +193,13 @@ function build() {
     forming_week: FW ? { week: day(FW.t), close: r2(FW.c), sma: Object.fromEntries(NS.map((n) => [n, r2(FW['s' + n])])), pct: Object.fromEntries(NS.map((n) => [n, pc(FW.c, FW['s' + n])])) } : null,
     last: { price_50w: sinceOf(crosses.price_50w), price_100w: sinceOf(crosses.price_100w), price_200w: sinceOf(crosses.price_200w), w50_w100: sinceOf(crosses.w50_w100), d50_d200: sinceOf(crosses.d50_d200) }
   };
-  const pastOf = (P) => { const pk = maxIn(P.top, day(T(P.bottom) + 30 * DAY)); return { ...P, peak: stretchAt(pk), weeks_top_to_peak: Math.round((T(pk) - T(P.top)) / (7 * DAY)), weeks_top_to_bottom: Math.round((T(P.bottom) - T(P.top)) / (7 * DAY)), days_peak_to_bottom: Math.round((T(P.bottom) - T(pk)) / DAY), unwind: after(pk) }; };
+  const pastOf = (P) => { const pk = maxIn(P.top, day(T(P.bottom) + 30 * DAY)); const top0 = D.find((r) => r.t === T(P.top)); return { ...P, drawdown: top0 ? pc(D.find((r) => r.t === T(pk)).c, top0.c) : null, peak: stretchAt(pk), weeks_top_to_peak: Math.round((T(pk) - T(P.top)) / (7 * DAY)), weeks_top_to_bottom: Math.round((T(P.bottom) - T(P.top)) / (7 * DAY)), days_peak_to_bottom: Math.round((T(P.bottom) - T(pk)) / DAY), unwind: after(pk) }; };
   const analog = {
     pasts: PASTS.filter((P) => T(P.bottom) + 30 * DAY <= lastDay).map(pastOf),
     past: { ...ANALOG.past, peak: stretchAt(peak22), weeks_top_to_peak: Math.round((T(peak22) - T(ANALOG.past.top)) / (7 * DAY)), weeks_top_to_bottom: Math.round((T(ANALOG.past.bottom) - T(ANALOG.past.top)) / (7 * DAY)), unwind: after(peak22) },
-    now: { ...ANALOG.now, weeks_since_top: weeksSince(ANALOG.now.top), peak: stretchAt(peak26), unwind: after(peak26) }
+    now: { ...ANALOG.now, weeks_since_top: weeksSince(ANALOG.now.top), peak: stretchAt(peak26), unwind: after(peak26),
+      drawdown: (() => { const t0 = D.find((r) => r.t === T(ANALOG.now.top)), p = peak26 && D.find((r) => r.t === T(peak26)); return t0 && p ? pc(p.c, t0.c) : null; })(),
+      now_vs_top: (() => { const t0 = D.find((r) => r.t === T(ANALOG.now.top)); return t0 ? pc(D[D.length - 1].c, t0.c) : null; })() }
   };
 
   // ---------- this week's read: fixed rules from the 2022 bear and the 2023-25 bull ----------
@@ -179,25 +209,52 @@ function build() {
   //                        last close 5%+ under that high) AND a daily close below the 20D or 50D (how the 2022 peak unwound)
   //   Bear                 above the 50W and 100W with the 50W above the 100W
   //   Turning bear         above the 100W but the 50W still under the 100W (the bear setup not confirmed yet)
-  const PEAKS = [analog.past.peak, analog.now.peak].filter(Boolean).map((p) => p.usdtd);
+  // the prior bear extreme as known on day di (no look-ahead): USDT.D = the highest close, BTC = the lowest close, in the
+  // year before the last 20 days
+  const priorExt = (di) => { const w = D.slice(Math.max(0, di - 365), Math.max(0, di - 19)).map((r) => r.c); return w.length ? (BX > 0 ? Math.max(...w) : Math.min(...w)) : null; };
   function readAt(di, wi) {
-    const d = D[di], w = W[wi], last20 = D.slice(Math.max(0, di - 19), di + 1), hi20 = Math.max(...last20.map((r) => r.c));
-    const zone = Math.min(...PEAKS);
+    const d = D[di], w = W[wi], last20 = D.slice(Math.max(0, di - 19), di + 1).map((r) => r.c);
+    const zone = priorExt(di);
+    if (!IS_BTC) {
+      const hi20 = Math.max(...last20);
+      const ck = {
+        w100: { ok: w.c > w.s100, label: 'Weekly close above the 100W', v: r2(w.s100) },
+        w50_100: { ok: w.s50 > w.s100, label: '50W above the 100W', v: r2(w.s50) },
+        w50: { ok: w.c > w.s50, label: 'Weekly close above the 50W', v: r2(w.s50) },
+        w20: { ok: w.c > w.s20, label: 'Weekly close above the 20W', v: r2(w.s20) },
+        d20: { ok: d.c > d.s20, label: 'Daily close above the 20D', v: r2(d.s20) },
+        d50: { ok: d.c > d.s50, label: 'Daily close above the 50D', v: r2(d.s50) },
+        reject: { ok: zone != null && hi20 >= zone * 0.98 && d.c <= hi20 * 0.95, label: `Turned back near the prior peak (20-day high ${hi20.toFixed(2)} vs the prior year's peak ${zone != null ? zone.toFixed(2) : '—'}, now 5%+ below it)`, v: r2(hi20) }
+      };
+      let verdict, why;
+      if (!ck.w100.ok) { verdict = 'Bull'; why = 'USDT.D closed the week below its 100W: the 2023–25 bull pattern.'; }
+      else if (!ck.w50.ok) { verdict = 'Turning bull'; why = 'Weekly close below the 50W while still above the 100W. In the 2022 bear USDT.D never closed a week below the 50W; it did in Jan 2023, two months after BTC bottomed. (Aug–Oct 2026 also did this during a relief rally, then went back above.)'; }
+      else if (ck.reject.ok && (!ck.d20.ok || !ck.d50.ok)) { verdict = 'Bear, possibly ending'; why = 'Turned back near the prior peak and lost the ' + (!ck.d50.ok ? '50D' : '20D') + ': how the 2022 peak started to unwind (BTC bottomed within days). Needs weekly closes below the 20W/50W to confirm.'; }
+      else if (ck.w50_100.ok) { verdict = 'Bear'; why = 'Above the 50W and 100W with the 50W over the 100W: the 2022 bear pattern. Money is still moving into USDT.'; }
+      else { verdict = 'Turning bear'; why = 'Above the 100W but the 50W is still under the 100W: the bear setup is not confirmed yet.'; }
+      return { day: day(d.t), week: day(w.t), usdtd: r2(d.c), week_close: r2(w.c), verdict, why, checks: ck };
+    }
+    // BTC: below the 100W = Bear; below the 50W but above the 100W = Turning bear; above the 50W with the 50W under the
+    // 100W = Turning bull; above both with the 50W over the 100W = Bull; in a Bear, holding near the prior year's low and a
+    // daily close back above the 20D or 50D = Bear, possibly ending
+    const lo20 = Math.min(...last20);
     const ck = {
-      w100: { ok: w.c > w.s100, label: 'Weekly close above the 100W', v: r2(w.s100) },
-      w50_100: { ok: w.s50 > w.s100, label: '50W above the 100W', v: r2(w.s50) },
-      w50: { ok: w.c > w.s50, label: 'Weekly close above the 50W', v: r2(w.s50) },
-      w20: { ok: w.c > w.s20, label: 'Weekly close above the 20W', v: r2(w.s20) },
-      d20: { ok: d.c > d.s20, label: 'Daily close above the 20D', v: r2(d.s20) },
-      d50: { ok: d.c > d.s50, label: 'Daily close above the 50D', v: r2(d.s50) },
-      reject: { ok: hi20 >= zone * 0.98 && d.c <= hi20 * 0.95, label: `Turned back near the prior peaks (20-day high ${hi20.toFixed(2)} vs ${zone.toFixed(2)}+, now 5%+ below it)`, v: r2(hi20) }
+      w100: { ok: w.c < w.s100, label: 'Weekly close below the 100W', v: r2(w.s100) },
+      w50_100: { ok: w.s50 < w.s100, label: '50W below the 100W', v: r2(w.s50) },
+      w50: { ok: w.c < w.s50, label: 'Weekly close below the 50W', v: r2(w.s50) },
+      w20: { ok: w.c < w.s20, label: 'Weekly close below the 20W', v: r2(w.s20) },
+      w200: { ok: w.s200 != null && w.c < w.s200, label: 'Weekly close below the 200W', v: r2(w.s200) },
+      d20: { ok: d.c < d.s20, label: 'Daily close below the 20D', v: r2(d.s20) },
+      d50: { ok: d.c < d.s50, label: 'Daily close below the 50D', v: r2(d.s50) },
+      reject: { ok: zone != null && lo20 <= zone * 1.02 && d.c >= lo20 * 1.05, label: `Held near the prior low (20-day low ${Math.round(lo20).toLocaleString('en-US')} vs the prior year's low ${zone != null ? Math.round(zone).toLocaleString('en-US') : '—'}, now 5%+ above it)`, v: r2(lo20) }
     };
     let verdict, why;
-    if (!ck.w100.ok) { verdict = 'Bull'; why = 'USDT.D closed the week below its 100W: the 2023–25 bull pattern.'; }
-    else if (!ck.w50.ok) { verdict = 'Turning bull'; why = 'Weekly close below the 50W while still above the 100W. In the 2022 bear USDT.D never closed a week below the 50W; it did in Jan 2023, two months after BTC bottomed. (Aug–Oct 2026 also did this during a relief rally, then went back above.)'; }
-    else if (ck.reject.ok && (!ck.d20.ok || !ck.d50.ok)) { verdict = 'Bear, possibly ending'; why = 'Turned back near the prior peaks and lost the ' + (!ck.d50.ok ? '50D' : '20D') + ': how the 2022 peak started to unwind (BTC bottomed within days). Needs weekly closes below the 20W/50W to confirm.'; }
-    else if (ck.w50_100.ok) { verdict = 'Bear'; why = 'Above the 50W and 100W with the 50W over the 100W: the 2022 bear pattern. Money is still moving into USDT.'; }
-    else { verdict = 'Turning bear'; why = 'Above the 100W but the 50W is still under the 100W: the bear setup is not confirmed yet.'; }
+    if (ck.w100.ok) {
+      if (ck.reject.ok && (!ck.d20.ok || !ck.d50.ok)) { verdict = 'Bear, possibly ending'; why = 'Still under the 100W, but BTC held near the prior low and closed back above the ' + (!ck.d50.ok ? '50D' : '20D') + ': how bear bottoms started (needs weekly closes above the 20W/50W to confirm).'; }
+      else { verdict = 'Bear'; why = 'BTC closed the week below its 100W: the 2022 bear pattern (BTC lost the 100W in May 2022 and got it back in Oct 2023).' + (ck.w200.ok ? ' It is also below the 200W, which in 2018, 2020 and 2022 came near the bottom.' : ''); }
+    } else if (ck.w50.ok) { verdict = 'Turning bear'; why = 'Weekly close below the 50W while still above the 100W: how the 2018, 2021–22 and 2025 tops turned into bears.'; }
+    else if (ck.w50_100.ok) { verdict = 'Turning bull'; why = 'Back above the 50W and 100W but the 50W is still under the 100W: the bull setup is not confirmed yet.'; }
+    else { verdict = 'Bull'; why = 'Above the 50W and 100W with the 50W over the 100W: the bull pattern (2020–21, 2023–25).'; }
     return { day: day(d.t), week: day(w.t), usdtd: r2(d.c), week_close: r2(w.c), verdict, why, checks: ck };
   }
   const weekRead = readAt(D.length - 1, W.length - 1);
@@ -205,7 +262,7 @@ function build() {
   // every closed week since Jun 2017: the last 8 for the strip, and each change of verdict for the "past record" list
   const all = [];
   for (let k = 0; k < W.length; k++) {
-    if (W[k].t < T('2017-06-01') || W[k].s100 == null) continue;
+    if (W[k].t < T(IS_BTC ? '2015-06-01' : START) || W[k].s100 == null) continue;
     const sun = W[k].t + 6 * DAY, di = D.findIndex((r) => r.t === sun);
     if (di >= 0) { const r = readAt(di, k); all.push({ week: r.week, close: r.week_close, verdict: r.verdict, btc: D[di].btc != null ? Math.round(D[di].btc) : null }); }
   }
@@ -244,7 +301,7 @@ function build() {
       { id: 'w50', label: `Weekly close ${top ? 'below' : 'above'} the 50W`, f: (i) => wk(i, 50), lvl: () => LW.s50 }
     ];
     const isExt = (i) => (top ? hi90[i] != null && D[i].c >= hi90[i] : lo90[i] != null && D[i].c <= lo90[i]);
-    const i0 = D.findIndex((r) => r.t >= T('2017-06-01'));
+    const i0 = D.findIndex((r) => r.t >= T(START));
     const record = STEPS.map((st) => {
       let h = null, armed = false, saw = false; const out = [];
       const wkly = st.id[0] === 'w';
@@ -291,9 +348,11 @@ function build() {
       const fired = steps.filter((x) => x.fired).length, S = (id) => steps.find((x) => x.id === id);
       const w50 = S('w50').fired && S('w50').on_now, w20 = S('w20').fired && S('w20').on_now, w20was = S('w20').fired && !S('w20').on_now;
       const dOn = steps.filter((x) => x.fired && x.id[0] === 'd' && x.on_now).length, dWas = steps.filter((x) => x.fired && x.id[0] === 'd').length;
+      const M = IS_BTC ? { tw: '', tc: ': not yet proof the bull is over', te: '', bw: ' (BTC bottom confirmed on the weekly)', bc: ': BTC bounce, not yet proof the bear is over', be: '' }
+        : { tw: '', tc: ': relief rally for crypto; not yet proof the bear is over', te: ' (crypto relief likely)', bw: ' (crypto top warning)', bc: ': crypto pullback', be: ' (crypto dip likely)' };
       const status = top
-        ? (w50 ? 'Top likely in: weekly close below the 50W and still under it' : w20 ? 'Pullback confirmed on the weekly (below the 20W): relief rally for crypto; not yet proof the bear is over' : dOn ? 'Early warning: USDT.D has started to turn down (crypto relief likely); many of these fail' : (w20was || dWas) ? 'Signs fired but USDT.D is back above those levels: the turn has not held' : div && div.divergence ? 'Top setup: near the prior peak on weaker weekly momentum (like Nov 2022); no break yet' : 'No top signs yet: USDT.D still rising')
-        : (w50 ? 'Bottom likely in: weekly close above the 50W and still over it (crypto top warning)' : w20 ? 'USDT.D bounce confirmed on the weekly (above the 20W): crypto pullback' : dOn ? 'Early warning: USDT.D has started to turn up (crypto dip likely); many of these fail' : (w20was || dWas) ? 'Signs fired but USDT.D is back below those levels: the turn has not held' : div && div.divergence ? 'Bottom setup: near the prior low on stronger weekly momentum; no break yet' : 'No bottom signs yet: USDT.D still falling');
+        ? (w50 ? 'Top likely in: weekly close below the 50W and still under it' : w20 ? `Pullback confirmed on the weekly (below the 20W)${M.tc}` : dOn ? `Early warning: ${NAME} has started to turn down${M.te}; many of these fail` : (w20was || dWas) ? `Signs fired but ${NAME} is back above those levels: the turn has not held` : div && div.divergence ? `Top setup: near the prior peak on weaker weekly momentum${IS_BTC ? '' : ' (like Nov 2022)'}; no break yet` : `No top signs yet: ${NAME} still rising`)
+        : (w50 ? `Bottom likely in: weekly close above the 50W and still over it${M.bw}` : w20 ? `${NAME} bounce confirmed on the weekly (above the 20W)${M.bc}` : dOn ? `Early warning: ${NAME} has started to turn up${M.be}; many of these fail` : (w20was || dWas) ? `Signs fired but ${NAME} is back below those levels: the turn has not held` : div && div.divergence ? 'Bottom setup: near the prior low on stronger weekly momentum; no break yet' : `No bottom signs yet: ${NAME} still falling`);
       const btcNow = L.btc != null ? Math.round(L.btc) : null;
       return { btc_now: btcNow, btc_now_chg: btcNow != null && D[h].btc ? pc(btcNow, D[h].btc) : null, extreme: { day: day(D[h].t), v: r2(D[h].c), btc: D[h].btc != null ? Math.round(D[h].btc) : null, days_ago: D.length - 1 - h }, steps, fired, divergence: div, status };
     }
@@ -312,11 +371,11 @@ function build() {
     const previous = pe ? { extreme: pe.extreme, fired: pe.fired, status: pe.status } : null;
     if (hOpp === D.length - 1) {
       return { kind: top ? 'top' : 'bottom', mode: 'waiting', since_turn: opp, previous, steps: STEPS.map((st, k) => ({ id: st.id, label: st.label, level: r2(st.lvl()), on_now: false, fired: null, ...record[k] })), fired: 0,
-        status: `Waiting: USDT.D made a new 90-day ${turnWord} today (${opp.v.toFixed(2)}); this watch restarts from the next USDT.D ${ownWord}` };
+        status: `Waiting: ${NAME} made a new 90-day ${turnWord} today (${IS_BTC ? '$' + Math.round(opp.v).toLocaleString('en-US') : opp.v.toFixed(2)}); this watch restarts from the next ${NAME} ${ownWord}` };
     }
     let h = hOpp + 1; for (let i = hOpp + 1; i < D.length; i++) if (top ? D[i].c > D[h].c : D[i].c < D[h].c) h = i;
     const e = episode(h);
-    if (h === D.length - 1 && !e.fired) e.status = `Restarted after the ${opp.day} USDT.D ${turnWord}: still ${top ? 'rising' : 'falling'}, new ${ownWord} today; signs start counting once it ${top ? 'stops rising' : 'stops falling'}`;
+    if (h === D.length - 1 && !e.fired) e.status = `Restarted after the ${opp.day} ${NAME} ${turnWord}: still ${top ? 'rising' : 'falling'}, new ${ownWord} today; signs start counting once it ${top ? 'stops rising' : 'stops falling'}`;
     return { kind: top ? 'top' : 'bottom', mode: 'since_turn', since_turn: opp, previous, ...e };
   }
   const topWatch = watch(true), bottomWatch = watch(false);
@@ -355,7 +414,7 @@ function build() {
       { id: 'swing', label: `Swing break: close ${top ? 'below' : 'above'} the 7-day ${top ? 'low' : 'high'} before it`, f: (i, h) => { const w = D.slice(Math.max(0, h - 7), h).map((r) => r.c); return top ? D[i].c < Math.min(...w) : D[i].c > Math.max(...w); }, lvl: (h) => { const w = D.slice(Math.max(0, h - 7), h).map((r) => r.c); return top ? Math.min(...w) : Math.max(...w); } },
       { id: 'd20', label: `Daily close ${top ? 'below' : 'above'} the 20D`, f: (i) => D[i].s20 != null && sg * (D[i].s20 - D[i].c) > 0, lvl: () => L.s20 }
     ];
-    const i0 = D.findIndex((r) => r.t >= T('2017-06-01'));
+    const i0 = D.findIndex((r) => r.t >= T(START));
     const outcome = (i, h) => {
       const fut = D.slice(i + 1, i + 61).map((r) => r.c);
       const b0 = D[h].btc, bi = D[i].btc, b30 = D[i + 30] && D[i + 30].btc;
@@ -396,6 +455,8 @@ function build() {
     });
     const F = (id) => signs.find((x) => x.id === id).fired, expired = D.length - 1 - h > 30;
     const status = expired ? `No new 30-day ${top ? 'high' : 'low'} for ${D.length - 1 - h} days: the signs below are from the ${day(D[h].t)} ${top ? 'high' : 'low'} and are no longer live`
+      : IS_BTC ? (top ? (F('swing') ? 'Swing break: short-term BTC top confirmed (pullback under way)' : F('div10') ? 'Best early sign for BTC tops: divergence + close below the 10D (pullback likely)' : (F('rev') || F('d10') || F('d20')) ? 'Early warning: BTC turning down (pullback possible; many of these fail)' : dvOn ? `Setup: new high on weaker RSI; a close below the 10D ($${Math.round(L.s10).toLocaleString('en-US')}) would trigger` : 'No early signs: BTC momentum still rising')
+        : (F('swing') ? 'Swing break: short-term BTC bottom confirmed (bounce under way)' : F('div10') ? 'Divergence + close above the 10D (BTC bounce likely)' : (F('rev') || F('d10') || F('d20')) ? 'Early warning: BTC turning up (bounce possible; many of these fail)' : dvOn ? `Setup: new low on stronger RSI; a close above the 10D ($${Math.round(L.s10).toLocaleString('en-US')}) would trigger` : 'No early signs: BTC still falling'))
       : top ? (F('swing') ? 'Swing break: short-term USDT.D top confirmed (crypto bounce under way)' : F('div10') ? 'Best early sign: divergence + close below the 10D (crypto bounce likely)' : (F('rev') || F('d10') || F('d20')) ? 'Early warning: USDT.D turning down (crypto bounce possible; many of these fail)' : dvOn ? `Setup: new high on weaker RSI; a close below the 10D (${f2s(L.s10)}) would trigger the best early sign` : 'No early signs: USDT.D momentum still rising')
         : (F('swing') ? 'Swing break: short-term USDT.D bottom confirmed (crypto pullback under way)' : F('div10') ? 'Divergence + close above the 10D (crypto pullback possible)' : (F('rev') || F('d10') || F('d20')) ? 'Early warning: USDT.D turning up (crypto pullback possible; many of these fail)' : dvOn ? `Setup: new low on stronger RSI; a close above the 10D (${f2s(L.s10)}) would trigger` : 'No early signs: USDT.D still falling');
     return { kind: top ? 'top' : 'bottom', extreme: { day: day(D[h].t), v: r2(D[h].c), btc: D[h].btc != null ? Math.round(D[h].btc) : null, days_ago: D.length - 1 - h }, expired,
@@ -413,7 +474,7 @@ function build() {
   const swings = [];
   {
     let state = null, start = null; const runs = [];
-    for (let i = D.findIndex((r) => r.t >= T('2017-06-01')); i < D.length; i++) {
+    for (let i = D.findIndex((r) => r.t >= T(START)); i < D.length; i++) {
       const hiE = hi90[i] != null && D[i].c >= hi90[i], loE = lo90[i] != null && D[i].c <= lo90[i];
       if (hiE && state !== 'top') { if (state) runs.push({ kind: state, start, end: i }); state = 'top'; start = i; }
       else if (loE && state !== 'bottom') { if (state) runs.push({ kind: state, start, end: i }); state = 'bottom'; start = i; }
@@ -432,11 +493,11 @@ function build() {
 
   // permanent log (history/usdtd_log.json, committed by the workflow): every sign that fired for a swing and every swing once
   // it closed, with the day it was first written. The first run fills it from history ("reconstructed"); later entries are live.
-  const LOGF = process.env.USDTD_LOG || path.join(ROOT, 'history', 'usdtd_log.json');
+  const LOGF = process.env.USDTD_LOG || path.join(ROOT, 'history', IS_BTC ? 'btc_log.json' : 'usdtd_log.json');
   let log = null;
   if (!process.env.USDTD_ASOF) {
     const first = !fs.existsSync(LOGF);
-    log = first ? { _about: 'USDT.D tops and bottoms as the dashboard saw them (build/usdtd.js). live=false: filled from history on the first run (21 Nov 2026); live=true: written by the build when it happened.', entries: [] } : JSON.parse(fs.readFileSync(LOGF, 'utf8'));
+    log = first ? { _about: NAME + ' tops and bottoms as the dashboard saw them (build/usdtd.js). live=false: filled from history on the first run (21 Nov 2026); live=true: written by the build when it happened.', entries: [] } : JSON.parse(fs.readFileSync(LOGF, 'utf8'));
     const have = new Set(log.entries.map((e) => e.key)), stamp = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
     const add = (e) => { if (!have.has(e.key)) { have.add(e.key); log.entries.push({ ...e, logged_at: stamp, live: !first }); } };
     swings.forEach((w) => {
@@ -454,9 +515,9 @@ function build() {
   const ser = (X, from) => X.filter((r) => r.t >= T(from)).map((r) => [day(r.t), r2(r.c), r2(r.s20), r2(r.s50), r2(r.s100), r2(r.s200), r.btc != null ? Math.round(r.btc) : null]);
   return {
     generated: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
-    source: 'USDT.D: TradingView CRYPTOCAP:USDT.D daily to ' + day(last1) + ', then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).',
-    tolerance_pct: TOL * 100, read: weekRead, top_watch: topWatch, bottom_watch: bottomWatch, swings, regimes, crosses, turning, marks, analog, now,
-    series: { cols: ['day', 'close', 's20', 's50', 's100', 's200', 'btc'], daily: ser(D, '2017-01-01'), weekly: ser(Wall, '2016-01-01'), forming_week: !!FW }
+    source: IS_BTC ? 'BTC: Coinbase BTCUSD daily to ' + day(last1) + ', then Binance BTCUSDT (closing prices, UTC days).' : 'USDT.D: TradingView CRYPTOCAP:USDT.D daily to ' + day(last1) + ', then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).',
+    asset: ASSET, name: NAME, tolerance_pct: TOL * 100, read: weekRead, top_watch: topWatch, bottom_watch: bottomWatch, swings, regimes, crosses, turning, marks, analog, now,
+    series: { cols: ['day', 'close', 's20', 's50', 's100', 's200', 'btc'], daily: ser(D, IS_BTC ? '2015-01-01' : '2017-01-01'), weekly: ser(Wall, IS_BTC ? '2015-01-01' : '2016-01-01'), forming_week: !!FW }
   };
 }
 
@@ -464,8 +525,8 @@ try {
   const o = build();
   const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null;
   const same = prev && JSON.stringify({ ...prev, generated: 0 }) === JSON.stringify({ ...o, generated: 0 });
-  if (same) console.log('usdtd.json unchanged (' + o.now.day + ')');
-  else { fs.writeFileSync(OUT, JSON.stringify(o)); console.log('usdtd.json written: ' + o.now.day + ' USDT.D ' + o.now.usdtd + ' (' + o.series.daily.length + ' days)'); }
+  if (same) console.log(path.basename(OUT) + ' unchanged (' + o.now.day + ')');
+  else { fs.writeFileSync(OUT, JSON.stringify(o)); console.log(path.basename(OUT) + ' written: ' + o.now.day + ' ' + NAME + ' ' + o.now.usdtd + ' (' + o.series.daily.length + ' days)'); }
 } catch (e) {
-  console.log('::warning::USDT.D tab not rebuilt, last good kept: ' + (e.stack || e));
+  console.log('::warning::' + NAME + ' tab not rebuilt, last good kept: ' + (e.stack || e));
 }
