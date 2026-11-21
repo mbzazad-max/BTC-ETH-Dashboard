@@ -283,6 +283,81 @@ function build() {
   }
   const topWatch = watch(true), bottomWatch = watch(false);
 
+  // ---------- early warning (fast daily layer, owner 21 Nov 2026) ----------
+  // Extreme = a daily close at a 30-day high (top) or low (bottom). Signs, each counted once per extreme within 30 days:
+  //   div    RSI(14) divergence AT the extreme: the strongest (top) / weakest (bottom) 30-day extreme 5-40 days earlier had an
+  //          RSI at least 3 points stronger (top) / weaker (bottom); fires on the extreme's own day (a setup, not a trigger)
+  //   div10  divergence, then a daily close beyond the 10D (below for top, above for bottom)
+  //   rev    key reversal: a close beyond the extreme day's low (top) / high (bottom)
+  //   d10    a daily close beyond the 10D
+  //   swing  a close beyond the lowest (top) / highest (bottom) close of the 7 days before the extreme
+  //   d20    a daily close beyond the 20D
+  // Past record since Jun 2017: moved = USDT.D moved 10%+ the other way within 60 days; held = no close beyond the extreme in
+  // the 60 days after the sign; lag = days after the extreme; btc_by = BTC's move from the extreme to the sign; btc30 = BTC's
+  // move in the 30 days after the sign (median) and how often it was up. Base = every 30-day extreme, for comparison.
+  const dr = rsiOf(D); D.forEach((r, i) => { r.rsi = dr[i]; });
+  const s10 = sma(D, 10); D.forEach((r, i) => { r.s10 = s10[i]; });
+  const med = (a) => { const s = a.filter((v) => v != null && isFinite(v)).sort((x, y) => x - y); return s.length ? Math.round(s[Math.floor(s.length / 2)] * 10) / 10 : null; };
+  function fast(top) {
+    const sg = top ? 1 : -1, N = 30;
+    const isExt = D.map((r, i) => i >= N - 1 && (top ? r.c >= Math.max(...D.slice(i - N + 1, i + 1).map((x) => x.c)) : r.c <= Math.min(...D.slice(i - N + 1, i + 1).map((x) => x.c))));
+    const EXT = []; isExt.forEach((v, i) => { if (v) EXT.push(i); });
+    const divAt = (h) => {
+      const prev = EXT.filter((j) => j >= h - 40 && j <= h - 5 && D[j].rsi != null);
+      if (!prev.length || D[h].rsi == null) return null;
+      const j = prev.reduce((a, x) => (sg * D[x].rsi > sg * D[a].rsi ? x : a));
+      return { prev_day: day(D[j].t), prev_rsi: Math.round(D[j].rsi * 10) / 10, rsi: Math.round(D[h].rsi * 10) / 10, divergence: sg * (D[j].rsi - D[h].rsi) >= 3 };
+    };
+    const beyond10 = (i) => D[i].s10 != null && sg * (D[i].s10 - D[i].c) > 0;
+    const SIGNS = [
+      { id: 'div', label: `RSI divergence at the ${top ? 'high' : 'low'} (setup)`, at: true },
+      { id: 'div10', label: `Divergence, then a close ${top ? 'below' : 'above'} the 10D`, f: (i, h, dv) => dv && beyond10(i), lvl: () => L.s10 },
+      { id: 'rev', label: `Key reversal: close ${top ? "below the high day's low" : "above the low day's high"}`, f: (i, h) => (top ? D[i].c < D[h].l : D[i].c > D[h].h), lvl: (h) => (top ? D[h].l : D[h].h) },
+      { id: 'd10', label: `Daily close ${top ? 'below' : 'above'} the 10D`, f: (i) => beyond10(i), lvl: () => L.s10 },
+      { id: 'swing', label: `Swing break: close ${top ? 'below' : 'above'} the 7-day ${top ? 'low' : 'high'} before it`, f: (i, h) => { const w = D.slice(Math.max(0, h - 7), h).map((r) => r.c); return top ? D[i].c < Math.min(...w) : D[i].c > Math.max(...w); }, lvl: (h) => { const w = D.slice(Math.max(0, h - 7), h).map((r) => r.c); return top ? Math.min(...w) : Math.max(...w); } },
+      { id: 'd20', label: `Daily close ${top ? 'below' : 'above'} the 20D`, f: (i) => D[i].s20 != null && sg * (D[i].s20 - D[i].c) > 0, lvl: () => L.s20 }
+    ];
+    const i0 = D.findIndex((r) => r.t >= T('2017-06-01'));
+    const outcome = (i, h) => {
+      const fut = D.slice(i + 1, i + 61).map((r) => r.c);
+      const b0 = D[h].btc, bi = D[i].btc, b30 = D[i + 30] && D[i + 30].btc;
+      return { moved: top ? Math.min(...fut) <= D[h].c * 0.9 : Math.max(...fut) >= D[h].c * 1.1, held: !fut.some((v) => (top ? v > D[h].c : v < D[h].c)), lag: i - h,
+        by: b0 && bi ? (bi / b0 - 1) * 100 : null, f30: bi && b30 ? (b30 / bi - 1) * 100 : null };
+    };
+    const summ = (out) => { const n = out.length; return n ? { n, moved: Math.round(out.filter((x) => x.moved).length / n * 100), held: Math.round(out.filter((x) => x.held).length / n * 100), lag: med(out.map((x) => x.lag)), btc_by: med(out.map((x) => x.by)), btc30: med(out.map((x) => x.f30)), btc30_up: Math.round(out.filter((x) => x.f30 != null && x.f30 > 0).length / Math.max(1, out.filter((x) => x.f30 != null).length) * 100) } : { n: 0 }; };
+    const record = {}, base = [];
+    for (const S of SIGNS) {
+      const out = []; let h = null, armed = false, dv = false;
+      for (let i = i0; i < D.length - 61; i++) {
+        let fire = false;
+        if (isExt[i]) { h = i; armed = true; const d = divAt(i); dv = !!(d && d.divergence); if (S.id === 'div' && dv) fire = true; else if (S.id === 'base') fire = true; else continue; }
+        else { if (!armed || i - h > 30 || S.at) continue; fire = S.f(i, h, dv); }
+        if (!fire) continue;
+        armed = false; out.push(outcome(i, h));
+      }
+      record[S.id] = summ(out);
+    }
+    for (let i = i0; i < D.length - 61; i++) if (isExt[i]) base.push(outcome(i, i));
+    // current episode
+    let h = -1; for (let i = D.length - 1; i >= 0; i--) if (isExt[i]) { h = i; break; }
+    const dvNow = divAt(h), dvOn = !!(dvNow && dvNow.divergence);
+    const signs = SIGNS.map((S) => {
+      let fired = null, bt = null;
+      if (S.at) { if (dvOn) { fired = day(D[h].t); bt = D[h].btc; } }
+      else for (let i = h + 1; i < D.length && i - h <= 30; i++) if (S.f(i, h, dvOn)) { fired = day(D[i].t); bt = D[i].btc; break; }
+      return { id: S.id, label: S.label, level: S.lvl ? r2(S.lvl(h)) : null, fired, btc: bt != null ? Math.round(bt) : null, btc_chg: bt != null && D[h].btc ? pc(bt, D[h].btc) : null, ...record[S.id] };
+    });
+    const F = (id) => signs.find((x) => x.id === id).fired, expired = D.length - 1 - h > 30;
+    const status = expired ? `No new 30-day ${top ? 'high' : 'low'} for ${D.length - 1 - h} days: the signs below are from the ${day(D[h].t)} ${top ? 'high' : 'low'} and are no longer live`
+      : top ? (F('swing') ? 'Swing break: short-term USDT.D top confirmed (crypto bounce under way)' : F('div10') ? 'Best early sign: divergence + close below the 10D (crypto bounce likely)' : (F('rev') || F('d10') || F('d20')) ? 'Early warning: USDT.D turning down (crypto bounce possible; many of these fail)' : dvOn ? `Setup: new high on weaker RSI; a close below the 10D (${f2s(L.s10)}) would trigger the best early sign` : 'No early signs: USDT.D momentum still rising')
+        : (F('swing') ? 'Swing break: short-term USDT.D bottom confirmed (crypto pullback under way)' : F('div10') ? 'Divergence + close above the 10D (crypto pullback possible)' : (F('rev') || F('d10') || F('d20')) ? 'Early warning: USDT.D turning up (crypto pullback possible; many of these fail)' : dvOn ? `Setup: new low on stronger RSI; a close above the 10D (${f2s(L.s10)}) would trigger` : 'No early signs: USDT.D still falling');
+    return { kind: top ? 'top' : 'bottom', extreme: { day: day(D[h].t), v: r2(D[h].c), btc: D[h].btc != null ? Math.round(D[h].btc) : null, days_ago: D.length - 1 - h }, expired,
+      rsi_now: D[D.length - 1].rsi != null ? Math.round(D[D.length - 1].rsi * 10) / 10 : null, divergence: dvNow, signs, base: summ(base), status };
+  }
+  const f2s = (v) => (v == null ? '—' : v.toFixed(2));
+  const topFast = fast(true), bottomFast = fast(false);
+  topWatch.fast = topFast; bottomWatch.fast = bottomFast;
+
   // chart series: daily from 2020, weekly from 2019 (SMAs included); compact arrays
   const ser = (X, from) => X.filter((r) => r.t >= T(from)).map((r) => [day(r.t), r2(r.c), r2(r.s20), r2(r.s50), r2(r.s100), r2(r.s200), r.btc != null ? Math.round(r.btc) : null]);
   return {

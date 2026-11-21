@@ -64,13 +64,36 @@
   }
 
   // ---------- 0b. top watch / bottom watch ----------
+  function fastSection(F, top) {
+    const box = el('div'); box.style.cssText = 'border:1px dashed var(--line);border-radius:8px;padding:10px 12px;margin:4px 0 12px';
+    const X = F.extreme, col = /confirmed|Best/.test(F.status) ? (top ? 'var(--up)' : 'var(--dn)') : /warning|Setup|possible/.test(F.status) ? 'var(--warn)' : 'var(--muted)';
+    box.append(el('p', { className: 'rf-note' }, `<b style="color:var(--ink);font-size:14px">⚡ Early warning (daily)</b> · fast signs after the latest USDT.D <b>30-day ${top ? 'high' : 'low'}</b>: ${f2(X.v)} on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}, BTC ${usd(X.btc)}. Earlier than the signs below, with more false alarms: they call a short-term ${top ? 'crypto bounce' : 'crypto pullback'}, not the cycle turn.`));
+    const dv = F.divergence;
+    box.append(el('p', null, `<b style="color:${col}">${F.status}.</b>` + (dv ? ` <span style="color:var(--muted)">Daily RSI: ${dd(dv.prev_day)} ${top ? 'high' : 'low'} ${dv.prev_rsi} → ${dd(X.day)} ${dv.rsi}${dv.divergence ? (top ? ' (weaker: divergence)' : ' (stronger: divergence)') : ' (no divergence)'}.</span>` : '')));
+    const fmtRow = (lab, s, isBase) => [
+      `<span style="white-space:nowrap">${lab}${!F.expired && s.level != null ? ` <span style="color:var(--muted)">(${f2(s.level)})</span>` : ''}</span>`,
+      isBase ? '<span style="color:var(--muted)">—</span>' : s.fired ? `<b style="color:${top ? 'var(--up)' : 'var(--dn)'}">✓ ${dd(s.fired)}</b>` : '<span style="color:var(--muted)">not yet</span>',
+      !isBase && s.fired && s.btc != null ? `${usd(s.btc)} <span class="${cls(s.btc_chg)}">(${sp(s.btc_chg)})</span>` : '—',
+      s.n ? `${s.moved}%` : '—', s.n ? `${s.held}%` : '—', s.n ? `${s.lag} d` : '—',
+      s.n && s.btc_by != null ? `<span class="${cls(s.btc_by)}">${sp(s.btc_by)}</span>` : '—',
+      s.n && s.btc30 != null ? `<span class="${cls(s.btc30)}">${sp(s.btc30)}</span> <span style="color:var(--muted)">(up ${s.btc30_up}%)</span>` : '—', s.n || '—'];
+    const rows = F.signs.map((x) => fmtRow((x.id === (top ? 'div10' : 'swing') ? '★ ' : '') + x.label, x, false));
+    rows.push(fmtRow('<span style="color:var(--muted)">For comparison: any 30-day ' + (top ? 'high' : 'low') + ', no sign</span>', F.base, true));
+    box.append(table(['Sign', 'Fired', `BTC then (vs ${usd(X.btc)})`, `Then USDT.D ${top ? '−' : '+'}10%`, 'Held 60 d', 'Fires after', 'BTC by then (typ.)', 'BTC 30 d after (typ.)', 'Seen'], rows));
+    box.append(el('p', { className: 'rf-note' }, `Past record since Jun 2017 (every USDT.D 30-day ${top ? 'high' : 'low'}, each sign counted once within 30 days of it): <b>Then USDT.D ${top ? '−' : '+'}10%</b> = moved 10%+ ${top ? 'down' : 'up'} from the ${top ? 'high' : 'low'} within 60 days; <b>Held 60 d</b> = no ${top ? 'higher' : 'lower'} close in the 60 days after the sign; <b>BTC 30 d after</b> = BTC's median move over the next 30 days and how often it was up. ` +
+      (top ? '★ = the best early sign so far: divergence, then a close below the 10D (94% then fell 10%+, BTC up 30 days later about 3 times in 4).' : '★ = the most reliable fast sign at USDT.D lows: the swing break (90% then rose 10%+); divergence works poorly there.')));
+    return box;
+  }
+
   function watchCard(w) {
     if (!w) return null;
     const top = w.kind === 'top', X = w.extreme;
     const c = card(top ? 'Top watch: has USDT.D peaked? <span style="font-weight:400;color:var(--muted);font-size:13px">(USDT.D top = crypto bottom or relief rally)</span>'
       : 'Bottom watch: has USDT.D bottomed? <span style="font-weight:400;color:var(--muted);font-size:13px">(USDT.D bottom = crypto top or pullback)</span>',
-    `Tracks the signs after the latest USDT.D 90-day ${top ? 'high' : 'low'}: <b>${f2(X.v)}</b> on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}, BTC ${usd(X.btc)}. Signs usually fire in this order; each is counted from that ${top ? 'high' : 'low'}.`);
+    `Two layers: a fast daily early warning (30-day ${top ? 'highs' : 'lows'}) and the slower cycle confirmation (90-day ${top ? 'highs' : 'lows'}, daily and weekly signs). Use the first for timing, the second to judge whether it is the real turn. Signs usually fire in the order listed.`);
     const col = /likely in|confirmed/.test(w.status) ? (top ? 'var(--up)' : 'var(--dn)') : /warning|setup/.test(w.status) ? 'var(--warn)' : 'var(--muted)';
+    if (w.fast) c.append(fastSection(w.fast, top));
+    c.append(el('p', { className: 'rf-note' }, `<b style="color:var(--ink);font-size:14px">🧭 Cycle confirmation (daily + weekly)</b> · slower signs after the latest USDT.D <b>90-day ${top ? 'high' : 'low'}</b>: ${f2(X.v)} on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}, BTC ${usd(X.btc)}. Is it turning into the real cycle ${top ? 'top' : 'bottom'}?`));
     c.append(el('p', null, `<b style="color:${col}">${w.status}.</b> ${w.fired} of 6 signs fired. <span style="color:var(--muted)">BTC: ${usd(X.btc)} at the USDT.D ${top ? 'high' : 'low'} → ${usd(w.btc_now)} now (<span class="${cls(w.btc_now_chg)}">${sp(w.btc_now_chg)}</span>).</span>`));
     const rows = w.steps.map((s) => [
       `<span style="white-space:nowrap">${s.label}${s.level != null ? ` <span style="color:var(--muted)">(${f2(s.level)})</span>` : ''}</span>`,
