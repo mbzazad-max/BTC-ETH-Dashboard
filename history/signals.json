@@ -6,59 +6,59 @@
    "score": 1,
    "of": 5,
    "green": [
-    "Leverage steady"
+    "Funding reset"
    ],
-   "at": "2026-11-21T06:35:03.010Z"
+   "at": "2026-11-21T06:37:22.283Z"
   },
   "BTC|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-21T06:35:03.010Z"
+   "at": "2026-11-21T06:37:22.283Z"
   },
   "ETH|buy": {
    "score": 1,
    "of": 5,
    "green": [
-    "Leverage steady"
+    "Funding reset"
    ],
-   "at": "2026-11-21T06:35:03.010Z"
+   "at": "2026-11-21T06:37:22.283Z"
   },
   "ETH|sell": {
-   "score": 0,
-   "of": 5,
-   "green": [],
-   "at": "2026-11-21T06:35:03.010Z"
-  },
-  "SOL|buy": {
-   "score": 2,
+   "score": 1,
    "of": 5,
    "green": [
-    "Flush over",
-    "Leverage steady"
+    "Squeeze over"
    ],
-   "at": "2026-11-21T06:35:03.010Z"
+   "at": "2026-11-21T06:37:22.283Z"
+  },
+  "SOL|buy": {
+   "score": 1,
+   "of": 5,
+   "green": [
+    "Funding reset"
+   ],
+   "at": "2026-11-21T06:37:22.283Z"
   },
   "SOL|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-21T06:35:03.010Z"
+   "at": "2026-11-21T06:37:22.283Z"
   },
   "BNB|buy": {
-   "score": 2,
+   "score": 1,
    "of": 5,
    "green": [
-    "Flush over",
-    "Leverage steady"
+    "Funding reset"
    ],
-   "at": "2026-11-21T06:35:03.010Z"
+   "at": "2026-11-21T06:37:22.283Z"
   },
   "BNB|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-21T06:35:03.010Z"
+   "at": "2026-11-21T06:37:22.283Z"
   }
  },
  "log": [
