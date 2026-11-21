@@ -57,8 +57,8 @@
       '<b>Bear</b>: above the 50W and 100W, with the 50W over the 100W.',
       '<b>Turning bear</b>: above the 100W but the 50W still under the 100W.'
     ].map((x) => `<li style="margin:2px 0">${x}</li>`).join('')));
-    rules.append(el('p', { className: 'rf-note' }, 'Every change of the read since Jun 2021 (week, USDT.D weekly close, BTC at that week\'s close). It caught the turns, but 2023 flipped back and forth while USDT.D sat on its 50W, and "possibly ending" in Jun 2026 was followed by a relief rally, not the bottom.'));
-    rules.append(table(['Week', 'Read', 'USDT.D', 'BTC'], R.record.map((x) => [dd(x.week), vpill(x.verdict), f2(x.close), usd(x.btc)])));
+    rules.append(el('p', { className: 'rf-note' }, 'Every change of the read since Jun 2017 (week, USDT.D weekly close, BTC at that week\'s close). ⚠ Before 2020 it does not work: in the USDT launch years USDT.D stayed above its 100W, so the read said Bear even through the 2017 bull and the 2019 rally. Since 2021 it caught the turns, but 2023 flipped back and forth while USDT.D sat on its 50W, and "possibly ending" in Jun 2026 was followed by a relief rally, not the bottom.'));
+    rules.append(table(['Week', 'Read', 'USDT.D', 'BTC'], R.record.map((x) => [dd(x.week) + (x.week < '2020-03-01' ? ' <span style="color:var(--warn)">⚠</span>' : ''), vpill(x.verdict), f2(x.close), usd(x.btc)])));
     c.append(rules);
     return c;
   }
@@ -88,7 +88,7 @@
           (d.divergence ? '<b style="color:var(--dn)">Bullish divergence for USDT.D</b>: near or below the prior low on stronger momentum (crypto top warning).' : d.near ? 'Near the prior low but momentum is not stronger: no divergence.' : 'Not near the prior low: no divergence check yet.');
       c.append(el('p', { className: 'rf-note' }, what));
     }
-    c.append(el('p', { className: 'rf-note' }, `How to read it: the early daily signs are good at calling a USDT.D ${top ? 'pullback (crypto relief rally)' : 'bounce (crypto pullback)'} but often not THE ${top ? 'top' : 'bottom'}: ${top ? 'in bears USDT.D tops in waves (Jun 2022 then Nov 2022; Jun 2026 then now)' : 'in bulls USDT.D bottoms in waves (Mar 2024 then Dec 2024)'}. The weekly signs are later but surer (weekly dates = the Sunday the week closed). Past record = every USDT.D 90-day ${top ? 'high' : 'low'} since Apr 2019.`));
+    c.append(el('p', { className: 'rf-note' }, `How to read it: the early daily signs are good at calling a USDT.D ${top ? 'pullback (crypto relief rally)' : 'bounce (crypto pullback)'} but often not THE ${top ? 'top' : 'bottom'}: ${top ? 'in bears USDT.D tops in waves (Jun 2022 then Nov 2022; Jun 2026 then now)' : 'in bulls USDT.D bottoms in waves (Mar 2024 then Dec 2024)'}. The weekly signs are later but surer (weekly dates = the Sunday the week closed). Past record = every USDT.D 90-day ${top ? 'high' : 'low'} since Jun 2017 (the 2017–19 launch years are included; they make the numbers a little noisier).`));
     return c;
   }
 
@@ -124,7 +124,7 @@
       'Shaded: <span style="color:var(--dn)">BTC bear</span> (top to bottom) and <span style="color:var(--up)">BTC bull</span>. In bears USDT.D rides above its SMAs (the 200D is the floor on dips); in bulls it stays under them (the 100/200 are the ceiling on bounces).');
     const bar = el('div'); bar.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px';
     const tabs = (opts, cur, set) => { const n = el('div', { className: 'br-tabs' }); n.style.alignSelf = 'center'; opts.forEach(([v, l]) => { const b = el('button', { type: 'button' }, l); b.setAttribute('aria-selected', String(v === cur)); b.onclick = () => { set(v); render(); }; n.append(b); }); return n; };
-    bar.append(tabs([['daily', 'Daily'], ['weekly', 'Weekly']], tf, (v) => { tf = v; }), tabs([['1y', '1Y'], ['3y', '3Y'], ['all', 'Since 2020']], span, (v) => { span = v; }));
+    bar.append(tabs([['daily', 'Daily'], ['weekly', 'Weekly']], tf, (v) => { tf = v; }), tabs([['1y', '1Y'], ['3y', '3Y'], ['all', 'Since 2020'], ['2017', 'Since 2017 (log)']], span, (v) => { span = v; }));
     const key = el('span', { className: 'rf-note' }, ['close', ...NS].map((k) => `<span style="white-space:nowrap"><i style="display:inline-block;width:14px;height:3px;vertical-align:middle;background:${COL[k]};${k === 200 ? 'opacity:.85' : ''}"></i> ${k === 'close' ? 'USDT.D' : (tf === 'daily' ? k + 'D' : k + 'W')}</span>`).join(' &nbsp;'));
     bar.append(key);
     c.append(bar);
@@ -135,13 +135,13 @@
   }
   function drawChart(box, info) {
     if (typeof d3 === 'undefined') { box.textContent = 'Chart library not loaded.'; return; }
-    const all = J.series[tf], cut = span === 'all' ? '2020-01-01' : new Date(Date.now() - (span === '1y' ? 1 : 3) * 365.25 * 864e5).toISOString().slice(0, 10);
+    const all = J.series[tf], cut = span === '2017' ? '2017-01-01' : span === 'all' ? '2020-01-01' : new Date(Date.now() - (span === '1y' ? 1 : 3) * 365.25 * 864e5).toISOString().slice(0, 10);
     const rows = all.filter((r) => r[0] >= cut).map((r) => ({ d: new Date(r[0] + 'T00:00:00Z'), day: r[0], c: r[1], 20: r[2], 50: r[3], 100: r[4], 200: r[5], btc: r[6] }));
     if (!rows.length) return;
     const W = Math.max(320, box.clientWidth || 900), H = Math.round(Math.min(420, Math.max(260, W * 0.42))), m = { t: 10, r: 46, b: 24, l: 8 };
     const x = d3.scaleUtc().domain(d3.extent(rows, (r) => r.d)).range([m.l, W - m.r]);
     const vals = rows.flatMap((r) => [r.c, r[20], r[50], r[100], r[200]]).filter((v) => v != null);
-    const y = d3.scaleLinear().domain(d3.extent(vals)).nice().range([H - m.b, m.t]);
+    const y = (span === '2017' ? d3.scaleLog() : d3.scaleLinear()).domain(d3.extent(vals)).nice().range([H - m.b, m.t]);
     const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').style('display', 'block').style('font-size', '11px');
     const x0 = rows[0].d, x1 = rows[rows.length - 1].d;
     J.regimes.forEach((R) => {
@@ -152,7 +152,7 @@
       const lx = x(a < x0 ? x0 : a) + 4;
       if (x(b > x1 ? x1 : b) - lx > 60) svg.append('text').attr('x', lx).attr('y', m.t + 12).attr('fill', R.kind === 'bear' ? 'var(--dn)' : 'var(--up)').text(R.name);
     });
-    svg.append('g').attr('transform', `translate(${W - m.r},0)`).call(d3.axisRight(y).ticks(6).tickFormat((v) => v + '%')).call((g) => g.select('.domain').remove()).call((g) => g.selectAll('line').attr('stroke', 'var(--line)')).call((g) => g.selectAll('text').attr('fill', 'var(--muted)'));
+    svg.append('g').attr('transform', `translate(${W - m.r},0)`).call(span === '2017' ? d3.axisRight(y).tickValues([0.1, 0.2, 0.5, 1, 2, 5, 10].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => v + '%') : d3.axisRight(y).ticks(6).tickFormat((v) => v + '%')).call((g) => g.select('.domain').remove()).call((g) => g.selectAll('line').attr('stroke', 'var(--line)')).call((g) => g.selectAll('text').attr('fill', 'var(--muted)'));
     svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.max(3, Math.floor(W / 110)))).call((g) => g.select('.domain').attr('stroke', 'var(--line)')).call((g) => g.selectAll('line').attr('stroke', 'var(--line)')).call((g) => g.selectAll('text').attr('fill', 'var(--muted)'));
     [200, 100, 50, 20].forEach((n) => svg.append('path').datum(rows.filter((r) => r[n] != null)).attr('fill', 'none').attr('stroke', COL[n]).attr('stroke-width', 1.3).attr('opacity', 0.9)
       .attr('d', d3.line().x((r) => x(r.d)).y((r) => y(r[n]))));
@@ -174,13 +174,14 @@
       c.append(el('p', { className: 'rf-note' }, `<b style="color:var(--ink)">${k === 'daily' ? 'Daily' : 'Weekly'}</b>`));
       const s = k === 'daily' ? 'D' : 'W';
       const rows = J.regimes.map((R) => [
-        `<b class="${R.kind === 'bear' ? 'neg' : 'pos'}">${R.name}</b><br><span style="color:var(--muted)">${dd(R.from)} → ${R.to ? dd(R.to) : 'now'}</span>`,
+        `<b class="${R.kind === 'bear' ? 'neg' : 'pos'}">${R.name}</b>${R.caveat ? ' <span title="' + R.caveat.replace(/"/g, '') + '" style="color:var(--warn)">⚠ launch years</span>' : ''}<br><span style="color:var(--muted)">${dd(R.from)} → ${R.to ? dd(R.to) : 'now'}</span>`,
         ...NS.map((n) => { const b = R[k][n]; return b.bars ? `${b.above}% above<br>sup ${frac(b.support)}${fracPct(b.support)}<br>res ${frac(b.resistance)}${fracPct(b.resistance)}` : '—'; }),
         R[k].stack.up != null ? `${R[k].stack.up}% / ${R[k].stack.down}%` : '—'
       ]);
       c.append(table(['BTC market', ...NS.map((n) => n + s), 'SMA stack 20>50>100>200 / reversed'], rows));
     });
-    c.append(el('p', { className: 'rf-note' }, 'What stands out: in both bears USDT.D held above the weekly 50 and 100 almost every week and the daily 200 was a floor (2022: 13 of 16 touches held). In the 2023–25 bull the weekly 100 capped nearly every rally. Shock weeks (Aug 2024, Apr 2025) are the exceptions.'));
+    c.append(el('p', { className: 'rf-note' }, 'What stands out: in all three bears (2018, 2022, now) USDT.D held above the weekly 50 and 100 almost every week, and the daily 200 was a floor (2022: 13 of 16 touches held). In the 2023–25 bull the weekly 100 capped nearly every rally. Shock weeks (Aug 2024, Apr 2025) are the exceptions.'));
+    c.append(el('p', { className: 'rf-note' }, '<b style="color:var(--warn)">⚠ Launch years (2017 bull, 2018 bear, 2019 rally):</b> ' + (J.regimes.find((R) => R.caveat) || {}).caveat + ' So the weekly 100 only became a clean bull/bear divider from about 2021; the daily SMAs (share of closes above the 20D/50D) separated bulls from bears in every period.'));
     return c;
   }
 
@@ -191,34 +192,40 @@
     const mk = (list, what) => list.map((x) => [dd(x.day), what(x), f2(x.usdtd), usd(x.btc)]);
     const rows = []
       .concat(mk(C.w50_w100, (x) => (x.dir === 'up' ? '<b class="neg">50W above 100W</b> (bear setup)' : '<b class="pos">50W below 100W</b> (bull setup)')))
-      .concat(mk(C.price_100w.filter((x) => x.day >= '2021-11-01'), (x) => (x.dir === 'up' ? '<span class="neg">Weekly close above 100W</span>' : '<span class="pos">Weekly close below 100W</span>')))
+      .concat(mk(C.price_100w, (x) => (x.dir === 'up' ? '<span class="neg">Weekly close above 100W</span>' : '<span class="pos">Weekly close below 100W</span>')))
       .sort((a, b) => (a[0] === b[0] ? 0 : new Date(a[0]) - new Date(b[0])));
     const byDate = rows.map((r) => ({ r, t: Date.parse(r[0]) })).sort((a, b) => a.t - b.t).map((x) => x.r);
     c.append(table(['Week', 'Signal', 'USDT.D', 'BTC'], byDate));
-    const d = el('details'); d.append(el('summary', { className: 'rf-note' }, 'All weekly 50W crosses and daily 50D/200D crosses since 2020'));
+    c.append(el('p', { className: 'rf-note' }, 'Since the 100W first exists (Feb 2017). There are no crosses before Dec 2020: in the USDT launch years USDT.D stayed above its 100W through the 2017 bull, the 2018 bear and the 2019 rally.'));
+    const d = el('details'); d.append(el('summary', { className: 'rf-note' }, 'All weekly 50W crosses and daily 50D/200D crosses since 2017'));
     d.append(table(['Week', 'Signal', 'USDT.D', 'BTC'], mk(C.price_50w, (x) => 'Weekly close ' + (x.dir === 'up' ? 'above' : 'below') + ' 50W')));
     d.append(table(['Day', 'Signal', 'USDT.D', 'BTC'], mk(C.d50_d200, (x) => '50D ' + (x.dir === 'up' ? 'above' : 'below') + ' 200D')));
     c.append(d);
     return c;
   }
 
-  // ---------- 5. 2022 vs now ----------
+  // ---------- 5. past bears vs now ----------
   function analogCard() {
-    const A = J.analog, P = A.past, N = A.now, NW = J.now;
-    const c = card('2022 bear vs now', `Weeks counted from the BTC top (${dd(P.top)} and ${dd(N.top)}). Stretch = % above the SMA on the day (weekly: last closed week's SMA).`);
-    const st = (o, k) => (o ? NS.map((n) => `${n}: <span class="${cls(o[k][n])}">${sp(o[k][n])}</span>`).join(' · ') : '—');
+    const A = J.analog, PS = A.pasts || [A.past], P = PS[PS.length - 1], N = A.now, NW = J.now;
+    const c = card('Past bears vs now: 2018, 2022 and this one',
+      `Weeks counted from each BTC top (${PS.map((p) => dd(p.top)).join(', ')} and ${dd(N.top)}). Stretch = % above the SMA on the day (weekly: last closed week's SMA; the 200W did not exist yet in 2018).`);
+    const st = (o, k) => (o ? NS.map((n) => (o[k][n] == null ? `${n}: —` : `${n}: <span class="${cls(o[k][n])}">${sp(o[k][n])}</span>`)).join('<br>') : '—');
     const nowObj = { d: Object.fromEntries(NS.map((n) => [n, NW.daily[n].pct])), w: Object.fromEntries(NS.map((n) => [n, NW.weekly[n].pct])) };
-    c.append(table(['', '2022 bear', 'Now'], [
-      ['Weeks since BTC top', `${P.weeks_top_to_bottom} to the BTC bottom (${dd(P.bottom)})`, `<b>${N.weeks_since_top}</b>`],
-      ['USDT.D peak', `<b>${f2(P.peak.usdtd)}</b> on ${dd(P.peak.day)}, week ${P.weeks_top_to_peak} (BTC ${usd(P.peak.btc)})`, `${f2(N.peak.usdtd)} on ${dd(N.peak.day)} (BTC ${usd(N.peak.btc)}); today <b>${f2(NW.usdtd)}</b>`],
-      ['Stretch over daily SMAs', 'at the peak: ' + st(P.peak, 'd'), 'today: ' + st(nowObj, 'd')],
-      ['Stretch over weekly SMAs', 'at the peak: ' + st(P.peak, 'w'), 'today: ' + st(nowObj, 'w')],
-      ['After the peak: first daily close below', NS.map((n) => `${n}D ${dd(P.unwind['d' + n])}`).join('<br>'), NS.map((n) => `${n}D ${dd(N.unwind['d' + n])}`).join('<br>') + '<br><span style="color:var(--muted)">(after the ' + dd(N.peak.day) + ' peak)</span>'],
-      ['…and first weekly close below', NS.map((n) => `${n}W ${dd(P.unwind['w' + n])}`).join('<br>'), NS.map((n) => `${n}W ${dd(N.unwind['w' + n])}`).join('<br>')]
+    const col = (f, nowTxt) => PS.map(f).concat([nowTxt]);
+    c.append(table(['', ...PS.map((p) => p.label + ' bear' + (p.label === '2018' ? ' <span style="color:var(--warn)">⚠</span>' : '')), 'Now'], [
+      ['BTC top → bottom', ...col((p) => `${dd(p.top)} → ${dd(p.bottom)} (<b>${p.weeks_top_to_bottom} weeks</b>)`, `top ${dd(N.top)}; <b>${N.weeks_since_top} weeks</b> so far`)],
+      ['USDT.D peak', ...col((p) => `<b>${f2(p.peak.usdtd)}</b> on ${dd(p.peak.day)}: <b>week ${p.weeks_top_to_peak}</b>, ${p.days_peak_to_bottom === 0 ? 'the day BTC bottomed' : p.days_peak_to_bottom + ' days before BTC bottomed'} (BTC ${usd(p.peak.btc)})`,
+        `${f2(N.peak.usdtd)} on ${dd(N.peak.day)} (week ${Math.round((Date.parse(N.peak.day) - Date.parse(N.top)) / 6048e5)}, BTC ${usd(N.peak.btc)}); today <b>${f2(NW.usdtd)}</b>`)],
+      ['Stretch over daily SMAs', ...col((p) => 'at the peak:<br>' + st(p.peak, 'd'), 'today:<br>' + st(nowObj, 'd'))],
+      ['Stretch over weekly SMAs', ...col((p) => 'at the peak:<br>' + st(p.peak, 'w'), `last closed week (${dd(NW.weekly.week)}, ${f2(NW.weekly.close)}):<br>` + st(nowObj, 'w'))],
+      ['After the peak: first daily close below', ...col((p) => NS.map((n) => `${n}D ${dd(p.unwind['d' + n])}`).join('<br>'), NS.map((n) => `${n}D ${dd(N.unwind['d' + n])}`).join('<br>') + '<br><span style="color:var(--muted)">(after the ' + dd(N.peak.day) + ' peak)</span>')],
+      ['…and first weekly close below', ...col((p) => NS.map((n) => `${n}W ${dd(p.unwind['w' + n])}`).join('<br>'), NS.map((n) => `${n}W ${dd(N.unwind['w' + n])}`).join('<br>'))]
     ]));
     const w = [];
+    const wk = PS.map((p) => p.weeks_top_to_peak);
+    w.push(`Timing: in ${PS.map((p) => p.label).join(' and ')} USDT.D peaked in week ${new Set(wk).size === 1 ? wk[0] + ' both times' : wk.join(' and ')} after the BTC top, within 0–2 weeks of the BTC bottom. This bear is in week ${N.weeks_since_top}: past that point, so the clock alone says "late", not "when".`);
     w.push(`Prior peaks: <b>${f2(N.peak.usdtd)}</b> (${dd(N.peak.day)}) and <b>${f2(P.peak.usdtd)}</b> (${dd(P.peak.day)}). A daily close above both = new cycle high for USDT.D (more BTC downside); a rejection there = a double top.`);
-    w.push(`2022 topped with USDT.D ${sp(P.peak.d[20])} over its 20D and ${sp(P.peak.w[20])} over its 20W; today it is ${sp(NW.daily[20].pct)} and ${sp(NW.weekly[20].pct)}.`);
+    w.push(`2022 topped with USDT.D ${sp(P.peak.d[20])} over its 20D and ${sp(P.peak.w[20])} over its 20W; today it is ${sp(NW.daily[20].pct)} over the 20D and ${sp(NW.weekly[20].pct)} over the 20W at the last weekly close. (2018's stretch was bigger, ${sp(PS[0].peak.w[20])} over the 20W, partly from USDT supply growth.)`);
     w.push(`The 2022 unwind (BTC bottoming) went: daily close below the 20D (now ${f2(NW.daily[20].sma)}) → 50D (${f2(NW.daily[50].sma)}) → 100D/200D (${f2(NW.daily[100].sma)} / ${f2(NW.daily[200].sma)}) → weekly close below the 50W (${f2(NW.weekly[50].sma)}). The weekly 100 (${f2(NW.weekly[100].sma)}) was lost only months later, as the bull got going.`);
     c.append(el('p', { className: 'rf-note' }, '<b style="color:var(--ink)">What to watch</b>'));
     c.append(el('ul', { className: 'rf-note' }, w.map((x) => `<li style="margin:3px 0">${x}</li>`).join('')));
@@ -244,7 +251,7 @@
   function render() {
     const R = root(); if (!R) return;
     if (!J) { R.replaceChildren(el('div', { className: 'br-card' }, '<p class="note">Loading USDT.D analysis…</p>')); return; }
-    const foot = el('p', { className: 'rf-note' }, `Built ${J.generated}. ${J.source} BTC cycle dates (closes): top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025. Patterns from past cycles, not a forecast; not financial advice.`);
+    const foot = el('p', { className: 'rf-note' }, `Built ${J.generated}. ${J.source} BTC cycle dates (closes): top 16 Dec 2017, bottom 15 Dec 2018, 2019 rally high 26 Jun 2019, bottom 12 Mar 2020, top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025. USDT.D history starts 8 Mar 2015; the 100W exists from Feb 2017 and the 200W from Jan 2019. Patterns from past cycles, not a forecast; not financial advice.`);
     R.replaceChildren(...[readCard(), watchCard(J.top_watch), watchCard(J.bottom_watch)].filter(Boolean), nowCard(), chartCard(), behaveCard(), signalsCard(), analogCard(), turnCard(), foot);
   }
   let rs = null;

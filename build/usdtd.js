@@ -6,7 +6,8 @@
                     (a UTC day counts once its 20:00 candle has closed, the same rule as build.js)
      USDT.D weekly = Monday weeks of those days; the last week is "forming" until its Sunday has closed
      BTC daily     = tv/COINBASE_BTCUSD/1D then binance/BTCUSDT/1D (same chain as build.js), for context only
-   Regimes are fixed BTC cycle dates (closing prices): top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025.
+   Regimes are fixed BTC cycle dates (closing prices): 2017 bull from 1 Mar 2017, top 16 Dec 2017, 2019 rally to 26 Jun 2019, bottom 15 Dec 2018, top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025.
+   USDT.D history starts 8 Mar 2015; the 100W exists from Feb 2017 and the 200W from Jan 2019, so tests start in Jun 2017.
    The last regime runs to today until a new BTC cycle date is added to REGIMES.
 
    Measures (per regime, per timeframe, per SMA):
@@ -22,13 +23,19 @@ const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..'), OUT = path.join(ROOT, 'public', 'usdtd.json');
 const MD = path.resolve(process.argv[2] || '../market-data');
 const DAY = 86400, NS = [20, 50, 100, 200], TOL = 0.01;
+const LAUNCH = 'USDT launch years: USDT supply grew many times over, which pushed USDT.D up whatever crypto prices did (USDT.D never closed a week below its 100W from 2017 to Dec 2020).';
 const REGIMES = [
+  { id: 'bull17', name: 'Bull 2017', kind: 'bull', from: '2017-03-01', to: '2017-12-16', caveat: LAUNCH },
+  { id: 'bear18', name: 'Bear 2018', kind: 'bear', from: '2017-12-16', to: '2018-12-15', caveat: LAUNCH + ' The bear pattern still showed (above the 100W every week, peak on the day BTC bottomed), but 2018 stretch figures run high.' },
+  { id: 'rally19', name: 'Rally 2019', kind: 'bull', from: '2018-12-15', to: '2019-06-26', caveat: LAUNCH },
   { id: 'bull21', name: 'Bull 2020–21', kind: 'bull', from: '2020-03-12', to: '2021-11-08' },
   { id: 'bear22', name: 'Bear 2022', kind: 'bear', from: '2021-11-08', to: '2022-11-21' },
   { id: 'bull23', name: 'Bull 2023–25', kind: 'bull', from: '2022-11-21', to: '2025-10-06' },
   { id: 'bear26', name: 'Bear 2025–26 (so far)', kind: 'bear', from: '2025-10-06', to: null }
 ];
-const ANALOG = { past: { top: '2021-11-08', bottom: '2022-11-21', label: '2022' }, now: { top: '2025-10-06', label: 'now' } };
+// past bears for the "past bears vs now" comparison (BTC closes): 2018 (USDT launch years, see the caveat) and 2022
+const PASTS = [{ top: '2017-12-16', bottom: '2018-12-15', label: '2018' }, { top: '2021-11-08', bottom: '2022-11-21', label: '2022' }];
+const ANALOG = { past: PASTS[1], now: { top: '2025-10-06', label: 'now' } };
 
 const day = (t) => new Date(t * 1000).toISOString().slice(0, 10);
 const T = (d) => Date.parse(d + 'T00:00:00Z') / 1000;
@@ -90,7 +97,7 @@ function build() {
   });
 
   // crosses since 2020: price through 50W/100W/200W, SMA vs SMA (weekly), 50D vs 200D
-  const since = T('2020-01-01');
+  const since = T('2017-01-01');
   function crossList(X, a, b) {
     const out = []; let prev = null;
     for (const r of X) {
@@ -120,7 +127,7 @@ function build() {
     }
     return out;
   }
-  const turning = REGIMES.filter((R) => R.id !== 'bull21').map((R) => ({ id: R.id, name: R.name, kind: R.kind, daily: pivots(D, R, 10), weekly: pivots(W, R, 3) }));
+  const turning = REGIMES.filter((R) => ['bear18', 'bear22', 'bull23', 'bear26'].includes(R.id)).map((R) => ({ id: R.id, name: R.name, kind: R.kind, daily: pivots(D, R, 10), weekly: pivots(W, R, 3) }));
 
   // stretch at the big turns: % above/below each SMA on the day (daily) and vs the last closed week's SMAs (weekly)
   const stretchAt = (d) => {
@@ -131,8 +138,9 @@ function build() {
     return o;
   };
   const maxIn = (a, b) => { const s = D.filter((r) => r.t >= T(a) && (!b || r.t < T(b))); return day(s.reduce((x, r) => (r.c > x.c ? r : x), s[0]).t); };
-  const peak22 = maxIn('2022-01-01', '2023-01-01'), peak26 = maxIn('2025-10-06');
+  const peak22 = maxIn('2022-01-01', '2023-01-01'), peak26 = maxIn('2025-10-06'), peak18 = maxIn('2017-12-16', '2019-01-15');
   const marks = [
+    ['BTC top Dec 2017', '2017-12-16'], ['USDT.D peak 2018 (BTC bottom)', peak18],
     ['BTC top Nov 2021', '2021-11-08'], ['USDT.D peak 2022', peak22], ['BTC bottom Nov 2022', '2022-11-21'],
     ['BTC top Oct 2025', '2025-10-06'], ['USDT.D peak since Oct 2025', peak26]
   ].map(([label, d]) => ({ label, ...stretchAt(d) })).filter((x) => x.day);
@@ -156,7 +164,9 @@ function build() {
     forming_week: FW ? { week: day(FW.t), close: r2(FW.c), sma: Object.fromEntries(NS.map((n) => [n, r2(FW['s' + n])])), pct: Object.fromEntries(NS.map((n) => [n, pc(FW.c, FW['s' + n])])) } : null,
     last: { price_50w: sinceOf(crosses.price_50w), price_100w: sinceOf(crosses.price_100w), price_200w: sinceOf(crosses.price_200w), w50_w100: sinceOf(crosses.w50_w100), d50_d200: sinceOf(crosses.d50_d200) }
   };
+  const pastOf = (P) => { const pk = maxIn(P.top, day(T(P.bottom) + 30 * DAY)); return { ...P, peak: stretchAt(pk), weeks_top_to_peak: Math.round((T(pk) - T(P.top)) / (7 * DAY)), weeks_top_to_bottom: Math.round((T(P.bottom) - T(P.top)) / (7 * DAY)), days_peak_to_bottom: Math.round((T(P.bottom) - T(pk)) / DAY), unwind: after(pk) }; };
   const analog = {
+    pasts: PASTS.map(pastOf),
     past: { ...ANALOG.past, peak: stretchAt(peak22), weeks_top_to_peak: Math.round((T(peak22) - T(ANALOG.past.top)) / (7 * DAY)), weeks_top_to_bottom: Math.round((T(ANALOG.past.bottom) - T(ANALOG.past.top)) / (7 * DAY)), unwind: after(peak22) },
     now: { ...ANALOG.now, weeks_since_top: weeksSince(ANALOG.now.top), peak: stretchAt(peak26), unwind: after(peak26) }
   };
@@ -191,10 +201,10 @@ function build() {
   }
   const weekRead = readAt(D.length - 1, W.length - 1);
   // previous weeks: the read at each of the last 8 closed weeks (daily state = that week's Sunday)
-  // every closed week since Jun 2021: the last 8 for the strip, and each change of verdict for the "past record" list
+  // every closed week since Jun 2017: the last 8 for the strip, and each change of verdict for the "past record" list
   const all = [];
   for (let k = 0; k < W.length; k++) {
-    if (W[k].t < T('2021-06-01') || W[k].s200 == null) continue;
+    if (W[k].t < T('2017-06-01') || W[k].s100 == null) continue;
     const sun = W[k].t + 6 * DAY, di = D.findIndex((r) => r.t === sun);
     if (di >= 0) { const r = readAt(di, k); all.push({ week: r.week, close: r.week_close, verdict: r.verdict, btc: D[di].btc != null ? Math.round(D[di].btc) : null }); }
   }
@@ -207,10 +217,10 @@ function build() {
 
   // ---------- top watch / bottom watch (owner, 21 Nov 2026) ----------
   // An "extreme" = a daily close at a 90-day high (top watch) or low (bottom watch). After each one, six signs are tracked in
-  // the order they usually fire. Past record (since Apr 2019, each sign counted once per extreme, within 120 days of it):
+  // the order they usually fire. Past record (since Jun 2017, each sign counted once per extreme, within 120 days of it):
   //   moved  = USDT.D moved 20%+ the other way from the extreme within 180 days (top: fell = crypto relief rally)
   //   stayed = no close beyond the extreme in the 120 days after the sign (the extreme really was THE top / bottom)
-  // Weekly RSI(14) divergence: the extreme's week vs the strongest week 8-52 weeks earlier (the clue that marked Nov 2022).
+  // (Since Jun 2017, the first full year with a 100W.) Weekly RSI(14) divergence: the extreme's week vs the strongest week 8-52 weeks earlier (the clue that marked Nov 2022).
   const rsiOf = (rows) => { let up = 0, dn = 0; return rows.map((r, i) => { if (i === 0) return null; const ch = r.c - rows[i - 1].c, a = 1 / 14; up = up * (1 - a) + Math.max(ch, 0) * a; dn = dn * (1 - a) + Math.max(-ch, 0) * a; return i < 14 ? null : (dn === 0 ? 100 : 100 - 100 / (1 + up / dn)); }); };
   const wr = rsiOf(Wall); Wall.forEach((r, i) => { r.rsi = wr[i]; });
   const wkBySun = new Map(W.map((w) => [w.t + 6 * DAY, w]));
@@ -229,7 +239,7 @@ function build() {
       { id: 'w50', label: `Weekly close ${top ? 'below' : 'above'} the 50W`, f: (i) => wk(i, 50), lvl: () => LW.s50 }
     ];
     const isExt = (i) => (top ? hi90[i] != null && D[i].c >= hi90[i] : lo90[i] != null && D[i].c <= lo90[i]);
-    const i0 = D.findIndex((r) => r.t >= T('2019-04-01'));
+    const i0 = D.findIndex((r) => r.t >= T('2017-06-01'));
     const record = STEPS.map((st) => {
       let h = null, armed = false; const out = [];
       for (let i = i0; i < D.length - 121; i++) {
@@ -277,7 +287,7 @@ function build() {
     generated: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     source: 'USDT.D: TradingView CRYPTOCAP:USDT.D daily to ' + day(last1) + ', then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).',
     tolerance_pct: TOL * 100, read: weekRead, top_watch: topWatch, bottom_watch: bottomWatch, regimes, crosses, turning, marks, analog, now,
-    series: { cols: ['day', 'close', 's20', 's50', 's100', 's200', 'btc'], daily: ser(D, '2020-01-01'), weekly: ser(Wall, '2019-01-01'), forming_week: !!FW }
+    series: { cols: ['day', 'close', 's20', 's50', 's100', 's200', 'btc'], daily: ser(D, '2017-01-01'), weekly: ser(Wall, '2016-01-01'), forming_week: !!FW }
   };
 }
 
