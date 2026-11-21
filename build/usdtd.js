@@ -161,12 +161,56 @@ function build() {
     now: { ...ANALOG.now, weeks_since_top: weeksSince(ANALOG.now.top), peak: stretchAt(peak26), unwind: after(peak26) }
   };
 
+  // ---------- this week's read: fixed rules from the 2022 bear and the 2023-25 bull ----------
+  //   Bull                 weekly close below the 100W (2023-25: under it the whole bull)
+  //   Turning bull         weekly close below the 50W, still above the 100W (2022 bear: never closed a week below the 50W)
+  //   Bear, possibly ending  above the 50W, but turned back near the prior peaks (20-day high within 2% of the lower peak,
+  //                        last close 5%+ under that high) AND a daily close below the 20D or 50D (how the 2022 peak unwound)
+  //   Bear                 above the 50W and 100W with the 50W above the 100W
+  //   Turning bear         above the 100W but the 50W still under the 100W (the bear setup not confirmed yet)
+  const PEAKS = [analog.past.peak, analog.now.peak].filter(Boolean).map((p) => p.usdtd);
+  function readAt(di, wi) {
+    const d = D[di], w = W[wi], last20 = D.slice(Math.max(0, di - 19), di + 1), hi20 = Math.max(...last20.map((r) => r.c));
+    const zone = Math.min(...PEAKS);
+    const ck = {
+      w100: { ok: w.c > w.s100, label: 'Weekly close above the 100W', v: r2(w.s100) },
+      w50_100: { ok: w.s50 > w.s100, label: '50W above the 100W', v: r2(w.s50) },
+      w50: { ok: w.c > w.s50, label: 'Weekly close above the 50W', v: r2(w.s50) },
+      w20: { ok: w.c > w.s20, label: 'Weekly close above the 20W', v: r2(w.s20) },
+      d20: { ok: d.c > d.s20, label: 'Daily close above the 20D', v: r2(d.s20) },
+      d50: { ok: d.c > d.s50, label: 'Daily close above the 50D', v: r2(d.s50) },
+      reject: { ok: hi20 >= zone * 0.98 && d.c <= hi20 * 0.95, label: `Turned back near the prior peaks (20-day high ${hi20.toFixed(2)} vs ${zone.toFixed(2)}+, now 5%+ below it)`, v: r2(hi20) }
+    };
+    let verdict, why;
+    if (!ck.w100.ok) { verdict = 'Bull'; why = 'USDT.D closed the week below its 100W: the 2023–25 bull pattern.'; }
+    else if (!ck.w50.ok) { verdict = 'Turning bull'; why = 'Weekly close below the 50W while still above the 100W. In the 2022 bear USDT.D never closed a week below the 50W; it did in Jan 2023, two months after BTC bottomed. (Aug–Oct 2026 also did this during a relief rally, then went back above.)'; }
+    else if (ck.reject.ok && (!ck.d20.ok || !ck.d50.ok)) { verdict = 'Bear, possibly ending'; why = 'Turned back near the prior peaks and lost the ' + (!ck.d50.ok ? '50D' : '20D') + ': how the 2022 peak started to unwind (BTC bottomed within days). Needs weekly closes below the 20W/50W to confirm.'; }
+    else if (ck.w50_100.ok) { verdict = 'Bear'; why = 'Above the 50W and 100W with the 50W over the 100W: the 2022 bear pattern. Money is still moving into USDT.'; }
+    else { verdict = 'Turning bear'; why = 'Above the 100W but the 50W is still under the 100W: the bear setup is not confirmed yet.'; }
+    return { day: day(d.t), week: day(w.t), usdtd: r2(d.c), week_close: r2(w.c), verdict, why, checks: ck };
+  }
+  const weekRead = readAt(D.length - 1, W.length - 1);
+  // previous weeks: the read at each of the last 8 closed weeks (daily state = that week's Sunday)
+  // every closed week since Jun 2021: the last 8 for the strip, and each change of verdict for the "past record" list
+  const all = [];
+  for (let k = 0; k < W.length; k++) {
+    if (W[k].t < T('2021-06-01') || W[k].s200 == null) continue;
+    const sun = W[k].t + 6 * DAY, di = D.findIndex((r) => r.t === sun);
+    if (di >= 0) { const r = readAt(di, k); all.push({ week: r.week, close: r.week_close, verdict: r.verdict, btc: D[di].btc != null ? Math.round(D[di].btc) : null }); }
+  }
+  const history = all.slice(-8), record = all.filter((x, i) => i === 0 || x.verdict !== all[i - 1].verdict);
+  const prevR = W.length > 1 ? (() => { const sun = W[W.length - 2].t + 6 * DAY, di = D.findIndex((r) => r.t === sun); return di >= 0 ? readAt(di, W.length - 2) : null; })() : null;
+  weekRead.changed = prevR ? Object.keys(weekRead.checks).filter((k) => weekRead.checks[k].ok !== prevR.checks[k].ok).map((k) => (weekRead.checks[k].ok ? 'now: ' : 'no longer: ') + weekRead.checks[k].label) : [];
+  weekRead.prev_verdict = prevR ? prevR.verdict : null;
+  weekRead.history = history;
+  weekRead.record = record;
+
   // chart series: daily from 2020, weekly from 2019 (SMAs included); compact arrays
   const ser = (X, from) => X.filter((r) => r.t >= T(from)).map((r) => [day(r.t), r2(r.c), r2(r.s20), r2(r.s50), r2(r.s100), r2(r.s200), r.btc != null ? Math.round(r.btc) : null]);
   return {
     generated: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     source: 'USDT.D: TradingView CRYPTOCAP:USDT.D daily to ' + day(last1) + ', then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).',
-    tolerance_pct: TOL * 100, regimes, crosses, turning, marks, analog, now,
+    tolerance_pct: TOL * 100, read: weekRead, regimes, crosses, turning, marks, analog, now,
     series: { cols: ['day', 'close', 's20', 's50', 's100', 's200', 'btc'], daily: ser(D, '2020-01-01'), weekly: ser(Wall, '2019-01-01'), forming_week: !!FW }
   };
 }

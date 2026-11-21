@@ -35,6 +35,34 @@
     const w = el('div', { className: 'br-scroll' }); w.style.overflowX = 'auto'; w.append(t); return w;
   }
 
+  // ---------- 0. this week's read ----------
+  const VCOL = { 'Bear': ['var(--dn)', 'var(--dn-bg)'], 'Turning bear': ['var(--warn)', 'var(--warn-bg)'], 'Bear, possibly ending': ['var(--warn)', 'var(--warn-bg)'], 'Turning bull': ['var(--acc)', 'var(--acc-bg)'], 'Bull': ['var(--up)', 'var(--up-bg)'] };
+  const vpill = (v) => { const c = VCOL[v] || ['var(--muted)', 'var(--soft)']; return `<span class="rf-pill" style="color:${c[0]};background:${c[1]}">${v}</span>`; };
+  function readCard() {
+    const R = J.read; if (!R) return null;
+    const c = card(`This week's read for crypto: ${vpill(R.verdict)}`,
+      `From USDT.D's weekly close (week of ${dd(R.week)}, ${f2(R.week_close)}) and the last daily close (${dd(R.day)}, ${f2(R.usdtd)}). USDT.D up = money moving into USDT = crypto down. Updates on its own; the weekly part changes each Monday 11:00 Sydney.`);
+    c.append(el('p', null, `<b>${R.verdict}.</b> ${R.why}`));
+    if (R.prev_verdict && R.prev_verdict !== R.verdict) c.append(el('p', { className: 'rf-note' }, `Changed from <b>${R.prev_verdict}</b> last week.`));
+    if (R.changed && R.changed.length) c.append(el('p', { className: 'rf-note' }, 'Since last week: ' + R.changed.join('; ') + '.'));
+    const order = ['w100', 'w50_100', 'w50', 'w20', 'd50', 'd20', 'reject'];
+    c.append(el('ul', { className: 'rf-note' }, order.filter((k) => R.checks[k]).map((k) => { const x = R.checks[k]; return `<li style="margin:2px 0;list-style:none;margin-left:-18px">${x.ok ? '<b class="neg">✓</b>' : '<b style="color:var(--muted)">✗</b>'} ${x.label}${k !== 'reject' && x.v != null ? ` <span style="color:var(--muted)">(${f2(x.v)})</span>` : ''}</li>`; }).join('')));
+    c.append(el('p', { className: 'rf-note' }, '<b style="color:var(--ink)">Last 8 weeks:</b> ' + R.history.map((h) => `${dd(h.week).replace(/ \d{4}$/, '')} ${vpill(h.verdict)}`).join(' ')));
+    const rules = el('details');
+    rules.append(el('summary', { className: 'rf-note' }, 'The rules, and how they did since 2021'));
+    rules.append(el('ul', { className: 'rf-note' }, [
+      '<b>Bull</b>: weekly close below the 100W (2023–25: under it the whole bull).',
+      '<b>Turning bull</b>: weekly close below the 50W, still above the 100W (the 2022 bear never closed a week below the 50W).',
+      '<b>Bear, possibly ending</b>: still above the 50W, turned back near the prior peaks (20-day high within 2%, last close 5%+ below it) and a daily close below the 20D or 50D: how the 2022 peak unwound.',
+      '<b>Bear</b>: above the 50W and 100W, with the 50W over the 100W.',
+      '<b>Turning bear</b>: above the 100W but the 50W still under the 100W.'
+    ].map((x) => `<li style="margin:2px 0">${x}</li>`).join('')));
+    rules.append(el('p', { className: 'rf-note' }, 'Every change of the read since Jun 2021 (week, USDT.D weekly close, BTC at that week\'s close). It caught the turns, but 2023 flipped back and forth while USDT.D sat on its 50W, and "possibly ending" in Jun 2026 was followed by a relief rally, not the bottom.'));
+    rules.append(table(['Week', 'Read', 'USDT.D', 'BTC'], R.record.map((x) => [dd(x.week), vpill(x.verdict), f2(x.close), usd(x.btc)])));
+    c.append(rules);
+    return c;
+  }
+
   // ---------- 1. now ----------
   function nowCard() {
     const N = J.now, L = N.last, up100 = N.weekly[100].pct > 0;
@@ -188,7 +216,7 @@
     const R = root(); if (!R) return;
     if (!J) { R.replaceChildren(el('div', { className: 'br-card' }, '<p class="note">Loading USDT.D analysis…</p>')); return; }
     const foot = el('p', { className: 'rf-note' }, `Built ${J.generated}. ${J.source} BTC cycle dates (closes): top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025. Patterns from past cycles, not a forecast; not financial advice.`);
-    R.replaceChildren(nowCard(), chartCard(), behaveCard(), signalsCard(), analogCard(), turnCard(), foot);
+    R.replaceChildren(...[readCard()].filter(Boolean), nowCard(), chartCard(), behaveCard(), signalsCard(), analogCard(), turnCard(), foot);
   }
   let rs = null;
   window.addEventListener('resize', () => { clearTimeout(rs); rs = setTimeout(() => { const R = root(); if (J && R && !R.closest('[hidden]')) render(); }, 200); });
