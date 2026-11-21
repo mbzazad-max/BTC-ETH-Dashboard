@@ -71,13 +71,14 @@
       : 'Bottom watch: has USDT.D bottomed? <span style="font-weight:400;color:var(--muted);font-size:13px">(USDT.D bottom = crypto top or pullback)</span>',
     `Tracks the signs after the latest USDT.D 90-day ${top ? 'high' : 'low'}: <b>${f2(X.v)}</b> on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}, BTC ${usd(X.btc)}. Signs usually fire in this order; each is counted from that ${top ? 'high' : 'low'}.`);
     const col = /likely in|confirmed/.test(w.status) ? (top ? 'var(--up)' : 'var(--dn)') : /warning|setup/.test(w.status) ? 'var(--warn)' : 'var(--muted)';
-    c.append(el('p', null, `<b style="color:${col}">${w.status}.</b> ${w.fired} of 6 signs fired.`));
+    c.append(el('p', null, `<b style="color:${col}">${w.status}.</b> ${w.fired} of 6 signs fired. <span style="color:var(--muted)">BTC: ${usd(X.btc)} at the USDT.D ${top ? 'high' : 'low'} → ${usd(w.btc_now)} now (<span class="${cls(w.btc_now_chg)}">${sp(w.btc_now_chg)}</span>).</span>`));
     const rows = w.steps.map((s) => [
-      s.label + (s.level != null ? ` <span style="color:var(--muted)">(${f2(s.level)})</span>` : ''),
+      `<span style="white-space:nowrap">${s.label}${s.level != null ? ` <span style="color:var(--muted)">(${f2(s.level)})</span>` : ''}</span>`,
       s.fired ? `<b style="color:${top ? 'var(--up)' : 'var(--dn)'}">✓ ${dd(s.fired)}</b>${s.on_now ? '' : ' <span style="color:var(--muted)">(since reversed)</span>'}` : '<span style="color:var(--muted)">not yet</span>',
-      s.n ? `${s.moved}%` : '—', s.n ? `${s.stayed}%` : '—', s.n ? `${s.days} d` : '—', s.n || '—'
+      s.fired && s.btc != null ? `${usd(s.btc)} <span class="${cls(s.btc_chg)}">(${sp(s.btc_chg)})</span>` : '—',
+      s.n ? `${s.moved}%` : '—', s.n ? `${s.stayed}%` : '—', s.n ? `${s.days} d` : '—', s.btc_typ != null ? `<span class="${cls(s.btc_typ)}">${sp(s.btc_typ)}</span>` : '—', s.n || '—'
     ]);
-    c.append(table(['Sign', 'Fired since the ' + (top ? 'high' : 'low'), `USDT.D then moved 20%+ ${top ? 'down' : 'up'}`, `That ${top ? 'high' : 'low'} stayed the ${top ? 'top' : 'bottom'} (4 months)`, 'Typically fires', 'Times seen'], rows));
+    c.append(table(['Sign', 'Fired', `BTC then (vs ${usd(X.btc)})`, `Then USDT.D ${top ? '−' : '+'}20%`, `${top ? 'High' : 'Low'} held 4 mo`, 'Fires after', 'BTC by then (typ.)', 'Seen'], rows));
     const d = w.divergence;
     if (d) {
       const what = top
@@ -88,7 +89,7 @@
           (d.divergence ? '<b style="color:var(--dn)">Bullish divergence for USDT.D</b>: near or below the prior low on stronger momentum (crypto top warning).' : d.near ? 'Near the prior low but momentum is not stronger: no divergence.' : 'Not near the prior low: no divergence check yet.');
       c.append(el('p', { className: 'rf-note' }, what));
     }
-    c.append(el('p', { className: 'rf-note' }, `How to read it: the early daily signs are good at calling a USDT.D ${top ? 'pullback (crypto relief rally)' : 'bounce (crypto pullback)'} but often not THE ${top ? 'top' : 'bottom'}: ${top ? 'in bears USDT.D tops in waves (Jun 2022 then Nov 2022; Jun 2026 then now)' : 'in bulls USDT.D bottoms in waves (Mar 2024 then Dec 2024)'}. The weekly signs are later but surer (weekly dates = the Sunday the week closed). Past record = every USDT.D 90-day ${top ? 'high' : 'low'} since Jun 2017 (the 2017–19 launch years are included; they make the numbers a little noisier).`));
+    c.append(el('p', { className: 'rf-note' }, `Columns: <b>BTC then</b> = BTC's close the day the sign fired, and its change since the USDT.D ${top ? 'high' : 'low'}. Past record over every case: <b>Then USDT.D ${top ? '−' : '+'}20%</b> = USDT.D went on to move 20%+ ${top ? 'down' : 'up'} within 6 months; <b>${top ? 'High' : 'Low'} held 4 mo</b> = that ${top ? 'high' : 'low'} stayed the ${top ? 'top' : 'bottom'}; <b>Fires after</b> = typical days after the ${top ? 'high' : 'low'}; <b>BTC by then</b> = BTC's typical move by the time the sign fired (what waiting for it cost).<br>How to read it: the early daily signs are good at calling a USDT.D ${top ? 'pullback (crypto relief rally)' : 'bounce (crypto pullback)'} but often not THE ${top ? 'top' : 'bottom'}: ${top ? 'in bears USDT.D tops in waves (Jun 2022 then Nov 2022; Jun 2026 then now)' : 'in bulls USDT.D bottoms in waves (Mar 2024 then Dec 2024)'}. The weekly signs are later but surer (weekly dates = the Sunday the week closed). Past record = every USDT.D 90-day ${top ? 'high' : 'low'} since Jun 2017 (the 2017–19 launch years are included; they make the numbers a little noisier).`));
     return c;
   }
 

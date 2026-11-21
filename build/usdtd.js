@@ -248,18 +248,19 @@ function build() {
         armed = false;
         const stayed = !D.slice(i + 1, i + 121).some((r) => beyond(r.c, D[h].c));
         const after = D.slice(h, h + 181).map((r) => r.c), moved = top ? Math.min(...after) <= D[h].c * 0.8 : Math.max(...after) >= D[h].c * 1.2;
-        out.push({ stayed, moved, days: i - h });
+        out.push({ stayed, moved, days: i - h, btc: D[i].btc && D[h].btc ? (D[i].btc / D[h].btc - 1) * 100 : null });
       }
-      const n = out.length, days = out.map((x) => x.days).sort((a, b) => a - b);
-      return { id: st.id, n, moved: n ? Math.round(out.filter((x) => x.moved).length / n * 100) : null, stayed: n ? Math.round(out.filter((x) => x.stayed).length / n * 100) : null, days: n ? days[Math.floor(n / 2)] : null };
+      const n = out.length, days = out.map((x) => x.days).sort((a, b) => a - b), bm = out.map((x) => x.btc).filter((v) => v != null).sort((a, b) => a - b);
+      return { id: st.id, n, btc_typ: bm.length ? Math.round(bm[Math.floor(bm.length / 2)] * 10) / 10 : null, moved: n ? Math.round(out.filter((x) => x.moved).length / n * 100) : null, stayed: n ? Math.round(out.filter((x) => x.stayed).length / n * 100) : null, days: n ? days[Math.floor(n / 2)] : null };
     });
     // current episode: the latest extreme and which signs have fired since
     let h = -1; for (let i = D.length - 1; i >= 0; i--) if (isExt(i)) { h = i; break; }
     const steps = STEPS.map((st, k) => {
-      let fired = null; for (let i = h + 1; i < D.length; i++) if (st.f(i)) { fired = day(D[i].t); break; }
+      let fired = null, btcAt = null; for (let i = h + 1; i < D.length; i++) if (st.f(i)) { fired = day(D[i].t); btcAt = D[i].btc != null ? Math.round(D[i].btc) : null; break; }
+      const btcChg = btcAt != null && D[h].btc ? pc(btcAt, D[h].btc) : null;
       const weekly = st.id[0] === 'w', n = +st.id.slice(1);
       const onNow = weekly ? s * (LW.c - LW['s' + n]) > 0 : st.f(D.length - 1);   // weekly signs: the last closed week
-      return { id: st.id, label: st.label, level: r2(st.lvl()), on_now: !!onNow, fired, ...record[k] };
+      return { id: st.id, label: st.label, level: r2(st.lvl()), on_now: !!onNow, fired, btc: btcAt, btc_chg: btcChg, ...record[k] };
     });
     // weekly RSI divergence: the week of the extreme (or the forming week when the extreme is in it) vs the strongest prior week
     const wIdx = Wall.findIndex((w) => w.t === weekStart(D[h].t)), cur = Wall[wIdx];
@@ -277,7 +278,8 @@ function build() {
     const status = top
       ? (fw && steps.find((x) => x.id === 'w50').on_now ? 'Top likely in: weekly close below the 50W and still under it' : f20w ? 'Pullback confirmed on the weekly (below the 20W): relief rally for crypto; not yet proof the bear is over' : fd ? 'Early warning: USDT.D has started to turn down (crypto relief likely); many of these fail' : div && div.divergence ? 'Top setup: near the prior peak on weaker weekly momentum (like Nov 2022); no break yet' : 'No top signs yet: USDT.D still rising')
       : (fw && steps.find((x) => x.id === 'w50').on_now ? 'Bottom likely in: weekly close above the 50W and still over it (crypto top warning)' : f20w ? 'USDT.D bounce confirmed on the weekly (above the 20W): crypto pullback' : fd ? 'Early warning: USDT.D has started to turn up (crypto dip likely); many of these fail' : div && div.divergence ? 'Bottom setup: near the prior low on stronger weekly momentum; no break yet' : 'No bottom signs yet: USDT.D still falling');
-    return { kind: top ? 'top' : 'bottom', extreme: { day: day(D[h].t), v: r2(D[h].c), btc: D[h].btc != null ? Math.round(D[h].btc) : null, days_ago: D.length - 1 - h }, steps, fired, divergence: div, status };
+    const btcNow = L.btc != null ? Math.round(L.btc) : null;
+    return { kind: top ? 'top' : 'bottom', btc_now: btcNow, btc_now_chg: btcNow != null && D[h].btc ? pc(btcNow, D[h].btc) : null, extreme: { day: day(D[h].t), v: r2(D[h].c), btc: D[h].btc != null ? Math.round(D[h].btc) : null, days_ago: D.length - 1 - h }, steps, fired, divergence: div, status };
   }
   const topWatch = watch(true), bottomWatch = watch(false);
 
