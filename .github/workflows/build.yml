@@ -64,6 +64,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/snapshot.json public/freshness.json public/usdtd.json history/plans.json history/structure_test.json history/signals.json
           [ -f history/levels.json ] && git add history/levels.json
+          [ -f history/usdtd_log.json ] && git add history/usdtd_log.json
           if git diff --cached --quiet; then echo "Nothing changed."; exit 0; fi
           git commit -q -m "Dashboard build $(node -p "require('./public/freshness.json').generated")"
           for i in 1 2 3 4 5; do git push -q origin HEAD:main && exit 0; git pull -q --rebase origin main; sleep $((i*2)); done

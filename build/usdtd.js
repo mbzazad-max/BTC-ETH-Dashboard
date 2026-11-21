@@ -20,7 +20,7 @@
    Any failure keeps the last good public/usdtd.json and exits 0 with a warning, so the dashboard still deploys. */
 'use strict';
 const fs = require('fs'), path = require('path');
-const ROOT = path.resolve(__dirname, '..'), OUT = path.join(ROOT, 'public', 'usdtd.json');
+const ROOT = path.resolve(__dirname, '..'), OUT = process.env.USDTD_OUT || path.join(ROOT, 'public', 'usdtd.json');
 const MD = path.resolve(process.argv[2] || '../market-data');
 const DAY = 86400, NS = [20, 50, 100, 200], TOL = 0.01;
 const LAUNCH = 'USDT launch years: USDT supply grew many times over, which pushed USDT.D up whatever crypto prices did (USDT.D never closed a week below its 100W from 2017 to Dec 2020).';
@@ -57,7 +57,8 @@ function build() {
   const d1 = load('tv/CRYPTOCAP_USDT.D/1D'), h4 = load('tv/CRYPTOCAP_USDT.D/4H');
   const last1 = d1[d1.length - 1].t;
   const fromH4 = groupBy(h4, (t) => Math.floor(t / DAY) * DAY).filter((g) => g.rs[g.rs.length - 1].t === g.k + 72000 && g.k > last1).map((g) => agg(g.k, g.rs));
-  const D = d1.concat(fromH4);
+  let D = d1.concat(fromH4);
+  if (process.env.USDTD_ASOF) D = D.filter((r) => r.t <= T(process.env.USDTD_ASOF));   // replay: build as it would have looked on that day
   const btcA = load('tv/COINBASE_BTCUSD/1D'), btcB = load('binance/BTCUSDT/1D');
   const btc = new Map(btcA.concat(btcB.filter((r) => r.t > btcA[btcA.length - 1].t)).map((r) => [r.t, r.c]));
   const lastDay = D[D.length - 1].t;
@@ -91,7 +92,7 @@ function build() {
     out.stack = { up: full.length ? Math.round(up / full.length * 100) : null, down: full.length ? Math.round(dn / full.length * 100) : null };
     return out;
   }
-  const regimes = REGIMES.map((R) => {
+  const regimes = REGIMES.filter((R) => inR(D, R).length).map((R) => {
     const dX = inR(D, R), wX = inR(W, R), hi = dX.reduce((a, r) => (r.h > a.h ? r : a), dX[0]), lo = dX.reduce((a, r) => (r.l < a.l ? r : a), dX[0]);
     return { ...R, days: dX.length, weeks: wX.length, high: { day: day(hi.t), v: r2(hi.h) }, low: { day: day(lo.t), v: r2(lo.l) }, daily: behave(dX), weekly: behave(wX) };
   });
@@ -127,7 +128,7 @@ function build() {
     }
     return out;
   }
-  const turning = REGIMES.filter((R) => ['bear18', 'bear22', 'bull23', 'bear26'].includes(R.id)).map((R) => ({ id: R.id, name: R.name, kind: R.kind, daily: pivots(D, R, 10), weekly: pivots(W, R, 3) }));
+  const turning = REGIMES.filter((R) => ['bear18', 'bear22', 'bull23', 'bear26'].includes(R.id) && inR(D, R).length).map((R) => ({ id: R.id, name: R.name, kind: R.kind, daily: pivots(D, R, 10), weekly: pivots(W, R, 3) }));
 
   // stretch at the big turns: % above/below each SMA on the day (daily) and vs the last closed week's SMAs (weekly)
   const stretchAt = (d) => {
@@ -137,7 +138,7 @@ function build() {
     NS.forEach((n) => { o.d[n] = pc(r.c, r['s' + n]); o.w[n] = pc(r.c, wk['s' + n]); });
     return o;
   };
-  const maxIn = (a, b) => { const s = D.filter((r) => r.t >= T(a) && (!b || r.t < T(b))); return day(s.reduce((x, r) => (r.c > x.c ? r : x), s[0]).t); };
+  const maxIn = (a, b) => { const s = D.filter((r) => r.t >= T(a) && (!b || r.t < T(b))); if (!s.length) return null; return day(s.reduce((x, r) => (r.c > x.c ? r : x), s[0]).t); };
   const peak22 = maxIn('2022-01-01', '2023-01-01'), peak26 = maxIn('2025-10-06'), peak18 = maxIn('2017-12-16', '2019-01-15');
   const marks = [
     ['BTC top Dec 2017', '2017-12-16'], ['USDT.D peak 2018 (BTC bottom)', peak18],
@@ -166,7 +167,7 @@ function build() {
   };
   const pastOf = (P) => { const pk = maxIn(P.top, day(T(P.bottom) + 30 * DAY)); return { ...P, peak: stretchAt(pk), weeks_top_to_peak: Math.round((T(pk) - T(P.top)) / (7 * DAY)), weeks_top_to_bottom: Math.round((T(P.bottom) - T(P.top)) / (7 * DAY)), days_peak_to_bottom: Math.round((T(P.bottom) - T(pk)) / DAY), unwind: after(pk) }; };
   const analog = {
-    pasts: PASTS.map(pastOf),
+    pasts: PASTS.filter((P) => T(P.bottom) + 30 * DAY <= lastDay).map(pastOf),
     past: { ...ANALOG.past, peak: stretchAt(peak22), weeks_top_to_peak: Math.round((T(peak22) - T(ANALOG.past.top)) / (7 * DAY)), weeks_top_to_bottom: Math.round((T(ANALOG.past.bottom) - T(ANALOG.past.top)) / (7 * DAY)), unwind: after(peak22) },
     now: { ...ANALOG.now, weeks_since_top: weeksSince(ANALOG.now.top), peak: stretchAt(peak26), unwind: after(peak26) }
   };
@@ -224,12 +225,16 @@ function build() {
   const rsiOf = (rows) => { let up = 0, dn = 0; return rows.map((r, i) => { if (i === 0) return null; const ch = r.c - rows[i - 1].c, a = 1 / 14; up = up * (1 - a) + Math.max(ch, 0) * a; dn = dn * (1 - a) + Math.max(-ch, 0) * a; return i < 14 ? null : (dn === 0 ? 100 : 100 - 100 / (1 + up / dn)); }); };
   const wr = rsiOf(Wall); Wall.forEach((r, i) => { r.rsi = wr[i]; });
   const wkBySun = new Map(W.map((w) => [w.t + 6 * DAY, w]));
+  const isSun = D.map((r) => wkBySun.has(r.t));
+  const wkAt = []; { let cur = null; D.forEach((r, i) => { if (wkBySun.has(r.t)) cur = wkBySun.get(r.t); wkAt[i] = cur; }); }
   const hi90 = D.map((r, i) => (i >= 89 ? Math.max(...D.slice(i - 89, i + 1).map((x) => x.c)) : null));
   const lo90 = D.map((r, i) => (i >= 89 ? Math.min(...D.slice(i - 89, i + 1).map((x) => x.c)) : null));
+  const SLOW_FROM = {}, FAST_FROM = {};
   function watch(top) {
     const s = top ? -1 : 1;                                   // top watch: signs are closes BELOW; bottom watch: ABOVE
     const beyond = (a, b) => (top ? a > b : a < b);
-    const wk = (i, n) => { const w = wkBySun.get(D[i].t); return w && w['s' + n] != null && s * (w.c - w['s' + n]) > 0; };
+    // weekly signs use the last CLOSED week as of day i, and can only fire on the day a week closes (Sunday)
+    const wk = (i, n) => { const w = wkAt[i]; return !!w && w['s' + n] != null && s * (w.c - w['s' + n]) > 0; };
     const STEPS = [
       { id: 'd20', label: `Daily close ${top ? 'below' : 'above'} the 20D`, f: (i) => s * (D[i].c - D[i].s20) > 0, lvl: () => L.s20 },
       { id: 'd50', label: `Daily close ${top ? 'below' : 'above'} the 50D`, f: (i) => s * (D[i].c - D[i].s50) > 0, lvl: () => L.s50 },
@@ -241,10 +246,13 @@ function build() {
     const isExt = (i) => (top ? hi90[i] != null && D[i].c >= hi90[i] : lo90[i] != null && D[i].c <= lo90[i]);
     const i0 = D.findIndex((r) => r.t >= T('2017-06-01'));
     const record = STEPS.map((st) => {
-      let h = null, armed = false; const out = [];
+      let h = null, armed = false, saw = false; const out = [];
+      const wkly = st.id[0] === 'w';
       for (let i = i0; i < D.length - 121; i++) {
-        if (isExt(i)) { h = i; armed = true; continue; }
-        if (!armed || i - h > 120 || D[i].s200 == null || !st.f(i)) continue;
+        if (isExt(i)) { h = i; armed = true; saw = !st.f(i); continue; }
+        if (!armed || i - h > 120 || D[i].s200 == null) continue;
+        // a sign counts only as a CROSS: USDT.D was on the other side of the level at some point since the extreme
+        if (!st.f(i) || !saw || (wkly && !isSun[i])) { if (!st.f(i)) saw = true; continue; }
         armed = false;
         const stayed = !D.slice(i + 1, i + 121).some((r) => beyond(r.c, D[h].c));
         const after = D.slice(h, h + 181).map((r) => r.c), moved = top ? Math.min(...after) <= D[h].c * 0.8 : Math.max(...after) >= D[h].c * 1.2;
@@ -253,33 +261,63 @@ function build() {
       const n = out.length, days = out.map((x) => x.days).sort((a, b) => a - b), bm = out.map((x) => x.btc).filter((v) => v != null).sort((a, b) => a - b);
       return { id: st.id, n, btc_typ: bm.length ? Math.round(bm[Math.floor(bm.length / 2)] * 10) / 10 : null, moved: n ? Math.round(out.filter((x) => x.moved).length / n * 100) : null, stayed: n ? Math.round(out.filter((x) => x.stayed).length / n * 100) : null, days: n ? days[Math.floor(n / 2)] : null };
     });
-    // current episode: the latest extreme and which signs have fired since
-    let h = -1; for (let i = D.length - 1; i >= 0; i--) if (isExt(i)) { h = i; break; }
-    const steps = STEPS.map((st, k) => {
-      let fired = null, btcAt = null; for (let i = h + 1; i < D.length; i++) if (st.f(i)) { fired = day(D[i].t); btcAt = D[i].btc != null ? Math.round(D[i].btc) : null; break; }
-      const btcChg = btcAt != null && D[h].btc ? pc(btcAt, D[h].btc) : null;
-      const weekly = st.id[0] === 'w', n = +st.id.slice(1);
-      const onNow = weekly ? s * (LW.c - LW['s' + n]) > 0 : st.f(D.length - 1);   // weekly signs: the last closed week
-      return { id: st.id, label: st.label, level: r2(st.lvl()), on_now: !!onNow, fired, btc: btcAt, btc_chg: btcChg, ...record[k] };
-    });
-    // weekly RSI divergence: the week of the extreme (or the forming week when the extreme is in it) vs the strongest prior week
-    const wIdx = Wall.findIndex((w) => w.t === weekStart(D[h].t)), cur = Wall[wIdx];
-    const win = Wall.slice(Math.max(0, wIdx - 52), Math.max(0, wIdx - 8)).filter((w) => w.rsi != null);
-    const prev = win.length ? win.reduce((a, w) => (top ? (w.c > a.c ? w : a) : (w.c < a.c ? w : a))) : null;
-    let div = null;
-    if (prev && cur && cur.rsi != null) {
-      const near = top ? cur.c >= prev.c * 0.97 : cur.c <= prev.c * 1.03;
-      const weaker = top ? cur.rsi < prev.rsi - 2 : cur.rsi > prev.rsi + 2;
-      div = { prev_week: day(prev.t), prev_close: r2(prev.c), prev_rsi: Math.round(prev.rsi * 10) / 10, week: day(cur.t), close: r2(cur.c), rsi: Math.round(cur.rsi * 10) / 10,
-        forming: formingWeek && cur === Wall[Wall.length - 1], near, divergence: near && weaker };
+    // which extreme the current episode tracks (owner, 21 Nov 2026): the latest own 90-day extreme, unless the OPPOSITE watch
+    // has turned more recently (e.g. USDT.D made a new 90-day high after the last 90-day low). Then this watch restarts from
+    // that turn and follows the running extreme since it (bottom watch: the lowest close since the latest 90-day high), so it
+    // is empty while USDT.D is still moving away and starts firing as soon as the move ends. The old episode is kept as "previous".
+    const isOpp = (i) => (top ? lo90[i] != null && D[i].c <= lo90[i] : hi90[i] != null && D[i].c >= hi90[i]);
+    let hOwn = -1; for (let i = D.length - 1; i >= 0; i--) if (isExt(i)) { hOwn = i; break; }
+    let hOpp = -1; for (let i = D.length - 1; i >= 0; i--) if (isOpp(i)) { hOpp = i; break; }
+    function episode(h) {
+      const steps = STEPS.map((st, k) => {
+        let fired = null, btcAt = null, saw = !st.f(h); const wkly = st.id[0] === 'w';
+        for (let i = h + 1; i < D.length; i++) { if (st.f(i) && saw && (!wkly || isSun[i])) { fired = day(D[i].t); btcAt = D[i].btc != null ? Math.round(D[i].btc) : null; break; } if (!st.f(i)) saw = true; }
+        const btcChg = btcAt != null && D[h].btc ? pc(btcAt, D[h].btc) : null;
+        const weekly = st.id[0] === 'w', n = +st.id.slice(1);
+        const onNow = weekly ? s * (LW.c - LW['s' + n]) > 0 : st.f(D.length - 1);   // weekly signs: the last closed week
+        return { id: st.id, label: st.label, level: r2(st.lvl()), on_now: !!onNow, fired, btc: btcAt, btc_chg: btcChg, ...record[k] };
+      });
+      // weekly RSI divergence: the week of the extreme (or the forming week when the extreme is in it) vs the strongest prior week
+      const wIdx = Wall.findIndex((w) => w.t === weekStart(D[h].t)), cur = Wall[wIdx];
+      const win = Wall.slice(Math.max(0, wIdx - 52), Math.max(0, wIdx - 8)).filter((w) => w.rsi != null);
+      const prev = win.length ? win.reduce((a, w) => (top ? (w.c > a.c ? w : a) : (w.c < a.c ? w : a))) : null;
+      let div = null;
+      if (prev && cur && cur.rsi != null) {
+        const near = top ? cur.c >= prev.c * 0.97 : cur.c <= prev.c * 1.03;
+        const weaker = top ? cur.rsi < prev.rsi - 2 : cur.rsi > prev.rsi + 2;
+        div = { prev_week: day(prev.t), prev_close: r2(prev.c), prev_rsi: Math.round(prev.rsi * 10) / 10, week: day(cur.t), close: r2(cur.c), rsi: Math.round(cur.rsi * 10) / 10,
+          forming: formingWeek && cur === Wall[Wall.length - 1], near, divergence: near && weaker };
+      }
+      const fired = steps.filter((x) => x.fired).length, S = (id) => steps.find((x) => x.id === id);
+      const w50 = S('w50').fired && S('w50').on_now, w20 = S('w20').fired && S('w20').on_now, w20was = S('w20').fired && !S('w20').on_now;
+      const dOn = steps.filter((x) => x.fired && x.id[0] === 'd' && x.on_now).length, dWas = steps.filter((x) => x.fired && x.id[0] === 'd').length;
+      const status = top
+        ? (w50 ? 'Top likely in: weekly close below the 50W and still under it' : w20 ? 'Pullback confirmed on the weekly (below the 20W): relief rally for crypto; not yet proof the bear is over' : dOn ? 'Early warning: USDT.D has started to turn down (crypto relief likely); many of these fail' : (w20was || dWas) ? 'Signs fired but USDT.D is back above those levels: the turn has not held' : div && div.divergence ? 'Top setup: near the prior peak on weaker weekly momentum (like Nov 2022); no break yet' : 'No top signs yet: USDT.D still rising')
+        : (w50 ? 'Bottom likely in: weekly close above the 50W and still over it (crypto top warning)' : w20 ? 'USDT.D bounce confirmed on the weekly (above the 20W): crypto pullback' : dOn ? 'Early warning: USDT.D has started to turn up (crypto dip likely); many of these fail' : (w20was || dWas) ? 'Signs fired but USDT.D is back below those levels: the turn has not held' : div && div.divergence ? 'Bottom setup: near the prior low on stronger weekly momentum; no break yet' : 'No bottom signs yet: USDT.D still falling');
+      const btcNow = L.btc != null ? Math.round(L.btc) : null;
+      return { btc_now: btcNow, btc_now_chg: btcNow != null && D[h].btc ? pc(btcNow, D[h].btc) : null, extreme: { day: day(D[h].t), v: r2(D[h].c), btc: D[h].btc != null ? Math.round(D[h].btc) : null, days_ago: D.length - 1 - h }, steps, fired, divergence: div, status };
     }
-    const fired = steps.filter((x) => x.fired).length;
-    const fw = steps.find((x) => x.id === 'w50').fired, f20w = steps.find((x) => x.id === 'w20').fired, fd = steps.filter((x) => x.fired && x.id[0] === 'd').length;
-    const status = top
-      ? (fw && steps.find((x) => x.id === 'w50').on_now ? 'Top likely in: weekly close below the 50W and still under it' : f20w ? 'Pullback confirmed on the weekly (below the 20W): relief rally for crypto; not yet proof the bear is over' : fd ? 'Early warning: USDT.D has started to turn down (crypto relief likely); many of these fail' : div && div.divergence ? 'Top setup: near the prior peak on weaker weekly momentum (like Nov 2022); no break yet' : 'No top signs yet: USDT.D still rising')
-      : (fw && steps.find((x) => x.id === 'w50').on_now ? 'Bottom likely in: weekly close above the 50W and still over it (crypto top warning)' : f20w ? 'USDT.D bounce confirmed on the weekly (above the 20W): crypto pullback' : fd ? 'Early warning: USDT.D has started to turn up (crypto dip likely); many of these fail' : div && div.divergence ? 'Bottom setup: near the prior low on stronger weekly momentum; no break yet' : 'No bottom signs yet: USDT.D still falling');
-    const btcNow = L.btc != null ? Math.round(L.btc) : null;
-    return { kind: top ? 'top' : 'bottom', btc_now: btcNow, btc_now_chg: btcNow != null && D[h].btc ? pc(btcNow, D[h].btc) : null, extreme: { day: day(D[h].t), v: r2(D[h].c), btc: D[h].btc != null ? Math.round(D[h].btc) : null, days_ago: D.length - 1 - h }, steps, fired, divergence: div, status };
+    const turnWord = top ? 'low' : 'high', ownWord = top ? 'high' : 'low';
+    // for the history: the first CROSS of each sign after h and before `until` (index), with BTC then
+    const stepsFrom = (h, until) => STEPS.map((st) => {
+      let saw = !st.f(h); const wkly = st.id[0] === 'w';
+      for (let i = h + 1; i < until; i++) { if (st.f(i) && saw && (!wkly || isSun[i])) return { id: st.id, day: day(D[i].t), usdtd: r2(D[i].c), btc: D[i].btc != null ? Math.round(D[i].btc) : null, btc_chg: D[i].btc && D[h].btc ? pc(D[i].btc, D[h].btc) : null }; if (!st.f(i)) saw = true; }
+      return { id: st.id, day: null };
+    });
+    SLOW_FROM[top ? 'top' : 'bottom'] = stepsFrom;
+    if (hOwn >= hOpp) return { kind: top ? 'top' : 'bottom', mode: 'own', ...episode(hOwn) };
+    // the opposite watch turned more recently: restart from that turn
+    const opp = { day: day(D[hOpp].t), v: r2(D[hOpp].c), btc: D[hOpp].btc != null ? Math.round(D[hOpp].btc) : null };
+    const pe = hOwn >= 0 ? episode(hOwn) : null;
+    const previous = pe ? { extreme: pe.extreme, fired: pe.fired, status: pe.status } : null;
+    if (hOpp === D.length - 1) {
+      return { kind: top ? 'top' : 'bottom', mode: 'waiting', since_turn: opp, previous, steps: STEPS.map((st, k) => ({ id: st.id, label: st.label, level: r2(st.lvl()), on_now: false, fired: null, ...record[k] })), fired: 0,
+        status: `Waiting: USDT.D made a new 90-day ${turnWord} today (${opp.v.toFixed(2)}); this watch restarts from the next USDT.D ${ownWord}` };
+    }
+    let h = hOpp + 1; for (let i = hOpp + 1; i < D.length; i++) if (top ? D[i].c > D[h].c : D[i].c < D[h].c) h = i;
+    const e = episode(h);
+    if (h === D.length - 1 && !e.fired) e.status = `Restarted after the ${opp.day} USDT.D ${turnWord}: still ${top ? 'rising' : 'falling'}, new ${ownWord} today; signs start counting once it ${top ? 'stops rising' : 'stops falling'}`;
+    return { kind: top ? 'top' : 'bottom', mode: 'since_turn', since_turn: opp, previous, ...e };
   }
   const topWatch = watch(true), bottomWatch = watch(false);
 
@@ -338,6 +376,15 @@ function build() {
       record[S.id] = summ(out);
     }
     for (let i = i0; i < D.length - 61; i++) if (isExt[i]) base.push(outcome(i, i));
+    FAST_FROM[top ? 'top' : 'bottom'] = (h0, until) => {
+      const dv = divAt(h0), on = !!(dv && dv.divergence);
+      return SIGNS.map((S) => {
+        let i = null;
+        if (S.at) { if (on) i = h0; }
+        else for (let k = h0 + 1; k < Math.min(until, D.length) && k - h0 <= 30; k++) if (S.f(k, h0, on)) { i = k; break; }
+        return i == null ? { id: S.id, day: null } : { id: S.id, day: day(D[i].t), usdtd: r2(D[i].c), btc: D[i].btc != null ? Math.round(D[i].btc) : null, btc_chg: D[i].btc && D[h0].btc ? pc(D[i].btc, D[h0].btc) : null };
+      });
+    };
     // current episode
     let h = -1; for (let i = D.length - 1; i >= 0; i--) if (isExt[i]) { h = i; break; }
     const dvNow = divAt(h), dvOn = !!(dvNow && dvNow.divergence);
@@ -358,12 +405,57 @@ function build() {
   const topFast = fast(true), bottomFast = fast(false);
   topWatch.fast = topFast; bottomWatch.fast = bottomFast;
 
+  // ---------- every USDT.D top and bottom (owner, 21 Nov 2026) ----------
+  // Swings alternate: a top run starts at the first USDT.D 90-day closing high after a 90-day low (and the reverse); the swing's
+  // top (bottom) is the highest (lowest) close before the next opposite run starts. For each swing: the fast and the slow signs
+  // (first cross after the extreme, up to the next swing's extreme), BTC at each, and the move to the next swing. The last swing
+  // is open (still running). Since Jun 2017 (the first year with a 100W).
+  const swings = [];
+  {
+    let state = null, start = null; const runs = [];
+    for (let i = D.findIndex((r) => r.t >= T('2017-06-01')); i < D.length; i++) {
+      const hiE = hi90[i] != null && D[i].c >= hi90[i], loE = lo90[i] != null && D[i].c <= lo90[i];
+      if (hiE && state !== 'top') { if (state) runs.push({ kind: state, start, end: i }); state = 'top'; start = i; }
+      else if (loE && state !== 'bottom') { if (state) runs.push({ kind: state, start, end: i }); state = 'bottom'; start = i; }
+    }
+    if (state) runs.push({ kind: state, start, end: D.length, open: true });
+    const ext = runs.map((r) => { let h = r.start; for (let i = r.start; i < r.end; i++) if (r.kind === 'top' ? D[i].c > D[h].c : D[i].c < D[h].c) h = i; return h; });
+    runs.forEach((r, k) => {
+      const h = ext[k], nh = k + 1 < runs.length ? ext[k + 1] : null, until = nh != null ? nh : D.length, top = r.kind === 'top';
+      const pt = (i) => ({ day: day(D[i].t), usdtd: r2(D[i].c), btc: D[i].btc != null ? Math.round(D[i].btc) : null });
+      swings.push({ kind: r.kind, open: !!r.open, run_start: day(D[r.start].t), extreme: pt(h),
+        fast: FAST_FROM[r.kind](h, until), slow: SLOW_FROM[r.kind](h, until),
+        next: nh != null ? { ...pt(nh), days: nh - h, usdtd_chg: pc(D[nh].c, D[h].c), btc_chg: D[nh].btc && D[h].btc ? pc(D[nh].btc, D[h].btc) : null } : null,
+        so_far: nh == null ? { days: D.length - 1 - h, usdtd_chg: pc(L.c, D[h].c), btc_chg: L.btc && D[h].btc ? pc(L.btc, D[h].btc) : null } : null });
+    });
+  }
+
+  // permanent log (history/usdtd_log.json, committed by the workflow): every sign that fired for a swing and every swing once
+  // it closed, with the day it was first written. The first run fills it from history ("reconstructed"); later entries are live.
+  const LOGF = process.env.USDTD_LOG || path.join(ROOT, 'history', 'usdtd_log.json');
+  let log = null;
+  if (!process.env.USDTD_ASOF) {
+    const first = !fs.existsSync(LOGF);
+    log = first ? { _about: 'USDT.D tops and bottoms as the dashboard saw them (build/usdtd.js). live=false: filled from history on the first run (21 Nov 2026); live=true: written by the build when it happened.', entries: [] } : JSON.parse(fs.readFileSync(LOGF, 'utf8'));
+    const have = new Set(log.entries.map((e) => e.key)), stamp = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+    const add = (e) => { if (!have.has(e.key)) { have.add(e.key); log.entries.push({ ...e, logged_at: stamp, live: !first }); } };
+    swings.forEach((w) => {
+      const id = w.kind + '|' + w.run_start;
+      [['fast', w.fast], ['slow', w.slow]].forEach(([layer, list]) => list.forEach((x) => { if (x.day) add({ key: id + '|' + layer + '|' + x.id, swing: id, kind: w.kind, layer, sign: x.id, day: x.day, usdtd: x.usdtd, btc: x.btc, btc_chg: x.btc_chg }); }));
+      if (!w.open) add({ key: id + '|closed', swing: id, kind: w.kind, event: 'closed', extreme: w.extreme, next: w.next });
+    });
+    fs.mkdirSync(path.dirname(LOGF), { recursive: true });
+    fs.writeFileSync(LOGF, JSON.stringify(log, null, 1));
+  }
+  const liveKeys = log ? Object.fromEntries(log.entries.filter((e) => e.live).map((e) => [e.key, e.logged_at])) : {};
+  swings.forEach((w) => { const id = w.kind + '|' + w.run_start; w.live = {}; Object.entries(liveKeys).forEach(([k, at]) => { if (k.startsWith(id + '|')) w.live[k.slice(id.length + 1)] = at; }); });
+
   // chart series: daily from 2020, weekly from 2019 (SMAs included); compact arrays
   const ser = (X, from) => X.filter((r) => r.t >= T(from)).map((r) => [day(r.t), r2(r.c), r2(r.s20), r2(r.s50), r2(r.s100), r2(r.s200), r.btc != null ? Math.round(r.btc) : null]);
   return {
     generated: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     source: 'USDT.D: TradingView CRYPTOCAP:USDT.D daily to ' + day(last1) + ', then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).',
-    tolerance_pct: TOL * 100, read: weekRead, top_watch: topWatch, bottom_watch: bottomWatch, regimes, crosses, turning, marks, analog, now,
+    tolerance_pct: TOL * 100, read: weekRead, top_watch: topWatch, bottom_watch: bottomWatch, swings, regimes, crosses, turning, marks, analog, now,
     series: { cols: ['day', 'close', 's20', 's50', 's100', 's200', 'btc'], daily: ser(D, '2017-01-01'), weekly: ser(Wall, '2016-01-01'), forming_week: !!FW }
   };
 }

@@ -93,15 +93,20 @@
     `Two layers: a fast daily early warning (30-day ${top ? 'highs' : 'lows'}) and the slower cycle confirmation (90-day ${top ? 'highs' : 'lows'}, daily and weekly signs). Use the first for timing, the second to judge whether it is the real turn. Signs usually fire in the order listed.`);
     const col = /likely in|confirmed/.test(w.status) ? (top ? 'var(--up)' : 'var(--dn)') : /warning|setup/.test(w.status) ? 'var(--warn)' : 'var(--muted)';
     if (w.fast) c.append(fastSection(w.fast, top));
-    c.append(el('p', { className: 'rf-note' }, `<b style="color:var(--ink);font-size:14px">🧭 Cycle confirmation (daily + weekly)</b> · slower signs after the latest USDT.D <b>90-day ${top ? 'high' : 'low'}</b>: ${f2(X.v)} on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}, BTC ${usd(X.btc)}. Is it turning into the real cycle ${top ? 'top' : 'bottom'}?`));
-    c.append(el('p', null, `<b style="color:${col}">${w.status}.</b> ${w.fired} of 6 signs fired. <span style="color:var(--muted)">BTC: ${usd(X.btc)} at the USDT.D ${top ? 'high' : 'low'} → ${usd(w.btc_now)} now (<span class="${cls(w.btc_now_chg)}">${sp(w.btc_now_chg)}</span>).</span>`));
+    const T2 = w.since_turn, opp = top ? 'low' : 'high', own = top ? 'high' : 'low';
+    const track = w.mode === 'waiting' ? `nothing to track yet: USDT.D made a new 90-day ${opp} on ${dd(T2.day)} (${f2(T2.v)}, BTC ${usd(T2.btc)})`
+      : w.mode === 'since_turn' ? `the ${own} since the ${dd(T2.day)} USDT.D ${opp} (${f2(T2.v)}): <b>${f2(X.v)}</b> on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}, BTC ${usd(X.btc)}`
+      : `the latest USDT.D <b>90-day ${own}</b>: ${f2(X.v)} on ${dd(X.day)}${X.days_ago ? ` (${X.days_ago} days ago)` : ' (today)'}, BTC ${usd(X.btc)}`;
+    c.append(el('p', { className: 'rf-note' }, `<b style="color:var(--ink);font-size:14px">🧭 Cycle confirmation (daily + weekly)</b> · slower signs after ${track}. Is it turning into the real cycle ${top ? 'top' : 'bottom'}? (It restarts by itself after each opposite turn.)`));
+    c.append(el('p', null, `<b style="color:${col}">${w.status}.</b> ${w.fired} of 6 signs fired.` + (X ? ` <span style="color:var(--muted)">BTC: ${usd(X.btc)} at the USDT.D ${own} → ${usd(w.btc_now)} now (<span class="${cls(w.btc_now_chg)}">${sp(w.btc_now_chg)}</span>).</span>` : '')));
+    if (w.previous) { const P = w.previous; c.append(el('p', { className: 'rf-note' }, `Previous episode: USDT.D ${own} ${f2(P.extreme.v)} on ${dd(P.extreme.day)} (BTC ${usd(P.extreme.btc)}), ${P.fired} of 6 signs fired, ended as: ${P.status}. Full record in "Every USDT.D top and bottom" below.`)); }
     const rows = w.steps.map((s) => [
       `<span style="white-space:nowrap">${s.label}${s.level != null ? ` <span style="color:var(--muted)">(${f2(s.level)})</span>` : ''}</span>`,
       s.fired ? `<b style="color:${top ? 'var(--up)' : 'var(--dn)'}">✓ ${dd(s.fired)}</b>${s.on_now ? '' : ' <span style="color:var(--muted)">(since reversed)</span>'}` : '<span style="color:var(--muted)">not yet</span>',
       s.fired && s.btc != null ? `${usd(s.btc)} <span class="${cls(s.btc_chg)}">(${sp(s.btc_chg)})</span>` : '—',
       s.n ? `${s.moved}%` : '—', s.n ? `${s.stayed}%` : '—', s.n ? `${s.days} d` : '—', s.btc_typ != null ? `<span class="${cls(s.btc_typ)}">${sp(s.btc_typ)}</span>` : '—', s.n || '—'
     ]);
-    c.append(table(['Sign', 'Fired', `BTC then (vs ${usd(X.btc)})`, `Then USDT.D ${top ? '−' : '+'}20%`, `${top ? 'High' : 'Low'} held 4 mo`, 'Fires after', 'BTC by then (typ.)', 'Seen'], rows));
+    c.append(table(['Sign', 'Fired', X ? `BTC then (vs ${usd(X.btc)})` : 'BTC then', `Then USDT.D ${top ? '−' : '+'}20%`, `${top ? 'High' : 'Low'} held 4 mo`, 'Fires after', 'BTC by then (typ.)', 'Seen'], rows));
     const d = w.divergence;
     if (d) {
       const what = top
@@ -113,6 +118,30 @@
       c.append(el('p', { className: 'rf-note' }, what));
     }
     c.append(el('p', { className: 'rf-note' }, `Columns: <b>BTC then</b> = BTC's close the day the sign fired, and its change since the USDT.D ${top ? 'high' : 'low'}. Past record over every case: <b>Then USDT.D ${top ? '−' : '+'}20%</b> = USDT.D went on to move 20%+ ${top ? 'down' : 'up'} within 6 months; <b>${top ? 'High' : 'Low'} held 4 mo</b> = that ${top ? 'high' : 'low'} stayed the ${top ? 'top' : 'bottom'}; <b>Fires after</b> = typical days after the ${top ? 'high' : 'low'}; <b>BTC by then</b> = BTC's typical move by the time the sign fired (what waiting for it cost).<br>How to read it: the early daily signs are good at calling a USDT.D ${top ? 'pullback (crypto relief rally)' : 'bounce (crypto pullback)'} but often not THE ${top ? 'top' : 'bottom'}: ${top ? 'in bears USDT.D tops in waves (Jun 2022 then Nov 2022; Jun 2026 then now)' : 'in bulls USDT.D bottoms in waves (Mar 2024 then Dec 2024)'}. The weekly signs are later but surer (weekly dates = the Sunday the week closed). Past record = every USDT.D 90-day ${top ? 'high' : 'low'} since Jun 2017 (the 2017–19 launch years are included; they make the numbers a little noisier).`));
+    return c;
+  }
+
+  // ---------- 0c. every top and bottom ----------
+  function swingsCard() {
+    const SW = J.swings; if (!SW || !SW.length) return null;
+    const c = card('Every USDT.D top and bottom since 2017',
+      'Each swing between a USDT.D 90-day high and the next 90-day low (and back). <b>USDT.D top</b> = crypto low, <b>USDT.D bottom</b> = crypto high. For each: the extreme with BTC that day, when the best early sign and the cycle signs fired (BTC change since the extreme), and what happened up to the next swing. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/usdtd_log.json).');
+    const ds = (x) => { const d = new Date(x + 'T00:00:00Z'); return d.getUTCDate() + ' ' + MON[d.getUTCMonth()] + " '" + String(d.getUTCFullYear()).slice(2); };
+    const sg = (w, id, layer) => { const x = (layer === 'fast' ? w.fast : w.slow).find((y) => y.id === id); if (!x || !x.day) return '<span style="color:var(--muted)">—</span>'; const live = w.live && w.live[layer + '|' + id]; return `${ds(x.day)} <span class="${cls(x.btc_chg)}">${sp(x.btc_chg)}</span>${live ? ' <span title="logged live ' + live + '" style="color:var(--acc)">●</span>' : ''}`; };
+    const rows = SW.slice().reverse().map((w) => {
+      const top = w.kind === 'top', E = w.extreme;
+      const pill = `<span class="rf-pill" style="color:${top ? 'var(--up)' : 'var(--dn)'};background:${top ? 'var(--up-bg)' : 'var(--dn-bg)'}">USDT.D ${top ? 'top' : 'bottom'}</span>`;
+      const nFast = w.fast.filter((x) => x.day).length;
+      const after = w.next ? `→ ${dd(w.next.day)} (${w.next.days} d): USDT.D <span class="${top ? 'pos' : 'neg'}">${sp(w.next.usdtd_chg)}</span>, BTC <span class="${cls(w.next.btc_chg)}">${sp(w.next.btc_chg)}</span>`
+        : `<b>open</b>, ${w.so_far.days} d so far: USDT.D ${sp(w.so_far.usdtd_chg)}, BTC <span class="${cls(w.so_far.btc_chg)}">${sp(w.so_far.btc_chg)}</span>`;
+      return [pill + (w.open ? ' <b style="color:var(--warn)">now</b>' : ''), `<b>${dd(E.day)}</b><br>${f2(E.usdtd)}% · BTC ${usd(E.btc)}`,
+        `★ ${sg(w, top ? 'div10' : 'swing', 'fast')}<br><span style="color:var(--muted)">${nFast}/6 fast signs</span>`,
+        ['d20', 'd50', 'w20', 'w50'].map((id) => `<span style="color:var(--muted)">${id.replace('d', '').replace('w', '') + (id[0] === 'd' ? 'D' : 'W')}</span> ${sg(w, id, 'slow')}`).join('<br>'), after];
+    });
+    const head = ['Swing', 'Extreme (BTC that day)', 'Early ★ (daily)', 'Cycle signs: 20D · 50D · 20W · 50W', 'Then (to the next swing)'];
+    c.append(table(head, rows.slice(0, 10)));
+    if (rows.length > 10) { const d = el('details'); d.append(el('summary', { className: 'rf-note' }, `Show all ${rows.length} swings since 2017`)); d.append(table(head, rows.slice(10))); c.append(d); }
+    c.append(el('p', { className: 'rf-note' }, '★ = the best early sign: for USDT.D tops, RSI divergence then a close below the 10D; for USDT.D bottoms, the swing break. Signs are crosses (USDT.D had to be on the other side of the level after the extreme). Dates before 2020 are in the USDT launch years.'));
     return c;
   }
 
@@ -276,7 +305,7 @@
     const R = root(); if (!R) return;
     if (!J) { R.replaceChildren(el('div', { className: 'br-card' }, '<p class="note">Loading USDT.D analysis…</p>')); return; }
     const foot = el('p', { className: 'rf-note' }, `Built ${J.generated}. ${J.source} BTC cycle dates (closes): top 16 Dec 2017, bottom 15 Dec 2018, 2019 rally high 26 Jun 2019, bottom 12 Mar 2020, top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025. USDT.D history starts 8 Mar 2015; the 100W exists from Feb 2017 and the 200W from Jan 2019. Patterns from past cycles, not a forecast; not financial advice.`);
-    R.replaceChildren(...[readCard(), watchCard(J.top_watch), watchCard(J.bottom_watch)].filter(Boolean), nowCard(), chartCard(), behaveCard(), signalsCard(), analogCard(), turnCard(), foot);
+    R.replaceChildren(...[readCard(), watchCard(J.top_watch), watchCard(J.bottom_watch), swingsCard()].filter(Boolean), nowCard(), chartCard(), behaveCard(), signalsCard(), analogCard(), turnCard(), foot);
   }
   let rs = null;
   window.addEventListener('resize', () => { clearTimeout(rs); rs = setTimeout(() => { const R = root(); if (J && R && !R.closest('[hidden]')) render(); }, 200); });
