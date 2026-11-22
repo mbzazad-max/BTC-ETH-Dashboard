@@ -24,16 +24,19 @@
    usage: node build/usdtd.js <market-data dir> [--asset=btc] */
 'use strict';
 const fs = require('fs'), path = require('path');
-const ASSET = (() => { const a = (process.argv.find((x) => x.startsWith('--asset=')) || '--asset=usdtd').slice(8); return ['btc', 'total2es'].includes(a) ? a : 'usdtd'; })();
-const IS_BTC = ASSET === 'btc', IS_T2 = ASSET === 'total2es';
-const UP = IS_BTC || IS_T2;     // price-like: up = bullish (BTC, TOTAL2ES); USDT.D is the mirror
+const ASSET = (() => { const a = (process.argv.find((x) => x.startsWith('--asset=')) || '--asset=usdtd').slice(8); return ['btc', 'total2es', 'eth'].includes(a) ? a : 'usdtd'; })();
+const IS_BTC = ASSET === 'btc', IS_T2 = ASSET === 'total2es', IS_ETH = ASSET === 'eth';
+const UP = IS_BTC || IS_T2 || IS_ETH;     // price-like: up = bullish (BTC, TOTAL2ES); USDT.D is the mirror
 // TOTAL2ES tab (owner, 22 Nov 2026): the BTC-cycle engine on TradingView CRYPTOCAP:TOTAL2ES (altcoin market cap excluding
 // BTC and stablecoins). Daily history from Apr 2014 stored once in history/total2es_1d.csv (fetched 22 Nov 2026), then days
 // made from the closed 4H candles that the PC uploads to market-data (tv/CRYPTOCAP_TOTAL2ES/4H). BTC stays the context column.
-const ROOT = path.resolve(__dirname, '..'), OUT = process.env.USDTD_OUT || path.join(ROOT, 'public', IS_BTC ? 'btccycle.json' : IS_T2 ? 'total2es.json' : 'usdtd.json');
+// ETH cycle tab (owner, 22 Nov 2026): the BTC-cycle engine on ETH itself, with ETH's own cycle dates (closes). Daily history:
+// Kraken ETHUSD from 7 Aug 2015 to 16 Aug 2017 (TradingView, stored once in history/eth_1d.csv on 22 Nov 2026), then Binance
+// ETHUSDT from 17 Aug 2017 (the dashboard's own ETH candles in market-data). BTC stays the context column.
+const ROOT = path.resolve(__dirname, '..'), OUT = process.env.USDTD_OUT || path.join(ROOT, 'public', IS_BTC ? 'btccycle.json' : IS_T2 ? 'total2es.json' : IS_ETH ? 'ethcycle.json' : 'usdtd.json');
 const MD = path.resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) || '../market-data');
 const DAY = 86400, NS = [20, 50, 100, 200], TOL = 0.01;
-const NAME = IS_BTC ? 'BTC' : IS_T2 ? 'TOTAL2ES' : 'USDT.D';
+const NAME = IS_BTC ? 'BTC' : IS_T2 ? 'TOTAL2ES' : IS_ETH ? 'ETH' : 'USDT.D';
 const START = UP ? '2015-09-01' : '2017-06-01';            // tests and records start here (USDT.D: first year with a 100W)
 const LAUNCH = 'USDT launch years: USDT supply grew many times over, which pushed USDT.D up whatever crypto prices did (USDT.D never closed a week below its 100W from 2017 to Dec 2020).';
 const REGIMES_USDTD = [
@@ -55,14 +58,29 @@ const REGIMES_BTC = [
   { id: 'bull23', name: 'Bull 2023–25', kind: 'bull', from: '2022-11-21', to: '2025-10-06' },
   { id: 'bear26', name: 'Bear 2025–26 (so far)', kind: 'bear', from: '2025-10-06', to: null }
 ];
-const REGIMES = UP ? REGIMES_BTC : REGIMES_USDTD;
+// ETH's own cycle (closing prices): low 21 Oct 2015, top 13 Jan 2018, bottom 15 Dec 2018, 2019 rally high 26 Jun 2019,
+// low 12 Mar 2020, top 8 Nov 2021, bottom 18 Jun 2022, top 22 Aug 2025
+const REGIMES_ETH = [
+  { id: 'bull17', name: 'Bull 2015–18', kind: 'bull', from: '2015-10-21', to: '2018-01-13' },
+  { id: 'bear18', name: 'Bear 2018', kind: 'bear', from: '2018-01-13', to: '2018-12-15' },
+  { id: 'rally19', name: 'Rally 2019', kind: 'bull', from: '2018-12-15', to: '2019-06-26' },
+  { id: 'drop20', name: 'Drop 2019–20', kind: 'bear', from: '2019-06-26', to: '2020-03-12' },
+  { id: 'bull21', name: 'Bull 2020–21', kind: 'bull', from: '2020-03-12', to: '2021-11-08' },
+  { id: 'bear22', name: 'Bear 2022', kind: 'bear', from: '2021-11-08', to: '2022-06-18' },
+  { id: 'bull23', name: 'Bull 2022–25', kind: 'bull', from: '2022-06-18', to: '2025-08-22' },
+  { id: 'bear26', name: 'Bear 2025–26 (so far)', kind: 'bear', from: '2025-08-22', to: null }
+];
+const REGIMES = IS_ETH ? REGIMES_ETH : UP ? REGIMES_BTC : REGIMES_USDTD;
+// the cycle dates used for marks and "past bears vs now": BTC's (BTC, TOTAL2ES, USDT.D) or ETH's own
+const CY = IS_ETH ? { who: 'ETH', t1: '2018-01-13', t1l: 'Jan 2018', b1: '2018-12-15', t2: '2021-11-08', t2l: 'Nov 2021', b2: '2022-06-18', b2l: 'Jun 2022', t3: '2025-08-22', t3l: 'Aug 2025' }
+  : { who: 'BTC', t1: '2017-12-16', t1l: 'Dec 2017', b1: '2018-12-15', t2: '2021-11-08', t2l: 'Nov 2021', b2: '2022-11-21', b2l: 'Nov 2022', t3: '2025-10-06', t3l: 'Oct 2025' };
 // past bears for the "past bears vs now" comparison (BTC closes): 2018 (USDT launch years, see the caveat) and 2022
-const PASTS = [{ top: '2017-12-16', bottom: '2018-12-15', label: '2018' }, { top: '2021-11-08', bottom: '2022-11-21', label: '2022' }];
-const ANALOG = { past: PASTS[1], now: { top: '2025-10-06', label: 'now' } };
+const PASTS = [{ top: CY.t1, bottom: CY.b1, label: '2018' }, { top: CY.t2, bottom: CY.b2, label: '2022' }];
+const ANALOG = { past: PASTS[1], now: { top: CY.t3, label: 'now' } };
 
 const day = (t) => new Date(t * 1000).toISOString().slice(0, 10);
 const T = (d) => Date.parse(d + 'T00:00:00Z') / 1000;
-const fv = (v) => (v == null ? '—' : IS_T2 ? '$' + (v >= 1e12 ? (v / 1e12).toFixed(2) + 'T' : Math.round(v / 1e9) + 'B') : IS_BTC ? '$' + Math.round(v).toLocaleString('en-US') : v.toFixed(2));
+const fv = (v) => (v == null ? '—' : IS_ETH ? '$' + (v < 100 ? v.toFixed(2) : Math.round(v).toLocaleString('en-US')) : IS_T2 ? '$' + (v >= 1e12 ? (v / 1e12).toFixed(2) + 'T' : Math.round(v / 1e9) + 'B') : IS_BTC ? '$' + Math.round(v).toLocaleString('en-US') : v.toFixed(2));
 const r2 = (v) => (v == null || !isFinite(v) ? null : Math.round(v * 1e4) / 1e4);
 const pc = (a, b) => (a == null || b == null ? null : Math.round((a / b - 1) * 1000) / 10);
 
@@ -84,10 +102,13 @@ function build() {
   if (IS_BTC) { D = btcAll.map((r) => ({ ...r })); last1 = btcA[btcA.length - 1].t; }
   else {
     const csv = (f) => { const L = fs.readFileSync(f, 'utf8').trim().split('\n'); L.shift(); return L.map((ln) => { const p = ln.split(','); return { t: +p[0], o: +p[1], h: +p[2], l: +p[3], c: +p[4] }; }); };
+    if (IS_ETH) { const k = csv(path.join(ROOT, 'history', 'eth_1d.csv')), bn = load('binance/ETHUSDT/1D'); last1 = k[k.length - 1].t; D = k.concat(bn.filter((r) => r.t > last1)); }
+    else {
     const d1 = IS_T2 ? csv(path.join(ROOT, 'history', 'total2es_1d.csv')) : load('tv/CRYPTOCAP_USDT.D/1D'), h4 = load(IS_T2 ? 'tv/CRYPTOCAP_TOTAL2ES/4H' : 'tv/CRYPTOCAP_USDT.D/4H');
     last1 = d1[d1.length - 1].t;
     const fromH4 = groupBy(h4, (t) => Math.floor(t / DAY) * DAY).filter((g) => g.rs[g.rs.length - 1].t === g.k + 72000 && g.k > last1).map((g) => agg(g.k, g.rs));
     D = d1.concat(fromH4);
+    }
   }
   if (process.env.USDTD_ASOF) D = D.filter((r) => r.t <= T(process.env.USDTD_ASOF));   // replay: build as it would have looked on that day
   const btc = new Map(btcAll.map((r) => [r.t, r.c]));
@@ -171,12 +192,12 @@ function build() {
   // the bear-market extreme: USDT.D peaks (highest close), BTC bottoms (lowest close)
   const BX = UP ? -1 : 1;
   const maxIn = (a, b) => { const s = D.filter((r) => r.t >= T(a) && (!b || r.t < T(b))); if (!s.length) return null; return day(s.reduce((x, r) => (BX * r.c > BX * x.c ? r : x), s[0]).t); };
-  const peak22 = maxIn('2022-01-01', '2023-01-01'), peak26 = maxIn('2025-10-06'), peak18 = maxIn('2017-12-16', '2019-01-15');
+  const peak22 = maxIn('2022-01-01', '2023-01-01'), peak26 = maxIn(CY.t3), peak18 = maxIn(CY.t1, '2019-01-15');
   const XW = UP ? NAME + ' low' : 'USDT.D peak';
   const marks = [
-    ['BTC top Dec 2017', '2017-12-16'], [XW + ' 2018' + (UP ? '' : ' (BTC bottom)'), peak18],
-    ['BTC top Nov 2021', '2021-11-08'], [XW + ' 2022', peak22], ['BTC bottom Nov 2022', '2022-11-21'],
-    ['BTC top Oct 2025', '2025-10-06'], [XW + ' since Oct 2025', peak26]
+    [CY.who + ' top ' + CY.t1l, CY.t1], [XW + ' 2018' + (UP ? '' : ' (BTC bottom)'), peak18],
+    [CY.who + ' top ' + CY.t2l, CY.t2], [XW + ' 2022', peak22], [CY.who + ' bottom ' + CY.b2l, CY.b2],
+    [CY.who + ' top ' + CY.t3l, CY.t3], [XW + ' since ' + CY.t3l, peak26]
   ].map(([label, d]) => ({ label, ...stretchAt(d) })).filter((x) => x.day);
 
   // how the bear extreme unwound: first daily close back through each SMA after it (USDT.D: below; BTC: above), then weekly
@@ -499,7 +520,7 @@ function build() {
 
   // permanent log (history/usdtd_log.json, committed by the workflow): every sign that fired for a swing and every swing once
   // it closed, with the day it was first written. The first run fills it from history ("reconstructed"); later entries are live.
-  const LOGF = process.env.USDTD_LOG || path.join(ROOT, 'history', IS_BTC ? 'btc_log.json' : IS_T2 ? 'total2es_log.json' : 'usdtd_log.json');
+  const LOGF = process.env.USDTD_LOG || path.join(ROOT, 'history', IS_BTC ? 'btc_log.json' : IS_T2 ? 'total2es_log.json' : IS_ETH ? 'eth_log.json' : 'usdtd_log.json');
   let log = null;
   if (!process.env.USDTD_ASOF) {
     const first = !fs.existsSync(LOGF);
@@ -521,7 +542,7 @@ function build() {
   const ser = (X, from) => X.filter((r) => r.t >= T(from)).map((r) => [day(r.t), r2(r.c), r2(r.s20), r2(r.s50), r2(r.s100), r2(r.s200), r.btc != null ? Math.round(r.btc) : null]);
   return {
     generated: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
-    source: IS_T2 ? 'TOTAL2ES: TradingView CRYPTOCAP:TOTAL2ES daily to ' + day(last1) + ' (stored once, history/total2es_1d.csv), then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).' : IS_BTC ? 'BTC: Coinbase BTCUSD daily to ' + day(last1) + ', then Binance BTCUSDT (closing prices, UTC days).' : 'USDT.D: TradingView CRYPTOCAP:USDT.D daily to ' + day(last1) + ', then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).',
+    source: IS_ETH ? 'ETH: Kraken ETHUSD daily to ' + day(last1) + ' (TradingView, stored once, history/eth_1d.csv), then Binance ETHUSDT (closing prices, UTC days); BTC: Coinbase BTCUSD then Binance BTCUSDT.' : IS_T2 ? 'TOTAL2ES: TradingView CRYPTOCAP:TOTAL2ES daily to ' + day(last1) + ' (stored once, history/total2es_1d.csv), then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).' : IS_BTC ? 'BTC: Coinbase BTCUSD daily to ' + day(last1) + ', then Binance BTCUSDT (closing prices, UTC days).' : 'USDT.D: TradingView CRYPTOCAP:USDT.D daily to ' + day(last1) + ', then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).',
     asset: ASSET, name: NAME, tolerance_pct: TOL * 100, read: weekRead, top_watch: topWatch, bottom_watch: bottomWatch, swings, regimes, crosses, turning, marks, analog, now,
     series: { cols: ['day', 'close', 's20', 's50', 's100', 's200', 'btc'], daily: ser(D, UP ? '2015-01-01' : '2017-01-01'), weekly: ser(Wall, UP ? '2015-01-01' : '2016-01-01'), forming_week: !!FW }
   };

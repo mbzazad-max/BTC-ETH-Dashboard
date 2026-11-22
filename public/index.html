@@ -230,6 +230,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
     <button id="plan" role="tab" aria-selected="false">Trade plan</button>
     <button id="forecast" role="tab" aria-selected="false">Forecast</button>
     <button id="btccyc" role="tab" aria-selected="false">BTC cycle</button>
+    <button id="ethcyc" role="tab" aria-selected="false" hidden>ETH cycle</button>
   </nav>
 
   <section class="br-page" data-page="usdtd" hidden><div id="usdtd-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div><script src="usdtd.js"></script></section>
@@ -237,6 +238,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
   <section class="br-page" data-page="btccyc" hidden><div id="btccyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>
 
   <section class="br-page" data-page="total2" hidden><div id="total2-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>
+
+  <section class="br-page" data-page="ethcyc" hidden><div id="ethcyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>
 
   <section class="br-page" data-page="daily" hidden>
     <div class="br-card" id="daily-heatmap">
@@ -2192,6 +2195,8 @@ dash.calc('headline', {
       if (window.__btccyc) window.__btccyc();
     } else if (current === 'total2') {
       if (window.__total2) window.__total2();
+    } else if (current === 'ethcyc') {
+      if (window.__ethcyc) window.__ethcyc();
     } else {
       const yd = dash.data('yearly_roi');
       const rows = yd.status === 'ok' ? yd.data : [];
@@ -2226,7 +2231,12 @@ dash.calc('headline', {
   };
   gBtns.forEach((b) => b.addEventListener('click', () => gaugeView(b.dataset.gauge)));
   document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => gaugeView(null)));
-  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'btccyc'].includes(named)) show(named);
+  const ethTab = document.getElementById('ethcyc');
+  const ethOnly = (a) => { ethTab.hidden = a !== 'ETH'; if (a !== 'ETH' && current === 'ethcyc') show('btccyc'); if (a !== 'ETH' && coinTab === 'ethcyc') coinTab = 'btccyc'; };
+  document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => ethOnly(b.dataset.asset)));
+  let startCoin = 'BTC'; try { const v = localStorage.getItem('bd_asset'); if (['BTC', 'ETH', 'SOL', 'BNB'].includes(v)) startCoin = v; } catch (e) { /* storage unavailable */ }
+  ethTab.hidden = startCoin !== 'ETH';
+  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'btccyc'].includes(named) || (named === 'ethcyc' && startCoin === 'ETH')) show(named);
   else if (GAUGES.includes(named)) gaugeView(named);
 })();
 </script>

@@ -85,3 +85,11 @@ Data: the daily history from Apr 2014 was fetched once from TradingView and stor
 ## USDT.D and TOTAL2ES in the top switch (22 Nov 2026)
 
 Owner's request: USDT.D and TOTAL2ES are their own tabs next to BTC / ETH / SOL / BNB instead of page tabs under each coin; BTC cycle stays a page tab. A second button group (`#gaugeSw`) sits beside the coin switch. Picking USDT.D or TOTAL2ES hides the coin's headline, price tiles and tab bar and shows that page (same content, same renderer); picking a coin brings them back on the coin tab you were on. `#usdtd` and `#total2` links still open them. One tools/page.js edit (plus the switch and tab-bar edits); `tests/render.js` checks both directions for every coin.
+
+## ETH cycle tab (22 Nov 2026)
+
+Owner's request: the BTC cycle analysis, same logic, for ETH, as a tab under ETH. A page tab "ETH cycle" after "BTC cycle", shown only while ETH is the coin (switching away while on it goes to BTC cycle).
+- Engine: `node build/usdtd.js <market-data> --asset=eth` -> `public/ethcycle.json`, permanent log `history/eth_log.json`. Same rules as BTC (weekly read, bottom/top watch, early warning, every swing, SMA behaviour, weekly crosses, past bears vs now, turning points); BTC is kept as the context column (like TOTAL2ES).
+- ETH's own cycle dates (closes): low 21 Oct 2015, top 13 Jan 2018, bottom 15 Dec 2018, rally high 26 Jun 2019, low 12 Mar 2020, top 8 Nov 2021, bottom 18 Jun 2022, top 22 Aug 2025. Regimes, "past bears vs now" (2018: top→bottom 48 weeks, −94%; 2022: 32 weeks, −79%) and the swing tags use them.
+- Data: Kraken ETHUSD daily 7 Aug 2015 – 16 Aug 2017, fetched once from TradingView and stored in `history/eth_1d.csv` (Binance ETHUSDT starts 17 Aug 2017, too late for a 100W/200W in the 2018 bear; on the hand-over day Kraken closed 300.79, Binance 302.00), then the dashboard's own Binance ETHUSDT 1D from market-data. The 100W exists from Jun 2017, the 200W from May 2019.
+- Renderer: `window.__ethcyc` in `public/usdtd.js` (flag `ET`). BTC, USDT.D and TOTAL2ES outputs checked byte-identical (apart from the build time) before and after the engine change.
