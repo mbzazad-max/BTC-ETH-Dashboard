@@ -93,3 +93,11 @@ Owner's request: the BTC cycle analysis, same logic, for ETH, as a tab under ETH
 - ETH's own cycle dates (closes): low 21 Oct 2015, top 13 Jan 2018, bottom 15 Dec 2018, rally high 26 Jun 2019, low 12 Mar 2020, top 8 Nov 2021, bottom 18 Jun 2022, top 22 Aug 2025. Regimes, "past bears vs now" (2018: top→bottom 48 weeks, −94%; 2022: 32 weeks, −79%) and the swing tags use them.
 - Data: Kraken ETHUSD daily 7 Aug 2015 – 16 Aug 2017, fetched once from TradingView and stored in `history/eth_1d.csv` (Binance ETHUSDT starts 17 Aug 2017, too late for a 100W/200W in the 2018 bear; on the hand-over day Kraken closed 300.79, Binance 302.00), then the dashboard's own Binance ETHUSDT 1D from market-data. The 100W exists from Jun 2017, the 200W from May 2019.
 - Renderer: `window.__ethcyc` in `public/usdtd.js` (flag `ET`). BTC, USDT.D and TOTAL2ES outputs checked byte-identical (apart from the build time) before and after the engine change.
+
+## SOL and BNB cycle tabs (22 Nov 2026)
+
+Owner's request: the same cycle analysis for SOL and BNB, each under its own coin. Page tabs "SOL cycle" / "BNB cycle" after "BTC cycle", shown only while that coin is picked (the ETH / SOL / BNB cycle tab follows the coin switch; BTC goes to BTC cycle).
+- Engine: `--asset=sol` / `--asset=bnb` -> `public/solcycle.json`, `public/bnbcycle.json`, logs `history/sol_log.json`, `history/bnb_log.json`. Data: the dashboard's own Binance SOLUSDT (from 11 Aug 2020) and BNBUSDT (from 6 Nov 2017) daily candles; nothing new is fetched.
+- Own cycle dates (closes). SOL: low 23 Dec 2020, top 6 Nov 2021, bottom 29 Dec 2022, top 18 Jan 2025 (one past bear: 60 weeks, −96%). BNB: top 6 Jan 2018, bottom 7 Dec 2018, rally high 21 Jun 2019, low 12 Mar 2020, top 3 May 2021, bottom 18 Jun 2022, top 8 Oct 2025 (2018: 48 weeks, −80%; 2021–22: 59 weeks, −71%).
+- Short histories: SOL's 100W starts Jul 2022 and 200W Jun 2024; BNB's 100W Sep 2019 and 200W Aug 2021. The weekly read and its record start there.
+- Renderer: one coin table (`COINS` in public/usdtd.js) holds each coin's dates and wording; ETH moved onto it. Coin tabs ("weekly 200W ... came near the bottom") no longer quote BTC's history.

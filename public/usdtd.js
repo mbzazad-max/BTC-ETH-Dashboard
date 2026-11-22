@@ -1,13 +1,34 @@
-/* USDT.D tab (21 Nov 2026), BTC cycle tab (21 Nov 2026), TOTAL2ES tab (22 Nov 2026) and ETH cycle tab (22 Nov 2026, ETH only): one renderer for all four. Draws public/usdtd.json and
+/* USDT.D tab (21 Nov 2026), BTC cycle tab (21 Nov 2026), TOTAL2ES tab (22 Nov 2026) and ETH / SOL / BNB cycle tabs (22 Nov 2026, each only under its coin): one renderer for all. Draws public/usdtd.json and
    public/btccycle.json (both built by build/usdtd.js, the second with --asset=btc) into the "USDT.D" and "BTC cycle" pages.
    The page calls window.__usdtd() / window.__btccyc() when the tab is shown (tools/page.js edits). Read-only. */
 (function () {
   'use strict';
 function make(A) {
   // B = price-like (BTC, TOTAL2ES: up = bullish); OB = BTC itself (no separate BTC column); T2 = TOTAL2ES (owner, 22 Nov 2026)
-  // ET = ETH itself (owner, 22 Nov 2026): price-like like BTC, ETH's own cycle dates, BTC kept as the context column
-  const T2 = !!A.t2, OB = !!A.btc, ET = !!A.eth, B = OB || T2 || ET, NM = OB ? 'BTC' : T2 ? 'TOTAL2ES' : ET ? 'ETH' : 'USDT.D';
-  const CYW = ET ? 'ETH' : 'BTC';     // whose cycle the regimes and past bears follow
+  // ET = a coin with its own cycle dates (ETH, SOL, BNB; owner, 22 Nov 2026): price-like like BTC, BTC kept as the context column.
+  // CC = that coin's wording: its cycle dates, where its history starts, how it lines up with BTC
+  const COINS = {
+    ETH: { an: 'an', since: 'Sep 2015', sinceY: '2015', readSince: 'Jun 2017', chart: ['2015-01-01', 'Since 2015'], sig: 'Since the 100W first exists (Jun 2017) and the 200W (May 2019).',
+      cy: { '2018-01-13': 'top', '2018-12-15': 'bottom', '2021-11-08': 'top', '2022-06-18': 'bottom', '2025-08-22': 'top' },
+      vsBtc: 'ETH and BTC turn months apart, in either order (ETH bottomed in Jun 2022, BTC in Nov 2022; ETH topped in Aug 2025, BTC in Oct 2025).',
+      behave: 'ETH\'s bulls and bears are dated from ETH\'s own tops and bottoms (its 2022 low came in June, five months before BTC\'s, and its last top in Aug 2025, six weeks before BTC\'s).',
+      dates: 'low 21 Oct 2015, top 13 Jan 2018, bottom 15 Dec 2018, 2019 rally high 26 Jun 2019, low 12 Mar 2020, top 8 Nov 2021, bottom 18 Jun 2022, top 22 Aug 2025',
+      hist: 'ETH history starts 7 Aug 2015 (Kraken; Binance from 17 Aug 2017); the 100W exists from Jun 2017 and the 200W from May 2019. Before 2016 ETH traded under $1 on thin volume.' },
+    SOL: { an: 'a', since: 'Aug 2020', sinceY: '2020', readSince: 'Jul 2022', chart: ['2020-08-01', 'All (from Aug 2020)'], sig: 'Since the 100W first exists (Jul 2022) and the 200W (Jun 2024).',
+      cy: { '2021-11-06': 'top', '2022-12-29': 'bottom', '2025-01-18': 'top' },
+      vsBtc: 'SOL and BTC turn months apart, in either order (SOL bottomed in Dec 2022, a month after BTC; SOL topped in Jan 2025, nine months before BTC).',
+      behave: 'SOL\'s bulls and bears are dated from SOL\'s own tops and bottoms (its 2022 low came in Dec 2022 after the FTX collapse, a month after BTC\'s, and its last top in Jan 2025, nine months before BTC\'s). SOL trades from Aug 2020 only, so there is one past bear to compare (2021–22) and the 100W/200W start in Jul 2022 / Jun 2024.',
+      dates: 'low 23 Dec 2020, top 6 Nov 2021, bottom 29 Dec 2022, top 18 Jan 2025',
+      hist: 'SOL history starts 11 Aug 2020 (Binance SOLUSDT); the 100W exists from Jul 2022 and the 200W from Jun 2024, so the weekly read starts in Jul 2022.' },
+    BNB: { an: 'a', since: 'Nov 2017', sinceY: '2017', readSince: 'Sep 2019', chart: ['2017-11-01', 'Since 2017'], sig: 'Since the 100W first exists (Sep 2019) and the 200W (Aug 2021).',
+      cy: { '2018-01-06': 'top', '2018-12-07': 'bottom', '2021-05-03': 'top', '2022-06-18': 'bottom', '2025-10-08': 'top' },
+      vsBtc: 'BNB and BTC turn months apart, in either order (BNB bottomed in Jun 2022, five months before BTC; BNB topped in May 2021 and Oct 2025, the second time two days after BTC).',
+      behave: 'BNB\'s bulls and bears are dated from BNB\'s own tops and bottoms (its 2021 top came in May, its 2022 low in June, five months before BTC\'s, and its last top on 8 Oct 2025, two days after BTC\'s). Its 2019 rally went above the 2018 top.',
+      dates: 'top 6 Jan 2018, bottom 7 Dec 2018, 2019 rally high 21 Jun 2019, low 12 Mar 2020, top 3 May 2021, bottom 18 Jun 2022, top 8 Oct 2025',
+      hist: 'BNB history starts 6 Nov 2017 (Binance BNBUSDT); the 100W exists from Sep 2019 and the 200W from Aug 2021, so the weekly read starts in Sep 2019.' }
+  };
+  const T2 = !!A.t2, OB = !!A.btc, CC = COINS[A.coin], ET = !!CC, B = OB || T2 || ET, NM = OB ? 'BTC' : T2 ? 'TOTAL2ES' : ET ? A.coin : 'USDT.D';
+  const CYW = ET ? NM : 'BTC';     // whose cycle the regimes and past bears follow
   let J = null, loading = null, tf = 'daily', span = '3y';
   const NS = [20, 50, 100, 200];
   const COL = { close: 'var(--ink)', 20: 'var(--acc)', 50: 'var(--warn)', 100: '#9b59b6', 200: 'var(--dn)' };
@@ -58,7 +79,7 @@ function make(A) {
     c.append(el('ul', { className: 'rf-note' }, order.filter((k) => R.checks[k]).map((k) => { const x = R.checks[k]; return `<li style="margin:2px 0;list-style:none;margin-left:-18px">${x.ok ? '<b class="neg">✓</b>' : '<b style="color:var(--muted)">✗</b>'} ${x.label}${k !== 'reject' && x.v != null ? ` <span style="color:var(--muted)">(${f2(x.v)})</span>` : ''}</li>`; }).join('')));
     c.append(el('p', { className: 'rf-note' }, '<b style="color:var(--ink)">Last 8 weeks:</b> ' + R.history.map((h) => `${dd(h.week).replace(/ \d{4}$/, '')} ${vpill(h.verdict)}`).join(' ')));
     const rules = el('details');
-    rules.append(el('summary', { className: 'rf-note' }, `The rules, and how they did since ${B ? '2016' : '2017'}`));
+    rules.append(el('summary', { className: 'rf-note' }, `The rules, and how they did since ${ET ? CC.readSince : B ? '2016' : '2017'}`));
     rules.append(el('ul', { className: 'rf-note' }, (T2 ? [
       '<b>Bear</b>: weekly close below the 100W.',
       '<b>Bear, possibly ending</b>: below the 100W, but held near the prior year\'s low (20-day low at or within 2% of it, last close 5%+ above it) and a daily close back above the 20D or 50D.',
@@ -72,7 +93,7 @@ function make(A) {
       '<b>Turning bear</b>: weekly close below the 50W, still above the 100W.',
       '<b>Turning bull</b>: above the 50W and 100W, but the 50W still under the 100W.',
       '<b>Bull</b>: above the 50W and 100W, with the 50W over the 100W.',
-      'The same rules as the BTC cycle tab, applied to ETH itself.'
+      `The same rules as the BTC cycle tab, applied to ${NM} itself.`
     ] : B ? [
       '<b>Bear</b>: weekly close below the 100W (2022: from May 2022 to Oct 2023).',
       '<b>Bear, possibly ending</b>: below the 100W, but held near the prior year\'s low (20-day low at or within 2% of it, last close 5%+ above it) and a daily close back above the 20D or 50D: how the 2018 and 2022 bottoms started.',
@@ -86,7 +107,7 @@ function make(A) {
       '<b>Bear</b>: above the 50W and 100W, with the 50W over the 100W.',
       '<b>Turning bear</b>: above the 100W but the 50W still under the 100W.'
     ]).map((x) => `<li style="margin:2px 0">${x}</li>`).join('')));
-    rules.append(el('p', { className: 'rf-note' }, ET ? 'Every change of the read since 2016 (week, ETH weekly close, BTC at that week\'s close). ETH swings harder than BTC, so the read flips more often in sideways stretches.' : T2 ? 'Every change of the read since 2016 (week, TOTAL2ES weekly close, BTC at that week\'s close). Altcoins swing harder than BTC, so the read flips more often in sideways years (2024–25 went back and forth several times).' : B ? 'Every change of the read since 2016 (week, BTC weekly close). It called the 2018, 2022 and 2025 bears and the 2023 bull, late but steadily; "possibly ending" came near the 2018 and 2022 bottoms ($3.9k in Dec 2018; $17–21k in Jul–Nov 2022) and in Jun 2026.'
+    rules.append(el('p', { className: 'rf-note' }, ET ? `Every change of the read since ${CC.readSince} (week, ${NM} weekly close, BTC at that week's close). ${NM} swings harder than BTC, so the read flips more often in sideways stretches.` : T2 ? 'Every change of the read since 2016 (week, TOTAL2ES weekly close, BTC at that week\'s close). Altcoins swing harder than BTC, so the read flips more often in sideways years (2024–25 went back and forth several times).' : B ? 'Every change of the read since 2016 (week, BTC weekly close). It called the 2018, 2022 and 2025 bears and the 2023 bull, late but steadily; "possibly ending" came near the 2018 and 2022 bottoms ($3.9k in Dec 2018; $17–21k in Jul–Nov 2022) and in Jun 2026.'
       : 'Every change of the read since Jun 2017 (week, USDT.D weekly close, BTC at that week\'s close). ⚠ Before 2020 it does not work: in the USDT launch years USDT.D stayed above its 100W, so the read said Bear even through the 2017 bull and the 2019 rally. Since 2021 it caught the turns, but 2023 flipped back and forth while USDT.D sat on its 50W, and "possibly ending" also fired on pullbacks that were not the top (2021, Dec 2025, Jun 2026).'));
     rules.append(table(['Week', 'Read', NM, ...(OB ? [] : ['BTC'])], R.record.map((x) => [dd(x.week) + (!B && x.week < '2020-03-01' ? ' <span style="color:var(--warn)">⚠</span>' : ''), vpill(x.verdict), f2(x.close), ...(OB ? [] : [usd(x.btc)])])));
     c.append(rules);
@@ -114,7 +135,7 @@ function make(A) {
     rows.push(fmtRow('<span style="color:var(--muted)">For comparison: any 30-day ' + (top ? 'high' : 'low') + ', no sign</span>', F.base, true));
     const PB = OB ? 'Price' : 'BTC';
     box.append(table(['Sign', 'Fired', `${PB} then (vs ${usd(X.btc)})`, `Then ${NM} ${top ? '−' : '+'}10%`, 'Held 60 d', 'Fires after', `${PB} by then (typ.)`, `${PB} 30 d after (typ.)`, 'Seen'], rows));
-    box.append(el('p', { className: 'rf-note' }, `Past record since ${B ? 'Sep 2015' : 'Jun 2017'} (every ${NM} 30-day ${top ? 'high' : 'low'}, each sign counted once within 30 days of it): <b>Then ${NM} ${top ? '−' : '+'}10%</b> = moved 10%+ ${top ? 'down' : 'up'} from the ${top ? 'high' : 'low'} within 60 days; <b>Held 60 d</b> = no ${top ? 'higher' : 'lower'} close in the 60 days after the sign; <b>${PB} 30 d after</b> = BTC's median move over the next 30 days and how often it was up. ` +
+    box.append(el('p', { className: 'rf-note' }, `Past record since ${ET ? CC.since : B ? 'Sep 2015' : 'Jun 2017'} (every ${NM} 30-day ${top ? 'high' : 'low'}, each sign counted once within 30 days of it): <b>Then ${NM} ${top ? '−' : '+'}10%</b> = moved 10%+ ${top ? 'down' : 'up'} from the ${top ? 'high' : 'low'} within 60 days; <b>Held 60 d</b> = no ${top ? 'higher' : 'lower'} close in the 60 days after the sign; <b>${PB} 30 d after</b> = BTC's median move over the next 30 days and how often it was up. ` +
       (star ? `★ = the best record here: ${star.label.charAt(0).toLowerCase() + star.label.slice(1)} (${star.moved}% then moved 10%+ ${top ? 'down' : 'up'}, seen ${star.n} times).` : '')));
     return box;
   }
@@ -130,9 +151,9 @@ function make(A) {
       : (bear ? `TOTAL2ES is still below its 100W (${w100}) (read: ${v}): a confirmed low here is a swing low for altcoins until TOTAL2ES closes weeks back above the 50W (${w50}) and then the 100W. Check the BTC cycle tab too: altcoins rarely turn for good before BTC does.`
         : `the weekly read is ${v}: a low here would be a dip inside the uptrend, not a cycle low.`);
     else if (ET) t = top
-      ? (bull ? `ETH is above its 50W (${w50}) and 100W (${w100}) (read: Bull): a confirmed top here is a swing top until ETH closes weeks below the 50W, then the 100W.`
+      ? (bull ? `${NM} is above its 50W (${w50}) and 100W (${w100}) (read: Bull): a confirmed top here is a swing top until ${NM} closes weeks below the 50W, then the 100W.`
         : `the weekly read is already ${v}: a top here would be a relief-rally top inside the bear, not the cycle top.`)
-      : (bear ? `ETH is still below its 100W (${w100}) (read: ${v}): a confirmed low here is a swing low until ETH closes weeks back above the 50W (${w50}) and then the 100W. Check the BTC cycle tab too: ETH and BTC turn months apart, in either order (ETH bottomed in Jun 2022, BTC in Nov 2022; ETH topped in Aug 2025, BTC in Oct 2025).`
+      : (bear ? `${NM} is still below its 100W (${w100}) (read: ${v}): a confirmed low here is a swing low until ${NM} closes weeks back above the 50W (${w50}) and then the 100W. Check the BTC cycle tab too: ${CC.vsBtc}`
         : `the weekly read is ${v}: a low here would be a dip inside the uptrend, not a cycle low.`);
     else if (B) t = top
       ? (bull ? `BTC is above its 50W (${w50}) and 100W (${w100}) (read: Bull): a confirmed top here is a swing top until BTC closes weeks below the 50W, then the 100W (the Nov 2021 top: 50W lost Dec 2021, 100W May 2022).`
@@ -185,15 +206,15 @@ function make(A) {
       c.append(el('p', { className: 'rf-note' }, what));
     }
     const PB3 = OB ? 'Price' : 'BTC';
-    c.append(el('p', { className: 'rf-note' }, `Columns: <b>${PB3} then</b> = BTC's close the day the sign fired, and its change since the ${OB ? '' : NM + ' '}${top ? 'high' : 'low'}. Past record over every case: <b>Then ${NM} ${top ? '−' : '+'}20%</b> = ${NM} went on to move 20%+ ${top ? 'down' : 'up'} within 6 months; <b>${top ? 'High' : 'Low'} held 4 mo</b> = that ${top ? 'high' : 'low'} stayed the ${top ? 'top' : 'bottom'}; <b>Fires after</b> = typical days after the ${top ? 'high' : 'low'}; <b>${PB3} by then</b> = BTC's typical move by the time the sign fired (what waiting for it cost).<br>How to read it: the early daily signs are good at calling ${ET ? 'an' : 'a'} ${NM} ${top ? 'pullback' : 'bounce'}${B ? '' : (top ? ' (crypto relief rally)' : ' (crypto pullback)')} but often not THE ${top ? 'top' : 'bottom'}: ${ET ? (top ? 'in bulls ETH tops in waves' : 'in bears ETH bottoms in waves') : T2 ? (top ? 'in bulls altcoins top in waves (Mar 2024, Dec 2024, then later)' : 'in bears altcoins bottom in waves (Jun 2022 then Dec 2022; Jun 2026 and now)') : B ? (top ? 'in bulls BTC tops in waves (Mar 2024, Dec 2024, then Oct 2025)' : 'in bears BTC bottoms in waves (Jun 2022 then Nov 2022; Feb 2026, Jun 2026 and now)') : (top ? 'in bears USDT.D tops in waves (Jun 2022 then Nov 2022; Jun 2026 then now)' : 'in bulls USDT.D bottoms in waves (Mar 2024 then Dec 2024)')}. The weekly signs are later but surer (weekly dates = the Sunday the week closed). Past record = every ${NM} 90-day ${top ? 'high' : 'low'} since ${B ? 'Sep 2015' : 'Jun 2017 (the 2017–19 launch years are included; they make the numbers a little noisier)'}.`));
+    c.append(el('p', { className: 'rf-note' }, `Columns: <b>${PB3} then</b> = BTC's close the day the sign fired, and its change since the ${OB ? '' : NM + ' '}${top ? 'high' : 'low'}. Past record over every case: <b>Then ${NM} ${top ? '−' : '+'}20%</b> = ${NM} went on to move 20%+ ${top ? 'down' : 'up'} within 6 months; <b>${top ? 'High' : 'Low'} held 4 mo</b> = that ${top ? 'high' : 'low'} stayed the ${top ? 'top' : 'bottom'}; <b>Fires after</b> = typical days after the ${top ? 'high' : 'low'}; <b>${PB3} by then</b> = BTC's typical move by the time the sign fired (what waiting for it cost).<br>How to read it: the early daily signs are good at calling ${ET ? CC.an : 'a'} ${NM} ${top ? 'pullback' : 'bounce'}${B ? '' : (top ? ' (crypto relief rally)' : ' (crypto pullback)')} but often not THE ${top ? 'top' : 'bottom'}: ${ET ? (top ? `in bulls ${NM} tops in waves` : `in bears ${NM} bottoms in waves`) : T2 ? (top ? 'in bulls altcoins top in waves (Mar 2024, Dec 2024, then later)' : 'in bears altcoins bottom in waves (Jun 2022 then Dec 2022; Jun 2026 and now)') : B ? (top ? 'in bulls BTC tops in waves (Mar 2024, Dec 2024, then Oct 2025)' : 'in bears BTC bottoms in waves (Jun 2022 then Nov 2022; Feb 2026, Jun 2026 and now)') : (top ? 'in bears USDT.D tops in waves (Jun 2022 then Nov 2022; Jun 2026 then now)' : 'in bulls USDT.D bottoms in waves (Mar 2024 then Dec 2024)')}. The weekly signs are later but surer (weekly dates = the Sunday the week closed). Past record = every ${NM} 90-day ${top ? 'high' : 'low'} since ${ET ? CC.since : B ? 'Sep 2015' : 'Jun 2017 (the 2017–19 launch years are included; they make the numbers a little noisier)'}.`));
     return c;
   }
 
   // ---------- 0c. every top and bottom ----------
   function swingsCard() {
     const SW = J.swings; if (!SW || !SW.length) return null;
-    const c = card(`Every ${NM} top and bottom since ${B ? '2015' : '2017'}`,
-      ET ? 'Each swing between an ETH 90-day high and the next 90-day low (and back). For each: the extreme with BTC that day, when the best early sign and the swing signs fired (BTC change since the extreme), and what happened up to the next swing (ETH and BTC). Swings come 2–3 times a year; those within 3 weeks of an ETH cycle top or bottom are tagged. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/eth_log.json).'
+    const c = card(`Every ${NM} top and bottom since ${ET ? CC.sinceY : B ? '2015' : '2017'}`,
+      ET ? `Each swing between ${CC.an} ${NM} 90-day high and the next 90-day low (and back). For each: the extreme with BTC that day, when the best early sign and the swing signs fired (BTC change since the extreme), and what happened up to the next swing (${NM} and BTC). Swings come 2–3 times a year; those within 3 weeks of ${CC.an} ${NM} cycle top or bottom are tagged. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/${NM.toLowerCase()}_log.json).`
       : T2 ? 'Each swing between a TOTAL2ES 90-day high and the next 90-day low (and back). For each: the extreme with BTC that day, when the best early sign and the swing signs fired (BTC change since the extreme), and what happened up to the next swing (TOTAL2ES and BTC). Swings come 2–3 times a year; those within 3 weeks of a BTC cycle top or bottom are tagged. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/total2es_log.json).'
       : B ? 'Each swing between a BTC 90-day high and the next 90-day low (and back). For each: the extreme, when the best early sign and the swing signs fired (BTC change since the extreme), and what happened up to the next swing. Swings come 2–3 times a year; the few that were BTC cycle tops or bottoms are tagged. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/btc_log.json).'
         : 'Each swing between a USDT.D 90-day high and the next 90-day low (and back). <b>USDT.D top</b> = crypto low, <b>USDT.D bottom</b> = crypto high. For each: the extreme with BTC that day, when the best early sign and the swing signs fired (BTC change since the extreme), and what happened up to the next swing. Swings come 2–3 times a year; the few that were BTC cycle tops or bottoms are tagged. New swings and signs are added on their own; ● = written to the permanent log when it happened (history/usdtd_log.json).');
@@ -209,7 +230,7 @@ function make(A) {
         : w.next ? `→ ${dd(w.next.day)} (${w.next.days} d): USDT.D <span class="${top ? 'pos' : 'neg'}">${sp(w.next.usdtd_chg)}</span>, BTC <span class="${cls(w.next.btc_chg)}">${sp(w.next.btc_chg)}</span>`
         : `<b>open</b>, ${w.so_far.days} d so far: USDT.D ${sp(w.so_far.usdtd_chg)}, BTC <span class="${cls(w.so_far.btc_chg)}">${sp(w.so_far.btc_chg)}</span>`;
       const st = STAR[w.kind];
-      const CY = ET ? { '2018-01-13': 'top', '2018-12-15': 'bottom', '2021-11-08': 'top', '2022-06-18': 'bottom', '2025-08-22': 'top' } : { '2017-12-16': 'top', '2018-12-15': 'bottom', '2021-11-08': 'top', '2022-11-21': 'bottom', '2025-10-06': 'top' };
+      const CY = ET ? CC.cy : { '2017-12-16': 'top', '2018-12-15': 'bottom', '2021-11-08': 'top', '2022-11-21': 'bottom', '2025-10-06': 'top' };
       const cy = Object.keys(CY).find((k) => Math.abs(Date.parse(k) - Date.parse(E.day)) <= 21 * 864e5);
       const cyTag = cy ? `<br><span class="rf-pill" style="margin-top:3px">${CYW} cycle ${CY[cy]}</span>` : '';
       return [pill + (w.open ? ' <b style="color:var(--warn)">now</b>' : '') + cyTag, `<b>${dd(E.day)}</b><br>${OB ? usd(E.btc) : `${fp(E.usdtd)} · BTC ${usd(E.btc)}`}`,
@@ -218,7 +239,7 @@ function make(A) {
     });
     const head = ['Swing', OB ? 'Extreme' : 'Extreme (BTC that day)', 'Early ★ (daily)', 'Swing signs: 20D · 50D · 20W · 50W', 'Then (to the next swing)'];
     c.append(table(head, rows.slice(0, 10)));
-    if (rows.length > 10) { const d = el('details'); d.append(el('summary', { className: 'rf-note' }, `Show all ${rows.length} swings since ${B ? '2015' : '2017'}`)); d.append(table(head, rows.slice(10))); c.append(d); }
+    if (rows.length > 10) { const d = el('details'); d.append(el('summary', { className: 'rf-note' }, `Show all ${rows.length} swings since ${ET ? CC.sinceY : B ? '2015' : '2017'}`)); d.append(table(head, rows.slice(10))); c.append(d); }
     c.append(el('p', { className: 'rf-note' }, `★ = the fast sign with the best record: for ${NM} tops, ${STAR.top ? STAR.top.label.charAt(0).toLowerCase() + STAR.top.label.slice(1) : '—'}; for ${NM} bottoms, ${STAR.bottom ? STAR.bottom.label.charAt(0).toLowerCase() + STAR.bottom.label.slice(1) : '—'}. Signs are crosses (${NM} had to be on the other side of the level after the extreme).${B ? '' : ' Dates before 2020 are in the USDT launch years.'}`));
     return c;
   }
@@ -264,7 +285,7 @@ function make(A) {
       'Shaded: <span style="color:var(--dn)">BTC bear</span> (top to bottom) and <span style="color:var(--up)">BTC bull</span>. In bears USDT.D rides above its SMAs (the 200D is the floor on dips); in bulls it stays under them (the 100/200 are the ceiling on bounces).');
     const bar = el('div'); bar.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px';
     const tabs = (opts, cur, set) => { const n = el('div', { className: 'br-tabs' }); n.style.alignSelf = 'center'; opts.forEach(([v, l]) => { const b = el('button', { type: 'button' }, l); b.setAttribute('aria-selected', String(v === cur)); b.onclick = () => { set(v); render(); }; n.append(b); }); return n; };
-    bar.append(tabs([['daily', 'Daily'], ['weekly', 'Weekly']], tf, (v) => { tf = v; }), tabs([['1y', '1Y'], ['3y', '3Y'], ['all', 'Since 2020'], ['2017', B ? 'Since 2015' : 'Since 2017 (log)']], span, (v) => { span = v; }));
+    bar.append(tabs([['daily', 'Daily'], ['weekly', 'Weekly']], tf, (v) => { tf = v; }), tabs([['1y', '1Y'], ['3y', '3Y'], ['all', 'Since 2020'], ['2017', ET ? CC.chart[1] : B ? 'Since 2015' : 'Since 2017 (log)']], span, (v) => { span = v; }));
     const key = el('span', { className: 'rf-note' }, ['close', ...NS].map((k) => `<span style="white-space:nowrap"><i style="display:inline-block;width:14px;height:3px;vertical-align:middle;background:${COL[k]};${k === 200 ? 'opacity:.85' : ''}"></i> ${k === 'close' ? NM : (tf === 'daily' ? k + 'D' : k + 'W')}</span>`).join(' &nbsp;'));
     bar.append(key);
     c.append(bar);
@@ -275,7 +296,7 @@ function make(A) {
   }
   function drawChart(box, info) {
     if (typeof d3 === 'undefined') { box.textContent = 'Chart library not loaded.'; return; }
-    const all = J.series[tf], cut = span === '2017' ? (B ? '2015-01-01' : '2017-01-01') : span === 'all' ? '2020-01-01' : new Date(Date.now() - (span === '1y' ? 1 : 3) * 365.25 * 864e5).toISOString().slice(0, 10);
+    const all = J.series[tf], cut = span === '2017' ? (ET ? CC.chart[0] : B ? '2015-01-01' : '2017-01-01') : span === 'all' ? '2020-01-01' : new Date(Date.now() - (span === '1y' ? 1 : 3) * 365.25 * 864e5).toISOString().slice(0, 10);
     const rows = all.filter((r) => r[0] >= cut).map((r) => ({ d: new Date(r[0] + 'T00:00:00Z'), day: r[0], c: r[1], 20: r[2], 50: r[3], 100: r[4], 200: r[5], btc: r[6] }));
     if (!rows.length) return;
     const W = Math.max(320, box.clientWidth || 900), H = Math.round(Math.min(420, Math.max(260, W * 0.42))), m = { t: 10, r: 46, b: 24, l: 8 };
@@ -293,7 +314,7 @@ function make(A) {
       const lx = x(a < x0 ? x0 : a) + 4;
       if (x(b > x1 ? x1 : b) - lx > 60) svg.append('text').attr('x', lx).attr('y', m.t + 12).attr('fill', R.kind === 'bear' ? 'var(--dn)' : 'var(--up)').text(R.name);
     });
-    svg.append('g').attr('transform', `translate(${W - m.r},0)`).call(T2 ? d3.axisRight(y).tickValues([2e9, 5e9, 1e10, 2e10, 5e10, 1e11, 2e11, 3e11, 5e11, 7e11, 1e12, 1.5e12, 2e12].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => '$' + (v >= 1e12 ? v / 1e12 + 'T' : v / 1e9 + 'B')) : B ? d3.axisRight(y).tickValues([...(ET ? [0.5, 1, 2, 5, 10, 20, 50] : []), 100, 200, 500, 1e3, 2e3, 5e3, 1e4, 2e4, 3e4, 5e4, 7e4, 1e5, 1.5e5, 2e5].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => '$' + (v >= 1e3 ? v / 1e3 + 'k' : v)) : span === '2017' ? d3.axisRight(y).tickValues([0.1, 0.2, 0.5, 1, 2, 5, 10].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => v + '%') : d3.axisRight(y).ticks(6).tickFormat((v) => v + '%')).call((g) => g.select('.domain').remove()).call((g) => g.selectAll('line').attr('stroke', 'var(--line)')).call((g) => g.selectAll('text').attr('fill', 'var(--muted)'));
+    svg.append('g').attr('transform', `translate(${W - m.r},0)`).call(T2 ? d3.axisRight(y).tickValues([2e9, 5e9, 1e10, 2e10, 5e10, 1e11, 2e11, 3e11, 5e11, 7e11, 1e12, 1.5e12, 2e12].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => '$' + (v >= 1e12 ? v / 1e12 + 'T' : v / 1e9 + 'B')) : B ? d3.axisRight(y).tickValues([...(ET ? [0.5, 1, 2, 5, 10, 20, 50] : []), 100, 200, ...(ET ? [300] : []), 500, 1e3, 2e3, 5e3, 1e4, 2e4, 3e4, 5e4, 7e4, 1e5, 1.5e5, 2e5].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => '$' + (v >= 1e3 ? v / 1e3 + 'k' : v)) : span === '2017' ? d3.axisRight(y).tickValues([0.1, 0.2, 0.5, 1, 2, 5, 10].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => v + '%') : d3.axisRight(y).ticks(6).tickFormat((v) => v + '%')).call((g) => g.select('.domain').remove()).call((g) => g.selectAll('line').attr('stroke', 'var(--line)')).call((g) => g.selectAll('text').attr('fill', 'var(--muted)'));
     svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.max(3, Math.floor(W / 110)))).call((g) => g.select('.domain').attr('stroke', 'var(--line)')).call((g) => g.selectAll('line').attr('stroke', 'var(--line)')).call((g) => g.selectAll('text').attr('fill', 'var(--muted)'));
     [200, 100, 50, 20].forEach((n) => svg.append('path').datum(rows.filter((r) => r[n] != null)).attr('fill', 'none').attr('stroke', COL[n]).attr('stroke-width', 1.3).attr('opacity', 0.9)
       .attr('d', d3.line().x((r) => x(r.d)).y((r) => y(r[n]))));
@@ -322,7 +343,7 @@ function make(A) {
       c.append(table([CYW + ' market', ...NS.map((n) => n + s), 'SMA stack 20>50>100>200 / reversed'], rows));
     });
     if (T2) c.append(el('p', { className: 'rf-note' }, 'Compare with the BTC cycle tab: altcoins usually sit under their SMAs for longer in bears and break above them later than BTC, and pullbacks inside bulls run deeper.'));
-    else if (ET) c.append(el('p', { className: 'rf-note' }, 'Compare with the BTC cycle tab: ETH\'s bulls and bears are dated from ETH\'s own tops and bottoms (its 2022 low came in June, five months before BTC\'s, and its last top in Aug 2025, six weeks before BTC\'s).'));
+    else if (ET) c.append(el('p', { className: 'rf-note' }, 'Compare with the BTC cycle tab: ' + CC.behave));
     else if (B) c.append(el('p', { className: 'rf-note' }, 'What stands out: in bulls BTC held above its weekly 50 about 9 weeks in 10 (2020–21: 90%, 2023–25: 89%) and in bears it stayed under its daily 100/200 most days (2018: 20–23% above; 2022: 12–13%). The weekly 100 is less clean for BTC: after the huge 2017 run, BTC stayed above it for most of the 2018 bear, which is why the weekly read waits for the 100W.'));
     else { c.append(el('p', { className: 'rf-note' }, 'What stands out: in all three bears (2018, 2022, now) USDT.D held above the weekly 50 and 100 almost every week, and the daily 200 was a floor (2022: 13 of 16 touches held). In the 2023–25 bull the weekly 100 capped nearly every rally. Shock weeks (Aug 2024, Apr 2025) are the exceptions.'));
     c.append(el('p', { className: 'rf-note' }, '<b style="color:var(--warn)">⚠ Launch years (2017 bull, 2018 bear, 2019 rally):</b> ' + (J.regimes.find((R) => R.caveat) || {}).caveat + ' So the weekly 100 only became a clean bull/bear divider from about 2021; the daily SMAs (share of closes above the 20D/50D) separated bulls from bears in every period.')); }
@@ -343,8 +364,8 @@ function make(A) {
     const byDate = rows.map((r) => ({ r, t: Date.parse(r[0]) })).sort((a, b) => a.t - b.t).map((x) => x.r);
     const HD = OB ? ['Week', 'Signal', 'BTC'] : ['Week', 'Signal', NM, 'BTC'];
     c.append(table(HD, byDate));
-    c.append(el('p', { className: 'rf-note' }, ET ? 'Since the 100W first exists (Jun 2017) and the 200W (May 2019).' : T2 ? 'Since the 100W first exists (2016) and the 200W (2018).' : B ? 'Since the 100W first exists (Nov 2016) and the 200W (Oct 2018).' : 'Since the 100W first exists (Feb 2017). There are no crosses before Dec 2020: in the USDT launch years USDT.D stayed above its 100W through the 2017 bull, the 2018 bear and the 2019 rally.'));
-    const d = el('details'); d.append(el('summary', { className: 'rf-note' }, `All weekly 50W crosses and daily 50D/200D crosses since ${B ? '2015' : '2017'}`));
+    c.append(el('p', { className: 'rf-note' }, ET ? CC.sig : T2 ? 'Since the 100W first exists (2016) and the 200W (2018).' : B ? 'Since the 100W first exists (Nov 2016) and the 200W (Oct 2018).' : 'Since the 100W first exists (Feb 2017). There are no crosses before Dec 2020: in the USDT launch years USDT.D stayed above its 100W through the 2017 bull, the 2018 bear and the 2019 rally.'));
+    const d = el('details'); d.append(el('summary', { className: 'rf-note' }, `All weekly 50W crosses and daily 50D/200D crosses since ${ET ? CC.sinceY : B ? '2015' : '2017'}`));
     d.append(table(HD, mk(C.price_50w, (x) => 'Weekly close ' + (x.dir === 'up' ? 'above' : 'below') + ' 50W')));
     d.append(table(['Day', ...HD.slice(1)], mk(C.d50_d200, (x) => '50D ' + (x.dir === 'up' ? 'above' : 'below') + ' 200D')));
     c.append(d);
@@ -381,7 +402,7 @@ function make(A) {
 
   function analogCardBtc() {
     const A = J.analog, PS = A.pasts || [], P = PS[PS.length - 1], N = A.now, NW = J.now;
-    const c = card('Past bears vs now: 2018, 2022 and this one',
+    const c = card(`Past bears vs now: ${PS.map((p) => p.label).join(', ')} and this one`,
       `Weeks counted from each ${CYW} top (${PS.map((p) => dd(p.top)).join(', ')} and ${dd(N.top)})${T2 ? '; TOTAL2ES depth is measured from its close on that BTC top day' : ''}. Distance = % above (+) or below (−) the SMA on the day of the low (weekly: last closed week's SMA; the 200W did not exist yet in 2018).`);
     const st = (o, k) => (o ? NS.map((n) => (o[k][n] == null ? `${n}: —` : `${n}: <span class="${cls(o[k][n])}">${sp(o[k][n])}</span>`)).join('<br>') : '—');
     const nowObj = { d: Object.fromEntries(NS.map((n) => [n, NW.daily[n].pct])), w: Object.fromEntries(NS.map((n) => [n, NW.weekly[n].pct])) };
@@ -397,7 +418,7 @@ function make(A) {
       ['…and first weekly close above', ...col((p) => NS.map((n) => `${n}W ${dd(p.unwind['w' + n])}`).join('<br>'), N.peak ? NS.map((n) => `${n}W ${dd(N.unwind['w' + n])}`).join('<br>') : '—')]
     ]));
     const w = [];
-    w.push(T2 ? `Timing: TOTAL2ES made its bear low ${PS.map((p) => `in week ${p.weeks_top_to_peak} (${p.label})`).join(' and ')} after the BTC top; BTC bottomed in weeks ${PS.map((p) => p.weeks_top_to_bottom).join(' and ')}. This bear is in week ${N.weeks_since_top}.` : `Timing: the 2018 and 2022 bears bottomed ${PS.map((p) => p.weeks_top_to_bottom).join(' and ')} weeks after the top. This bear is in week ${N.weeks_since_top}: past that point, so the clock says "late", not "when".`);
+    w.push(T2 ? `Timing: TOTAL2ES made its bear low ${PS.map((p) => `in week ${p.weeks_top_to_peak} (${p.label})`).join(' and ')} after the BTC top; BTC bottomed in weeks ${PS.map((p) => p.weeks_top_to_bottom).join(' and ')}. This bear is in week ${N.weeks_since_top}.` : `Timing: the ${PS.map((p) => p.label).join(' and ')} bear${PS.length > 1 ? 's' : ''} bottomed ${PS.map((p) => p.weeks_top_to_bottom).join(' and ')} weeks after the top. This bear is in week ${N.weeks_since_top}: past that point, so the clock says "late", not "when".`);
     w.push(`Depth: ${PS.map((p) => `${p.label} fell ${sp(p.drawdown)}`).join(', ')}; this one is ${sp(N.drawdown)} at its lowest so far.${OB ? " Each cycle's fall has been shallower than the last." : ''}`);
     if (P && P.peak && P.peak.w[200] != null) w.push(`The 200W: at the 2022 low ${NM} was ${sp(P.peak.w[200])} from its 200W; today it is ${sp(NW.weekly[200].pct)} at the last weekly close (200W ${f2(NW.weekly[200].sma)}).`);
     w.push(`How 2022 turned up: daily close above the 20D (now ${f2(NW.daily[20].sma)}) → 50D (${f2(NW.daily[50].sma)}) → 200D (${f2(NW.daily[200].sma)}) → weekly close above the 50W (${f2(NW.weekly[50].sma)}) and later the 100W (${f2(NW.weekly[100].sma)}).`);
@@ -425,7 +446,7 @@ function make(A) {
   function render() {
     const R = root(); if (!R) return;
     if (!J) { R.replaceChildren(el('div', { className: 'br-card' }, '<p class="note">Loading ' + NM + ' analysis…</p>')); return; }
-    const foot = el('p', { className: 'rf-note' }, `Built ${J.generated}. ${J.source} ${ET ? 'ETH cycle dates (closes): low 21 Oct 2015, top 13 Jan 2018, bottom 15 Dec 2018, 2019 rally high 26 Jun 2019, low 12 Mar 2020, top 8 Nov 2021, bottom 18 Jun 2022, top 22 Aug 2025.' : 'BTC cycle dates (closes): top 16 Dec 2017, bottom 15 Dec 2018, 2019 rally high 26 Jun 2019, bottom 12 Mar 2020, top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025.'} ${ET ? 'ETH history starts 7 Aug 2015 (Kraken; Binance from 17 Aug 2017); the 100W exists from Jun 2017 and the 200W from May 2019. Before 2016 ETH traded under $1 on thin volume.' : T2 ? 'TOTAL2ES history starts 1 Apr 2014; the 100W exists from 2016 and the 200W from 2018. Altcoin data before 2017 is thin (few coins).' : B ? 'BTC history starts 1 Dec 2014; the 100W exists from Nov 2016 and the 200W from Oct 2018.' : 'USDT.D history starts 8 Mar 2015; the 100W exists from Feb 2017 and the 200W from Jan 2019.'} Patterns from past cycles, not a forecast; not financial advice.`);
+    const foot = el('p', { className: 'rf-note' }, `Built ${J.generated}. ${J.source} ${ET ? `${NM} cycle dates (closes): ${CC.dates}.` : 'BTC cycle dates (closes): top 16 Dec 2017, bottom 15 Dec 2018, 2019 rally high 26 Jun 2019, bottom 12 Mar 2020, top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025.'} ${ET ? CC.hist : T2 ? 'TOTAL2ES history starts 1 Apr 2014; the 100W exists from 2016 and the 200W from 2018. Altcoin data before 2017 is thin (few coins).' : B ? 'BTC history starts 1 Dec 2014; the 100W exists from Nov 2016 and the 200W from Oct 2018.' : 'USDT.D history starts 8 Mar 2015; the 100W exists from Feb 2017 and the 200W from Jan 2019.'} Patterns from past cycles, not a forecast; not financial advice.`);
     R.replaceChildren(...[readCard(), watchCard(B ? J.bottom_watch : J.top_watch), watchCard(B ? J.top_watch : J.bottom_watch), swingsCard()].filter(Boolean), nowCard(), chartCard(), behaveCard(), signalsCard(), B ? analogCardBtc() : analogCard(), turnCard(), foot);
   }
   let rs = null;
@@ -439,5 +460,7 @@ function make(A) {
   window.__usdtd = make({ json: 'usdtd.json', root: 'usdtd-root' });
   window.__btccyc = make({ btc: true, json: 'btccycle.json', root: 'btccyc-root' });
   window.__total2 = make({ t2: true, json: 'total2es.json', root: 'total2-root' });
-  window.__ethcyc = make({ eth: true, json: 'ethcycle.json', root: 'ethcyc-root' });
+  window.__ethcyc = make({ coin: 'ETH', json: 'ethcycle.json', root: 'ethcyc-root' });
+  window.__solcyc = make({ coin: 'SOL', json: 'solcycle.json', root: 'solcyc-root' });
+  window.__bnbcyc = make({ coin: 'BNB', json: 'bnbcycle.json', root: 'bnbcyc-root' });
 })();

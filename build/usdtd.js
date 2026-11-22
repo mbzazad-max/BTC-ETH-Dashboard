@@ -24,19 +24,21 @@
    usage: node build/usdtd.js <market-data dir> [--asset=btc] */
 'use strict';
 const fs = require('fs'), path = require('path');
-const ASSET = (() => { const a = (process.argv.find((x) => x.startsWith('--asset=')) || '--asset=usdtd').slice(8); return ['btc', 'total2es', 'eth'].includes(a) ? a : 'usdtd'; })();
+const ASSET = (() => { const a = (process.argv.find((x) => x.startsWith('--asset=')) || '--asset=usdtd').slice(8); return ['btc', 'total2es', 'eth', 'sol', 'bnb'].includes(a) ? a : 'usdtd'; })();
 const IS_BTC = ASSET === 'btc', IS_T2 = ASSET === 'total2es', IS_ETH = ASSET === 'eth';
-const UP = IS_BTC || IS_T2 || IS_ETH;     // price-like: up = bullish (BTC, TOTAL2ES); USDT.D is the mirror
+// a coin with its own cycle dates (ETH, and SOL / BNB from 22 Nov 2026): BTC kept as the context column
+const IS_COIN = ['eth', 'sol', 'bnb'].includes(ASSET);
+const UP = IS_BTC || IS_T2 || IS_COIN;     // price-like: up = bullish (BTC, TOTAL2ES); USDT.D is the mirror
 // TOTAL2ES tab (owner, 22 Nov 2026): the BTC-cycle engine on TradingView CRYPTOCAP:TOTAL2ES (altcoin market cap excluding
 // BTC and stablecoins). Daily history from Apr 2014 stored once in history/total2es_1d.csv (fetched 22 Nov 2026), then days
 // made from the closed 4H candles that the PC uploads to market-data (tv/CRYPTOCAP_TOTAL2ES/4H). BTC stays the context column.
 // ETH cycle tab (owner, 22 Nov 2026): the BTC-cycle engine on ETH itself, with ETH's own cycle dates (closes). Daily history:
 // Kraken ETHUSD from 7 Aug 2015 to 16 Aug 2017 (TradingView, stored once in history/eth_1d.csv on 22 Nov 2026), then Binance
 // ETHUSDT from 17 Aug 2017 (the dashboard's own ETH candles in market-data). BTC stays the context column.
-const ROOT = path.resolve(__dirname, '..'), OUT = process.env.USDTD_OUT || path.join(ROOT, 'public', IS_BTC ? 'btccycle.json' : IS_T2 ? 'total2es.json' : IS_ETH ? 'ethcycle.json' : 'usdtd.json');
+const ROOT = path.resolve(__dirname, '..'), OUT = process.env.USDTD_OUT || path.join(ROOT, 'public', IS_BTC ? 'btccycle.json' : IS_T2 ? 'total2es.json' : IS_COIN ? ASSET + 'cycle.json' : 'usdtd.json');
 const MD = path.resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) || '../market-data');
 const DAY = 86400, NS = [20, 50, 100, 200], TOL = 0.01;
-const NAME = IS_BTC ? 'BTC' : IS_T2 ? 'TOTAL2ES' : IS_ETH ? 'ETH' : 'USDT.D';
+const NAME = IS_BTC ? 'BTC' : IS_T2 ? 'TOTAL2ES' : IS_COIN ? ASSET.toUpperCase() : 'USDT.D';
 const START = UP ? '2015-09-01' : '2017-06-01';            // tests and records start here (USDT.D: first year with a 100W)
 const LAUNCH = 'USDT launch years: USDT supply grew many times over, which pushed USDT.D up whatever crypto prices did (USDT.D never closed a week below its 100W from 2017 to Dec 2020).';
 const REGIMES_USDTD = [
@@ -70,17 +72,38 @@ const REGIMES_ETH = [
   { id: 'bull23', name: 'Bull 2022–25', kind: 'bull', from: '2022-06-18', to: '2025-08-22' },
   { id: 'bear26', name: 'Bear 2025–26 (so far)', kind: 'bear', from: '2025-08-22', to: null }
 ];
-const REGIMES = IS_ETH ? REGIMES_ETH : UP ? REGIMES_BTC : REGIMES_USDTD;
+// SOL's own cycle (Binance SOLUSDT closes, from 11 Aug 2020): low 23 Dec 2020, top 6 Nov 2021, bottom 29 Dec 2022, top 18 Jan 2025
+const REGIMES_SOL = [
+  { id: 'bull21', name: 'Bull 2020–21', kind: 'bull', from: '2020-12-23', to: '2021-11-06' },
+  { id: 'bear22', name: 'Bear 2021–22', kind: 'bear', from: '2021-11-06', to: '2022-12-29' },
+  { id: 'bull23', name: 'Bull 2023–25', kind: 'bull', from: '2022-12-29', to: '2025-01-18' },
+  { id: 'bear26', name: 'Bear 2025–26 (so far)', kind: 'bear', from: '2025-01-18', to: null }
+];
+// BNB's own cycle (Binance BNBUSDT closes, from 6 Nov 2017): top 6 Jan 2018, bottom 7 Dec 2018, 2019 rally high 21 Jun 2019
+// (above the 2018 top), low 12 Mar 2020, top 3 May 2021, bottom 18 Jun 2022, top 8 Oct 2025
+const REGIMES_BNB = [
+  { id: 'bull17', name: 'Bull 2017–18', kind: 'bull', from: '2017-11-06', to: '2018-01-06' },
+  { id: 'bear18', name: 'Bear 2018', kind: 'bear', from: '2018-01-06', to: '2018-12-07' },
+  { id: 'rally19', name: 'Rally 2019', kind: 'bull', from: '2018-12-07', to: '2019-06-21' },
+  { id: 'drop20', name: 'Drop 2019–20', kind: 'bear', from: '2019-06-21', to: '2020-03-12' },
+  { id: 'bull21', name: 'Bull 2020–21', kind: 'bull', from: '2020-03-12', to: '2021-05-03' },
+  { id: 'bear22', name: 'Bear 2021–22', kind: 'bear', from: '2021-05-03', to: '2022-06-18' },
+  { id: 'bull23', name: 'Bull 2022–25', kind: 'bull', from: '2022-06-18', to: '2025-10-08' },
+  { id: 'bear26', name: 'Bear 2025–26 (so far)', kind: 'bear', from: '2025-10-08', to: null }
+];
+const REGIMES = IS_ETH ? REGIMES_ETH : ASSET === 'sol' ? REGIMES_SOL : ASSET === 'bnb' ? REGIMES_BNB : UP ? REGIMES_BTC : REGIMES_USDTD;
 // the cycle dates used for marks and "past bears vs now": BTC's (BTC, TOTAL2ES, USDT.D) or ETH's own
-const CY = IS_ETH ? { who: 'ETH', t1: '2018-01-13', t1l: 'Jan 2018', b1: '2018-12-15', t2: '2021-11-08', t2l: 'Nov 2021', b2: '2022-06-18', b2l: 'Jun 2022', t3: '2025-08-22', t3l: 'Aug 2025' }
+const CY = ASSET === 'sol' ? { who: 'SOL', t1: null, t1l: '', b1: null, t2: '2021-11-06', t2l: 'Nov 2021', b2: '2022-12-29', b2l: 'Dec 2022', t3: '2025-01-18', t3l: 'Jan 2025' }
+  : ASSET === 'bnb' ? { who: 'BNB', t1: '2018-01-06', t1l: 'Jan 2018', b1: '2018-12-07', t2: '2021-05-03', t2l: 'May 2021', b2: '2022-06-18', b2l: 'Jun 2022', t3: '2025-10-08', t3l: 'Oct 2025' }
+  : IS_ETH ? { who: 'ETH', t1: '2018-01-13', t1l: 'Jan 2018', b1: '2018-12-15', t2: '2021-11-08', t2l: 'Nov 2021', b2: '2022-06-18', b2l: 'Jun 2022', t3: '2025-08-22', t3l: 'Aug 2025' }
   : { who: 'BTC', t1: '2017-12-16', t1l: 'Dec 2017', b1: '2018-12-15', t2: '2021-11-08', t2l: 'Nov 2021', b2: '2022-11-21', b2l: 'Nov 2022', t3: '2025-10-06', t3l: 'Oct 2025' };
 // past bears for the "past bears vs now" comparison (BTC closes): 2018 (USDT launch years, see the caveat) and 2022
-const PASTS = [{ top: CY.t1, bottom: CY.b1, label: '2018' }, { top: CY.t2, bottom: CY.b2, label: '2022' }];
-const ANALOG = { past: PASTS[1], now: { top: CY.t3, label: 'now' } };
+const PASTS = [{ top: CY.t1, bottom: CY.b1, label: '2018' }, { top: CY.t2, bottom: CY.b2, label: '2022' }].filter((P) => P.top);   // SOL: no 2018 bear
+const ANALOG = { past: PASTS[PASTS.length - 1], now: { top: CY.t3, label: 'now' } };
 
 const day = (t) => new Date(t * 1000).toISOString().slice(0, 10);
 const T = (d) => Date.parse(d + 'T00:00:00Z') / 1000;
-const fv = (v) => (v == null ? '—' : IS_ETH ? '$' + (v < 100 ? v.toFixed(2) : Math.round(v).toLocaleString('en-US')) : IS_T2 ? '$' + (v >= 1e12 ? (v / 1e12).toFixed(2) + 'T' : Math.round(v / 1e9) + 'B') : IS_BTC ? '$' + Math.round(v).toLocaleString('en-US') : v.toFixed(2));
+const fv = (v) => (v == null ? '—' : IS_COIN ? '$' + (v < 100 ? v.toFixed(2) : Math.round(v).toLocaleString('en-US')) : IS_T2 ? '$' + (v >= 1e12 ? (v / 1e12).toFixed(2) + 'T' : Math.round(v / 1e9) + 'B') : IS_BTC ? '$' + Math.round(v).toLocaleString('en-US') : v.toFixed(2));
 const r2 = (v) => (v == null || !isFinite(v) ? null : Math.round(v * 1e4) / 1e4);
 const pc = (a, b) => (a == null || b == null ? null : Math.round((a / b - 1) * 1000) / 10);
 
@@ -103,6 +126,7 @@ function build() {
   else {
     const csv = (f) => { const L = fs.readFileSync(f, 'utf8').trim().split('\n'); L.shift(); return L.map((ln) => { const p = ln.split(','); return { t: +p[0], o: +p[1], h: +p[2], l: +p[3], c: +p[4] }; }); };
     if (IS_ETH) { const k = csv(path.join(ROOT, 'history', 'eth_1d.csv')), bn = load('binance/ETHUSDT/1D'); last1 = k[k.length - 1].t; D = k.concat(bn.filter((r) => r.t > last1)); }
+    else if (IS_COIN) { D = load('binance/' + NAME + 'USDT/1D'); last1 = D[0].t; }
     else {
     const d1 = IS_T2 ? csv(path.join(ROOT, 'history', 'total2es_1d.csv')) : load('tv/CRYPTOCAP_USDT.D/1D'), h4 = load(IS_T2 ? 'tv/CRYPTOCAP_TOTAL2ES/4H' : 'tv/CRYPTOCAP_USDT.D/4H');
     last1 = d1[d1.length - 1].t;
@@ -192,10 +216,10 @@ function build() {
   // the bear-market extreme: USDT.D peaks (highest close), BTC bottoms (lowest close)
   const BX = UP ? -1 : 1;
   const maxIn = (a, b) => { const s = D.filter((r) => r.t >= T(a) && (!b || r.t < T(b))); if (!s.length) return null; return day(s.reduce((x, r) => (BX * r.c > BX * x.c ? r : x), s[0]).t); };
-  const peak22 = maxIn('2022-01-01', '2023-01-01'), peak26 = maxIn(CY.t3), peak18 = maxIn(CY.t1, '2019-01-15');
+  const peak22 = maxIn('2022-01-01', '2023-01-01'), peak26 = maxIn(CY.t3), peak18 = CY.t1 ? maxIn(CY.t1, '2019-01-15') : null;
   const XW = UP ? NAME + ' low' : 'USDT.D peak';
   const marks = [
-    [CY.who + ' top ' + CY.t1l, CY.t1], [XW + ' 2018' + (UP ? '' : ' (BTC bottom)'), peak18],
+    ...(CY.t1 ? [[CY.who + ' top ' + CY.t1l, CY.t1], [XW + ' 2018' + (UP ? '' : ' (BTC bottom)'), peak18]] : []),
     [CY.who + ' top ' + CY.t2l, CY.t2], [XW + ' 2022', peak22], [CY.who + ' bottom ' + CY.b2l, CY.b2],
     [CY.who + ' top ' + CY.t3l, CY.t3], [XW + ' since ' + CY.t3l, peak26]
   ].map(([label, d]) => ({ label, ...stretchAt(d) })).filter((x) => x.day);
@@ -278,7 +302,7 @@ function build() {
     let verdict, why;
     if (ck.w100.ok) {
       if (ck.reject.ok && (!ck.d20.ok || !ck.d50.ok)) { verdict = 'Bear, possibly ending'; why = 'Still under the 100W, but ' + NAME + ' held near the prior low and closed back above the ' + (!ck.d50.ok ? '50D' : '20D') + ': how bear bottoms started (needs weekly closes above the 20W/50W to confirm).'; }
-      else { verdict = 'Bear'; why = NAME + ' closed the week below its 100W: the 2022 bear pattern' + (IS_BTC ? ' (BTC lost the 100W in May 2022 and got it back in Oct 2023).' : '.') + (ck.w200.ok ? ' It is also below the 200W, which in 2018, 2020 and 2022 came near the bottom.' : ''); }
+      else { verdict = 'Bear'; why = NAME + ' closed the week below its 100W: the 2022 bear pattern' + (IS_BTC ? ' (BTC lost the 100W in May 2022 and got it back in Oct 2023).' : '.') + (ck.w200.ok ? (IS_COIN ? ' It is also below the 200W.' : ' It is also below the 200W, which in 2018, 2020 and 2022 came near the bottom.') : ''); }
     } else if (ck.w50.ok) { verdict = 'Turning bear'; why = 'Weekly close below the 50W while still above the 100W: how the 2018, 2021–22 and 2025 tops turned into bears.'; }
     else if (ck.w50_100.ok) { verdict = 'Turning bull'; why = 'Back above the 50W and 100W but the 50W is still under the 100W: the bull setup is not confirmed yet.'; }
     else { verdict = 'Bull'; why = 'Above the 50W and 100W with the 50W over the 100W: the bull pattern' + (IS_BTC ? ' (2020–21, 2023–25).' : '.'); }
@@ -520,7 +544,7 @@ function build() {
 
   // permanent log (history/usdtd_log.json, committed by the workflow): every sign that fired for a swing and every swing once
   // it closed, with the day it was first written. The first run fills it from history ("reconstructed"); later entries are live.
-  const LOGF = process.env.USDTD_LOG || path.join(ROOT, 'history', IS_BTC ? 'btc_log.json' : IS_T2 ? 'total2es_log.json' : IS_ETH ? 'eth_log.json' : 'usdtd_log.json');
+  const LOGF = process.env.USDTD_LOG || path.join(ROOT, 'history', IS_BTC ? 'btc_log.json' : IS_T2 ? 'total2es_log.json' : IS_COIN ? ASSET + '_log.json' : 'usdtd_log.json');
   let log = null;
   if (!process.env.USDTD_ASOF) {
     const first = !fs.existsSync(LOGF);
@@ -542,7 +566,7 @@ function build() {
   const ser = (X, from) => X.filter((r) => r.t >= T(from)).map((r) => [day(r.t), r2(r.c), r2(r.s20), r2(r.s50), r2(r.s100), r2(r.s200), r.btc != null ? Math.round(r.btc) : null]);
   return {
     generated: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
-    source: IS_ETH ? 'ETH: Kraken ETHUSD daily to ' + day(last1) + ' (TradingView, stored once, history/eth_1d.csv), then Binance ETHUSDT (closing prices, UTC days); BTC: Coinbase BTCUSD then Binance BTCUSDT.' : IS_T2 ? 'TOTAL2ES: TradingView CRYPTOCAP:TOTAL2ES daily to ' + day(last1) + ' (stored once, history/total2es_1d.csv), then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).' : IS_BTC ? 'BTC: Coinbase BTCUSD daily to ' + day(last1) + ', then Binance BTCUSDT (closing prices, UTC days).' : 'USDT.D: TradingView CRYPTOCAP:USDT.D daily to ' + day(last1) + ', then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).',
+    source: IS_COIN && !IS_ETH ? NAME + ': Binance ' + NAME + 'USDT daily from ' + day(D[0].t) + ' (closing prices, UTC days); BTC: Coinbase BTCUSD then Binance BTCUSDT.' : IS_ETH ? 'ETH: Kraken ETHUSD daily to ' + day(last1) + ' (TradingView, stored once, history/eth_1d.csv), then Binance ETHUSDT (closing prices, UTC days); BTC: Coinbase BTCUSD then Binance BTCUSDT.' : IS_T2 ? 'TOTAL2ES: TradingView CRYPTOCAP:TOTAL2ES daily to ' + day(last1) + ' (stored once, history/total2es_1d.csv), then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).' : IS_BTC ? 'BTC: Coinbase BTCUSD daily to ' + day(last1) + ', then Binance BTCUSDT (closing prices, UTC days).' : 'USDT.D: TradingView CRYPTOCAP:USDT.D daily to ' + day(last1) + ', then days from closed 4H candles; BTC: Coinbase BTCUSD then Binance BTCUSDT (closing prices).',
     asset: ASSET, name: NAME, tolerance_pct: TOL * 100, read: weekRead, top_watch: topWatch, bottom_watch: bottomWatch, swings, regimes, crosses, turning, marks, analog, now,
     series: { cols: ['day', 'close', 's20', 's50', 's100', 's200', 'btc'], daily: ser(D, UP ? '2015-01-01' : '2017-01-01'), weekly: ser(Wall, UP ? '2015-01-01' : '2016-01-01'), forming_week: !!FW }
   };

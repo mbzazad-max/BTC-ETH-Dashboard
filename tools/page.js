@@ -13,7 +13,7 @@
         next one is more than 1.5 daily ATR away, the nearest minor levels (1-2 methods, within 35%, up to 4) are listed with
         what they are and their timeframes; also those between price and a qualified zone more than 1.5 ATR away (20 Nov 2026). Buy zones, Key levels and the checklists still use 3+ method zones only.
    Every edit must match the original text exactly the stated number of times, or the build stops.
-   8. ETH cycle tab (22 Nov 2026): the BTC cycle analysis for ETH (public/ethcycle.json), a page tab shown only while ETH is selected.
+   8. ETH, SOL and BNB cycle tabs (22 Nov 2026): the BTC cycle analysis for each coin (public/<coin>cycle.json), a page tab shown only while that coin is selected.
    7. USDT.D and TOTAL2ES moved from the tab bar to their own buttons next to the coin switch (22 Nov 2026); BTC cycle stays a tab.
    usage: require('./page.js').edit(originalText) -> served page body */
 'use strict';
@@ -74,11 +74,11 @@ const EDITS = [
   // USDT.D tab (owner, 21 Nov 2026): a tab after Forecast that shows public/usdtd.json (build/usdtd.js) through public/usdtd.js;
   // the page's own show() already switches any .br-page, draw() hands the new tab to window.__usdtd, and #usdtd opens it
   ['    <button id="forecast" role="tab" aria-selected="false">Forecast</button>\n',
-   '    <button id="forecast" role="tab" aria-selected="false">Forecast</button>\n    <button id="btccyc" role="tab" aria-selected="false">BTC cycle</button>\n    <button id="ethcyc" role="tab" aria-selected="false" hidden>ETH cycle</button>\n', ONE],
+   '    <button id="forecast" role="tab" aria-selected="false">Forecast</button>\n    <button id="btccyc" role="tab" aria-selected="false">BTC cycle</button>\n    <button id="ethcyc" role="tab" aria-selected="false" hidden>ETH cycle</button>\n    <button id="solcyc" role="tab" aria-selected="false" hidden>SOL cycle</button>\n    <button id="bnbcyc" role="tab" aria-selected="false" hidden>BNB cycle</button>\n', ONE],
   ['  <section class="br-page" data-page="daily" hidden>',
-   '  <section class="br-page" data-page="usdtd" hidden><div id="usdtd-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div><script src="usdtd.js"></script></section>\n\n  <section class="br-page" data-page="btccyc" hidden><div id="btccyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="total2" hidden><div id="total2-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="ethcyc" hidden><div id="ethcyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="daily" hidden>', ONE],
+   '  <section class="br-page" data-page="usdtd" hidden><div id="usdtd-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div><script src="usdtd.js"></script></section>\n\n  <section class="br-page" data-page="btccyc" hidden><div id="btccyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="total2" hidden><div id="total2-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="ethcyc" hidden><div id="ethcyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="solcyc" hidden><div id="solcyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="bnbcyc" hidden><div id="bnbcyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="daily" hidden>', ONE],
   ["    } else {\n      const yd = dash.data('yearly_roi');",
-   "    } else if (current === 'usdtd') {\n      if (window.__usdtd) window.__usdtd();\n    } else if (current === 'btccyc') {\n      if (window.__btccyc) window.__btccyc();\n    } else if (current === 'total2') {\n      if (window.__total2) window.__total2();\n    } else if (current === 'ethcyc') {\n      if (window.__ethcyc) window.__ethcyc();\n    } else {\n      const yd = dash.data('yearly_roi');", ONE],
+   "    } else if (current === 'usdtd') {\n      if (window.__usdtd) window.__usdtd();\n    } else if (current === 'btccyc') {\n      if (window.__btccyc) window.__btccyc();\n    } else if (current === 'total2') {\n      if (window.__total2) window.__total2();\n    } else if (current === 'ethcyc') {\n      if (window.__ethcyc) window.__ethcyc();\n    } else if (current === 'solcyc') {\n      if (window.__solcyc) window.__solcyc();\n    } else if (current === 'bnbcyc') {\n      if (window.__bnbcyc) window.__bnbcyc();\n    } else {\n      const yd = dash.data('yearly_roi');", ONE],
   // USDT.D and TOTAL2ES as their own tabs in the top switch, next to BTC / ETH / SOL / BNB (owner, 22 Nov 2026): picking one
   // hides the coin's price tiles, headline and tab bar and shows that page; picking a coin brings back the coin tab you were on
   ["  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast'].includes(named)) show(named);\n",
@@ -94,13 +94,19 @@ const EDITS = [
    "  };\n" +
    "  gBtns.forEach((b) => b.addEventListener('click', () => gaugeView(b.dataset.gauge)));\n" +
    "  document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => gaugeView(null)));\n" +
-   // ETH cycle tab (owner, 22 Nov 2026): only shown while ETH is the coin; leaving ETH on that tab goes to the BTC cycle tab
-   "  const ethTab = document.getElementById('ethcyc');\n" +
-   "  const ethOnly = (a) => { ethTab.hidden = a !== 'ETH'; if (a !== 'ETH' && current === 'ethcyc') show('btccyc'); if (a !== 'ETH' && coinTab === 'ethcyc') coinTab = 'btccyc'; };\n" +
-   "  document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => ethOnly(b.dataset.asset)));\n" +
+   // ETH / SOL / BNB cycle tabs (owner, 22 Nov 2026): each only shown while its coin is picked; switching to another coin
+   // while on one goes to the new coin's own cycle tab (BTC: the BTC cycle tab)
+   "  const COINCYC = { ETH: 'ethcyc', SOL: 'solcyc', BNB: 'bnbcyc' }, cycTabs = Object.values(COINCYC);\n" +
+   "  const coinOnly = (a) => {\n" +
+   "    Object.entries(COINCYC).forEach(([c, id]) => { document.getElementById(id).hidden = c !== a; });\n" +
+   "    const to = COINCYC[a] || 'btccyc';\n" +
+   "    if (cycTabs.includes(current) && current !== to) show(to);\n" +
+   "    if (cycTabs.includes(coinTab) && coinTab !== to) coinTab = to;\n" +
+   "  };\n" +
+   "  document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => coinOnly(b.dataset.asset)));\n" +
    "  let startCoin = 'BTC'; try { const v = localStorage.getItem('bd_asset'); if (['BTC', 'ETH', 'SOL', 'BNB'].includes(v)) startCoin = v; } catch (e) { /* storage unavailable */ }\n" +
-   "  ethTab.hidden = startCoin !== 'ETH';\n" +
-   "  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'btccyc'].includes(named) || (named === 'ethcyc' && startCoin === 'ETH')) show(named);\n" +
+   "  Object.entries(COINCYC).forEach(([c, id]) => { document.getElementById(id).hidden = c !== startCoin; });\n" +
+   "  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'btccyc'].includes(named) || named === COINCYC[startCoin]) show(named);\n" +
    "  else if (GAUGES.includes(named)) gaugeView(named);\n", ONE],
   [/Math\.round\((\w+)\)\.toLocaleString\('en-US'\)/g, '__px0($1)', 8],
   [/d3\.format\(',\.0f'\)\((\w+)\)/g, '__pxd($1)', 4],
