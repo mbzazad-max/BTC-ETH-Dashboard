@@ -101,3 +101,7 @@ Owner's request: the same cycle analysis for SOL and BNB, each under its own coi
 - Own cycle dates (closes). SOL: low 23 Dec 2020, top 6 Nov 2021, bottom 29 Dec 2022, top 18 Jan 2025 (one past bear: 60 weeks, −96%). BNB: top 6 Jan 2018, bottom 7 Dec 2018, rally high 21 Jun 2019, low 12 Mar 2020, top 3 May 2021, bottom 18 Jun 2022, top 8 Oct 2025 (2018: 48 weeks, −80%; 2021–22: 59 weeks, −71%).
 - Short histories: SOL's 100W starts Jul 2022 and 200W Jun 2024; BNB's 100W Sep 2019 and 200W Aug 2021. The weekly read and its record start there.
 - Renderer: one coin table (`COINS` in public/usdtd.js) holds each coin's dates and wording; ETH moved onto it. Coin tabs ("weekly 200W ... came near the bottom") no longer quote BTC's history.
+
+## One cycle tab per coin (22 Nov 2026)
+
+Owner's request: BTC cycle shows only under BTC; ETH / SOL / BNB show only their own cycle tab. Switching coin while on a cycle tab goes to the new coin's own one; a `#btccyc` / `#ethcyc` / `#solcyc` / `#bnbcyc` link opens the cycle tab of the coin you have picked. Checked the same day: ETH / SOL / BNB prices equal the market-data candles, every daily and weekly SMA recomputed independently matches, the cycle dates are the real highest/lowest closes, the drawdowns and week counts match, and the BTC context column equals the BTC cycle tab.

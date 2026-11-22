@@ -2241,7 +2241,7 @@ dash.calc('headline', {
   };
   gBtns.forEach((b) => b.addEventListener('click', () => gaugeView(b.dataset.gauge)));
   document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => gaugeView(null)));
-  const COINCYC = { ETH: 'ethcyc', SOL: 'solcyc', BNB: 'bnbcyc' }, cycTabs = Object.values(COINCYC);
+  const COINCYC = { BTC: 'btccyc', ETH: 'ethcyc', SOL: 'solcyc', BNB: 'bnbcyc' }, cycTabs = Object.values(COINCYC);
   const coinOnly = (a) => {
     Object.entries(COINCYC).forEach(([c, id]) => { document.getElementById(id).hidden = c !== a; });
     const to = COINCYC[a] || 'btccyc';
@@ -2251,7 +2251,8 @@ dash.calc('headline', {
   document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => coinOnly(b.dataset.asset)));
   let startCoin = 'BTC'; try { const v = localStorage.getItem('bd_asset'); if (['BTC', 'ETH', 'SOL', 'BNB'].includes(v)) startCoin = v; } catch (e) { /* storage unavailable */ }
   Object.entries(COINCYC).forEach(([c, id]) => { document.getElementById(id).hidden = c !== startCoin; });
-  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'btccyc'].includes(named) || named === COINCYC[startCoin]) show(named);
+  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast'].includes(named)) show(named);
+  else if (cycTabs.includes(named)) show(COINCYC[startCoin]);
   else if (GAUGES.includes(named)) gaugeView(named);
 })();
 </script>

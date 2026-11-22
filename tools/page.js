@@ -13,7 +13,7 @@
         next one is more than 1.5 daily ATR away, the nearest minor levels (1-2 methods, within 35%, up to 4) are listed with
         what they are and their timeframes; also those between price and a qualified zone more than 1.5 ATR away (20 Nov 2026). Buy zones, Key levels and the checklists still use 3+ method zones only.
    Every edit must match the original text exactly the stated number of times, or the build stops.
-   8. ETH, SOL and BNB cycle tabs (22 Nov 2026): the BTC cycle analysis for each coin (public/<coin>cycle.json), a page tab shown only while that coin is selected.
+   8. ETH, SOL and BNB cycle tabs (22 Nov 2026): the BTC cycle analysis for each coin (public/<coin>cycle.json); each cycle tab, BTC cycle included, shows only while its coin is selected.
    7. USDT.D and TOTAL2ES moved from the tab bar to their own buttons next to the coin switch (22 Nov 2026); BTC cycle stays a tab.
    usage: require('./page.js').edit(originalText) -> served page body */
 'use strict';
@@ -94,9 +94,9 @@ const EDITS = [
    "  };\n" +
    "  gBtns.forEach((b) => b.addEventListener('click', () => gaugeView(b.dataset.gauge)));\n" +
    "  document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => gaugeView(null)));\n" +
-   // ETH / SOL / BNB cycle tabs (owner, 22 Nov 2026): each only shown while its coin is picked; switching to another coin
-   // while on one goes to the new coin's own cycle tab (BTC: the BTC cycle tab)
-   "  const COINCYC = { ETH: 'ethcyc', SOL: 'solcyc', BNB: 'bnbcyc' }, cycTabs = Object.values(COINCYC);\n" +
+   // cycle tabs (owner, 22 Nov 2026): BTC cycle only under BTC, ETH / SOL / BNB cycle only under that coin; switching coin
+   // while on a cycle tab goes to the new coin's own cycle tab
+   "  const COINCYC = { BTC: 'btccyc', ETH: 'ethcyc', SOL: 'solcyc', BNB: 'bnbcyc' }, cycTabs = Object.values(COINCYC);\n" +
    "  const coinOnly = (a) => {\n" +
    "    Object.entries(COINCYC).forEach(([c, id]) => { document.getElementById(id).hidden = c !== a; });\n" +
    "    const to = COINCYC[a] || 'btccyc';\n" +
@@ -106,7 +106,8 @@ const EDITS = [
    "  document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => coinOnly(b.dataset.asset)));\n" +
    "  let startCoin = 'BTC'; try { const v = localStorage.getItem('bd_asset'); if (['BTC', 'ETH', 'SOL', 'BNB'].includes(v)) startCoin = v; } catch (e) { /* storage unavailable */ }\n" +
    "  Object.entries(COINCYC).forEach(([c, id]) => { document.getElementById(id).hidden = c !== startCoin; });\n" +
-   "  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'btccyc'].includes(named) || named === COINCYC[startCoin]) show(named);\n" +
+   "  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast'].includes(named)) show(named);\n" +
+   "  else if (cycTabs.includes(named)) show(COINCYC[startCoin]);\n" +
    "  else if (GAUGES.includes(named)) gaugeView(named);\n", ONE],
   [/Math\.round\((\w+)\)\.toLocaleString\('en-US'\)/g, '__px0($1)', 8],
   [/d3\.format\(',\.0f'\)\((\w+)\)/g, '__pxd($1)', 4],

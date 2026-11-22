@@ -153,7 +153,7 @@ function make(A) {
     else if (ET) t = top
       ? (bull ? `${NM} is above its 50W (${w50}) and 100W (${w100}) (read: Bull): a confirmed top here is a swing top until ${NM} closes weeks below the 50W, then the 100W.`
         : `the weekly read is already ${v}: a top here would be a relief-rally top inside the bear, not the cycle top.`)
-      : (bear ? `${NM} is still below its 100W (${w100}) (read: ${v}): a confirmed low here is a swing low until ${NM} closes weeks back above the 50W (${w50}) and then the 100W. Check the BTC cycle tab too: ${CC.vsBtc}`
+      : (bear ? `${NM} is still below its 100W (${w100}) (read: ${v}): a confirmed low here is a swing low until ${NM} closes weeks back above the 50W (${w50}) and then the 100W. Check BTC's own cycle tab too (pick BTC at the top): ${CC.vsBtc}`
         : `the weekly read is ${v}: a low here would be a dip inside the uptrend, not a cycle low.`);
     else if (B) t = top
       ? (bull ? `BTC is above its 50W (${w50}) and 100W (${w100}) (read: Bull): a confirmed top here is a swing top until BTC closes weeks below the 50W, then the 100W (the Nov 2021 top: 50W lost Dec 2021, 100W May 2022).`
@@ -343,7 +343,7 @@ function make(A) {
       c.append(table([CYW + ' market', ...NS.map((n) => n + s), 'SMA stack 20>50>100>200 / reversed'], rows));
     });
     if (T2) c.append(el('p', { className: 'rf-note' }, 'Compare with the BTC cycle tab: altcoins usually sit under their SMAs for longer in bears and break above them later than BTC, and pullbacks inside bulls run deeper.'));
-    else if (ET) c.append(el('p', { className: 'rf-note' }, 'Compare with the BTC cycle tab: ' + CC.behave));
+    else if (ET) c.append(el('p', { className: 'rf-note' }, 'Compare with BTC\'s cycle tab (under BTC): ' + CC.behave));
     else if (B) c.append(el('p', { className: 'rf-note' }, 'What stands out: in bulls BTC held above its weekly 50 about 9 weeks in 10 (2020–21: 90%, 2023–25: 89%) and in bears it stayed under its daily 100/200 most days (2018: 20–23% above; 2022: 12–13%). The weekly 100 is less clean for BTC: after the huge 2017 run, BTC stayed above it for most of the 2018 bear, which is why the weekly read waits for the 100W.'));
     else { c.append(el('p', { className: 'rf-note' }, 'What stands out: in all three bears (2018, 2022, now) USDT.D held above the weekly 50 and 100 almost every week, and the daily 200 was a floor (2022: 13 of 16 touches held). In the 2023–25 bull the weekly 100 capped nearly every rally. Shock weeks (Aug 2024, Apr 2025) are the exceptions.'));
     c.append(el('p', { className: 'rf-note' }, '<b style="color:var(--warn)">⚠ Launch years (2017 bull, 2018 bear, 2019 rally):</b> ' + (J.regimes.find((R) => R.caveat) || {}).caveat + ' So the weekly 100 only became a clean bull/bear divider from about 2021; the daily SMAs (share of closes above the 20D/50D) separated bulls from bears in every period.')); }
