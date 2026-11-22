@@ -3,27 +3,31 @@
  "level": 3,
  "last": {
   "BTC|buy": {
-   "score": 2,
+   "score": 3,
    "of": 5,
    "green": [
-    "Funding reset",
+    "Flush over",
+    "Leverage steady",
     "Price confirms"
    ],
-   "at": "2026-11-22T00:35:28.762Z"
+   "at": "2026-11-22T00:41:02.537Z"
   },
   "BTC|sell": {
-   "score": 0,
-   "of": 5,
-   "green": [],
-   "at": "2026-11-22T00:35:28.762Z"
-  },
-  "ETH|buy": {
    "score": 1,
    "of": 5,
    "green": [
-    "Funding reset"
+    "Squeeze over"
    ],
-   "at": "2026-11-22T00:35:28.762Z"
+   "at": "2026-11-22T00:41:02.537Z"
+  },
+  "ETH|buy": {
+   "score": 2,
+   "of": 5,
+   "green": [
+    "Flush over",
+    "Leverage steady"
+   ],
+   "at": "2026-11-22T00:41:02.537Z"
   },
   "ETH|sell": {
    "score": 1,
@@ -31,35 +35,37 @@
    "green": [
     "Squeeze over"
    ],
-   "at": "2026-11-22T00:35:28.762Z"
+   "at": "2026-11-22T00:41:02.537Z"
   },
   "SOL|buy": {
-   "score": 1,
+   "score": 2,
    "of": 5,
    "green": [
-    "Funding reset"
+    "Flush over",
+    "Leverage steady"
    ],
-   "at": "2026-11-22T00:35:28.762Z"
+   "at": "2026-11-22T00:41:02.537Z"
   },
   "SOL|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-22T00:35:28.762Z"
+   "at": "2026-11-22T00:41:02.537Z"
   },
   "BNB|buy": {
-   "score": 1,
+   "score": 2,
    "of": 5,
    "green": [
-    "Funding reset"
+    "Flush over",
+    "Leverage steady"
    ],
-   "at": "2026-11-22T00:35:28.762Z"
+   "at": "2026-11-22T00:41:02.537Z"
   },
   "BNB|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-22T00:35:28.762Z"
+   "at": "2026-11-22T00:41:02.537Z"
   }
  },
  "log": [
@@ -412,6 +418,24 @@
    "price": 546.75,
    "candle": "2026-11-20T12:00 UTC",
    "kind": "end"
+  },
+  {
+   "at": "2026-11-22T00:41:02.537Z",
+   "coin": "BTC",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 2,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 60364.02,
+   "candle": "2026-11-21T16:00 UTC",
+   "kind": "up"
   }
  ],
  "from": "2026-11-13"
