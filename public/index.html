@@ -178,7 +178,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
     <div class="rf-top">
       <div>
         <div class="as-head"><h1><span class="a-name">Bitcoin</span> Dashboard</h1>
-          <div class="br-win as-sw" id="assetSw" role="group" aria-label="Coin"><button type="button" data-asset="BTC" aria-pressed="true">BTC</button><button type="button" data-asset="ETH" aria-pressed="false">ETH</button><button type="button" data-asset="SOL" aria-pressed="false">SOL</button><button type="button" data-asset="BNB" aria-pressed="false">BNB</button></div></div>
+          <div class="br-win as-sw" id="assetSw" role="group" aria-label="Coin"><button type="button" data-asset="BTC" aria-pressed="true">BTC</button><button type="button" data-asset="ETH" aria-pressed="false">ETH</button><button type="button" data-asset="SOL" aria-pressed="false">SOL</button><button type="button" data-asset="BNB" aria-pressed="false">BNB</button></div>
+          <div class="br-win as-sw" id="gaugeSw" role="group" aria-label="Market"><button type="button" id="usdtd" data-gauge="usdtd" aria-pressed="false">USDT.D</button><button type="button" id="total2" data-gauge="total2" aria-pressed="false">TOTAL2ES</button></div></div>
         <p class="rf-note">BTC (Coinbase BTCUSD), ETH (Binance ETHUSDT), SOL (Binance SOLUSDT) and BNB (Binance BNBUSDT): 4H, daily, weekly and monthly bars, market-sentiment gauges and the US macro calendar, saved as a snapshot each time you refresh. Every tab follows the coin you pick. Spot only.</p>
       </div>
       <div class="rf-status">
@@ -228,9 +229,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
     <button id="patterns" role="tab" aria-selected="false">Patterns</button>
     <button id="plan" role="tab" aria-selected="false">Trade plan</button>
     <button id="forecast" role="tab" aria-selected="false">Forecast</button>
-    <button id="usdtd" role="tab" aria-selected="false">USDT.D</button>
     <button id="btccyc" role="tab" aria-selected="false">BTC cycle</button>
-    <button id="total2" role="tab" aria-selected="false">TOTAL2ES</button>
   </nav>
 
   <section class="br-page" data-page="usdtd" hidden><div id="usdtd-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div><script src="usdtd.js"></script></section>
@@ -2215,7 +2214,20 @@ dash.calc('headline', {
 
   dash.onData(draw);
   const named = location.hash.slice(1);
-  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'usdtd', 'btccyc', 'total2'].includes(named)) show(named);
+  const GAUGES = ['usdtd', 'total2'], gBtns = [...document.querySelectorAll('#gaugeSw button')];
+  let coinTab = 'monthly';
+  const gaugeView = (g) => {
+    const on = GAUGES.includes(g);
+    gBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.gauge === g)));
+    if (on) document.querySelectorAll('#assetSw button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    [document.getElementById('tiles'), document.getElementById('lede'), document.querySelector('nav.br-tabs')].forEach((el) => { if (el) el.hidden = on; });
+    if (on) { if (!GAUGES.includes(current)) coinTab = current; show(g); }
+    else if (GAUGES.includes(current)) show(coinTab);
+  };
+  gBtns.forEach((b) => b.addEventListener('click', () => gaugeView(b.dataset.gauge)));
+  document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => gaugeView(null)));
+  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'btccyc'].includes(named)) show(named);
+  else if (GAUGES.includes(named)) gaugeView(named);
 })();
 </script>
 <script>

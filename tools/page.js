@@ -13,12 +13,13 @@
         next one is more than 1.5 daily ATR away, the nearest minor levels (1-2 methods, within 35%, up to 4) are listed with
         what they are and their timeframes; also those between price and a qualified zone more than 1.5 ATR away (20 Nov 2026). Buy zones, Key levels and the checklists still use 3+ method zones only.
    Every edit must match the original text exactly the stated number of times, or the build stops.
+   7. USDT.D and TOTAL2ES moved from the tab bar to their own buttons next to the coin switch (22 Nov 2026); BTC cycle stays a tab.
    usage: require('./page.js').edit(originalText) -> served page body */
 'use strict';
 const ONE = 1;
 const EDITS = [
   ['<button type="button" data-asset="ETH" aria-pressed="false">ETH</button></div>',
-   '<button type="button" data-asset="ETH" aria-pressed="false">ETH</button><button type="button" data-asset="SOL" aria-pressed="false">SOL</button><button type="button" data-asset="BNB" aria-pressed="false">BNB</button></div>', ONE],
+   '<button type="button" data-asset="ETH" aria-pressed="false">ETH</button><button type="button" data-asset="SOL" aria-pressed="false">SOL</button><button type="button" data-asset="BNB" aria-pressed="false">BNB</button></div>\n          <div class="br-win as-sw" id="gaugeSw" role="group" aria-label="Market"><button type="button" id="usdtd" data-gauge="usdtd" aria-pressed="false">USDT.D</button><button type="button" id="total2" data-gauge="total2" aria-pressed="false">TOTAL2ES</button></div>', ONE],
   ['<p class="rf-note">BTC (Coinbase BTCUSD) and ETH (Binance ETHUSDT): 4H,',
    '<p class="rf-note">BTC (Coinbase BTCUSD), ETH (Binance ETHUSDT), SOL (Binance SOLUSDT) and BNB (Binance BNBUSDT): 4H,', ONE],
   ['<li><b>BTC / ETH switch.</b>', '<li><b>BTC / ETH / SOL / BNB switch.</b>', ONE],
@@ -72,12 +73,28 @@ const EDITS = [
   // USDT.D tab (owner, 21 Nov 2026): a tab after Forecast that shows public/usdtd.json (build/usdtd.js) through public/usdtd.js;
   // the page's own show() already switches any .br-page, draw() hands the new tab to window.__usdtd, and #usdtd opens it
   ['    <button id="forecast" role="tab" aria-selected="false">Forecast</button>\n',
-   '    <button id="forecast" role="tab" aria-selected="false">Forecast</button>\n    <button id="usdtd" role="tab" aria-selected="false">USDT.D</button>\n    <button id="btccyc" role="tab" aria-selected="false">BTC cycle</button>\n    <button id="total2" role="tab" aria-selected="false">TOTAL2ES</button>\n', ONE],
+   '    <button id="forecast" role="tab" aria-selected="false">Forecast</button>\n    <button id="btccyc" role="tab" aria-selected="false">BTC cycle</button>\n', ONE],
   ['  <section class="br-page" data-page="daily" hidden>',
    '  <section class="br-page" data-page="usdtd" hidden><div id="usdtd-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div><script src="usdtd.js"></script></section>\n\n  <section class="br-page" data-page="btccyc" hidden><div id="btccyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="total2" hidden><div id="total2-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>\n\n  <section class="br-page" data-page="daily" hidden>', ONE],
   ["    } else {\n      const yd = dash.data('yearly_roi');",
    "    } else if (current === 'usdtd') {\n      if (window.__usdtd) window.__usdtd();\n    } else if (current === 'btccyc') {\n      if (window.__btccyc) window.__btccyc();\n    } else if (current === 'total2') {\n      if (window.__total2) window.__total2();\n    } else {\n      const yd = dash.data('yearly_roi');", ONE],
-  ["'patterns', 'plan', 'forecast'].includes(named)", "'patterns', 'plan', 'forecast', 'usdtd', 'btccyc', 'total2'].includes(named)", ONE],
+  // USDT.D and TOTAL2ES as their own tabs in the top switch, next to BTC / ETH / SOL / BNB (owner, 22 Nov 2026): picking one
+  // hides the coin's price tiles, headline and tab bar and shows that page; picking a coin brings back the coin tab you were on
+  ["  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast'].includes(named)) show(named);\n",
+   "  const GAUGES = ['usdtd', 'total2'], gBtns = [...document.querySelectorAll('#gaugeSw button')];\n" +
+   "  let coinTab = 'monthly';\n" +
+   "  const gaugeView = (g) => {\n" +
+   "    const on = GAUGES.includes(g);\n" +
+   "    gBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.gauge === g)));\n" +
+   "    if (on) document.querySelectorAll('#assetSw button').forEach((b) => b.setAttribute('aria-pressed', 'false'));\n" +
+   "    [document.getElementById('tiles'), document.getElementById('lede'), document.querySelector('nav.br-tabs')].forEach((el) => { if (el) el.hidden = on; });\n" +
+   "    if (on) { if (!GAUGES.includes(current)) coinTab = current; show(g); }\n" +
+   "    else if (GAUGES.includes(current)) show(coinTab);\n" +
+   "  };\n" +
+   "  gBtns.forEach((b) => b.addEventListener('click', () => gaugeView(b.dataset.gauge)));\n" +
+   "  document.querySelectorAll('#assetSw button').forEach((b) => b.addEventListener('click', () => gaugeView(null)));\n" +
+   "  if (['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'patterns', 'plan', 'forecast', 'btccyc'].includes(named)) show(named);\n" +
+   "  else if (GAUGES.includes(named)) gaugeView(named);\n", ONE],
   [/Math\.round\((\w+)\)\.toLocaleString\('en-US'\)/g, '__px0($1)', 8],
   [/d3\.format\(',\.0f'\)\((\w+)\)/g, '__pxd($1)', 4],
 ];
