@@ -166,6 +166,62 @@
      566.2477167583662
     ]
    }
+  },
+  "2026-11-23": {
+   "BTC": {
+    "spot": 61270.93,
+    "bull": "A daily close above 64,003 (top of the 61,827–64,003 resistance, 4 methods) hands control to buyers; next stop 65,745–67,921.",
+    "bear": "A daily close below 57,003 (floor of the 57,003–59,179 support, 3 methods) hands control to sellers; next minor levels (1–2 methods): equal lows 52,530–53,500 (1W); then the 47,145–49,321 support (3 methods).",
+    "bull_level": 64002.677741303036,
+    "bull_zone": [
+     61826.78512594245,
+     64002.677741303036
+    ],
+    "bear_level": 57002.61385495296,
+    "bear_zone": [
+     57002.61385495296,
+     59178.50647031354
+    ]
+   },
+   "ETH": {
+    "spot": 1710.65,
+    "bull": "A daily close above 2,021 (top of the 1,941–2,021 resistance, 5 methods) hands control to buyers; next stop 2,045–2,125.",
+    "bear": "No qualified support (3+ methods) below. Nearest minor levels (1–2 methods): swing low 1,506 (1D+1W+1M, 1-year low); fib 0.786 at 1,125 (1M).",
+    "bull_level": 2021.3226812124408,
+    "bull_zone": [
+     1941.1573187875592,
+     2021.3226812124408
+    ],
+    "bear_level": null,
+    "bear_zone": null
+   },
+   "SOL": {
+    "spot": 72.03,
+    "bull": "Nearest minor levels (1–2 methods): equal highs 76.1–77.8 + retest shelf 73.4–81.4 (4H+1D+1W). Qualified resistance: a daily close above 96.7 (top of the 93.3–96.7 resistance, 6 methods) hands control to buyers; next stop 97.9–101.4.",
+    "bear": "No qualified support (3+ methods) below. Nearest minor levels (1–2 methods): swing low 67.5 (1D+1W); swing low 60.1 (1D+1W, 1-year low).",
+    "bull_level": 96.73991742687264,
+    "bull_zone": [
+     93.2751845710107,
+     96.73991742687264
+    ],
+    "bear_level": null,
+    "bear_zone": null
+   },
+   "BNB": {
+    "spot": 556.65,
+    "bull": "A daily close above 617.9 (top of the 597.9–617.9 resistance, 5 methods) hands control to buyers; next stop 635.2–655.2.",
+    "bear": "A daily close below 546.0 (floor of the 546.0–566.0 support, 4 methods) hands control to sellers; next support 515.6–535.6.",
+    "bull_level": 617.8620941327684,
+    "bull_zone": [
+     597.8579058672316,
+     617.8620941327684
+    ],
+    "bear_level": 546.0229058672317,
+    "bear_zone": [
+     546.0229058672317,
+     566.0270941327685
+    ]
+   }
   }
  },
  "log": [
@@ -196,5 +252,5 @@
    "at": "2026-11-21T01:12:08.000Z"
   }
  ],
- "checked": "2026-11-22"
+ "checked": "2026-11-23"
 }
