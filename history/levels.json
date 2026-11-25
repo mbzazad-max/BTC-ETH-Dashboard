@@ -222,6 +222,62 @@
      566.0270941327685
     ]
    }
+  },
+  "2026-11-24": {
+   "BTC": {
+    "spot": 59832,
+    "bull": "A daily close above 67,893 (top of the 65,752–67,893 resistance, 5 methods) hands control to buyers; next stop 68,656–70,798.",
+    "bear": "A daily close below 57,014 (floor of the 57,014–59,155 support, 3 methods) hands control to sellers; next minor levels (1–2 methods): equal lows 52,530–53,500 (1W); then the 47,152–49,294 support (3 methods).",
+    "bull_level": 67893.42992320853,
+    "bull_zone": [
+     65751.85770894519,
+     67893.42992320853
+    ],
+    "bear_level": 57013.89055817062,
+    "bear_zone": [
+     57013.89055817062,
+     59155.462772433966
+    ]
+   },
+   "ETH": {
+    "spot": 1680.11,
+    "bull": "A daily close above 1,964 (top of the 1,887–1,964 resistance, 5 methods) hands control to buyers; next stop 2,040–2,117.",
+    "bear": "No qualified support (3+ methods) below. Nearest minor levels (1–2 methods): swing low 1,506 (1D+1W+1M, 1-year low); fib 0.786 at 1,125 (1M).",
+    "bull_level": 1964.22654425004,
+    "bull_zone": [
+     1886.9022791412228,
+     1964.22654425004
+    ],
+    "bear_level": null,
+    "bear_zone": null
+   },
+   "SOL": {
+    "spot": 69.69,
+    "bull": "A daily close above 79.1 (top of the 75.7–79.1 resistance, 4 methods) hands control to buyers; next stop 80.7–84.2.",
+    "bear": "No qualified support (3+ methods) below. Nearest minor levels (1–2 methods): swing low 67.5 (1D+1W); swing low 60.1 (1D+1W, 1-year low).",
+    "bull_level": 79.07410855968098,
+    "bull_zone": [
+     75.65085662209495,
+     79.07410855968098
+    ],
+    "bear_level": null,
+    "bear_zone": null
+   },
+   "BNB": {
+    "spot": 548.62,
+    "bull": "A daily close above 617.6 (top of the 598.1–617.6 resistance, 5 methods) hands control to buyers; next stop 635.4–655.0.",
+    "bear": "A daily close below 530.8 (floor of the 530.8–550.4 support, 3 methods) hands control to sellers; next minor levels (1–2 methods): equal lows 454.8–471.3 + fib 0.786 at 471.0 (1W); swing low 400.0 (1W+1M); no qualified support below them.",
+    "bull_level": 617.6209088375706,
+    "bull_zone": [
+     598.0990911624294,
+     617.6209088375706
+    ],
+    "bear_level": 530.8356884781679,
+    "bear_zone": [
+     530.8356884781679,
+     550.357506153309
+    ]
+   }
   }
  },
  "log": [
@@ -252,5 +308,5 @@
    "at": "2026-11-21T01:12:08.000Z"
   }
  ],
- "checked": "2026-11-23"
+ "checked": "2026-11-24"
 }
