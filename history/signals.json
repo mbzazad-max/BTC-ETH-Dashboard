@@ -3,53 +3,44 @@
  "level": 3,
  "last": {
   "BTC|buy": {
-   "score": 3,
-   "of": 5,
-   "green": [
-    "Flush over",
-    "Leverage steady",
-    "Price confirms"
-   ],
-   "at": "2026-11-25T07:27:33.926Z"
-  },
-  "BTC|sell": {
    "score": 1,
    "of": 5,
    "green": [
-    "Squeeze over"
+    "Price confirms"
    ],
-   "at": "2026-11-25T07:27:33.926Z"
+   "at": "2026-11-25T07:42:56.834Z"
+  },
+  "BTC|sell": {
+   "score": 0,
+   "of": 5,
+   "green": [],
+   "at": "2026-11-25T07:42:56.834Z"
   },
   "ETH|buy": {
-   "score": 3,
+   "score": 1,
    "of": 5,
    "green": [
-    "Flush over",
-    "Leverage steady",
-    "Funding reset"
+    "Leverage steady"
    ],
-   "at": "2026-11-25T07:27:33.926Z"
+   "at": "2026-11-25T07:42:56.834Z"
   },
   "ETH|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-25T07:27:33.926Z"
+   "at": "2026-11-25T07:42:56.834Z"
   },
   "SOL|buy": {
-   "score": 2,
+   "score": 0,
    "of": 5,
-   "green": [
-    "Flush over",
-    "Leverage steady"
-   ],
-   "at": "2026-11-25T07:27:33.926Z"
+   "green": [],
+   "at": "2026-11-25T07:42:56.834Z"
   },
   "SOL|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-25T07:27:33.926Z"
+   "at": "2026-11-25T07:42:56.834Z"
   },
   "BNB|buy": {
    "score": 3,
@@ -59,13 +50,13 @@
     "Leverage steady",
     "Price confirms"
    ],
-   "at": "2026-11-25T07:27:33.926Z"
+   "at": "2026-11-25T07:42:56.834Z"
   },
   "BNB|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-25T07:27:33.926Z"
+   "at": "2026-11-25T07:42:56.834Z"
   }
  },
  "log": [
@@ -541,6 +532,38 @@
    ],
    "price": 70.9,
    "candle": "2026-11-24T08:00 UTC",
+   "kind": "end"
+  },
+  {
+   "at": "2026-11-25T07:42:56.834Z",
+   "coin": "BTC",
+   "list": "buy",
+   "score": 1,
+   "of": 5,
+   "prev": 3,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Price confirms"
+   ],
+   "price": 59421.85,
+   "candle": "2026-11-25T00:00 UTC",
+   "kind": "end"
+  },
+  {
+   "at": "2026-11-25T07:42:56.834Z",
+   "coin": "ETH",
+   "list": "buy",
+   "score": 1,
+   "of": 5,
+   "prev": 3,
+   "prev_of": 5,
+   "verdict": "Wait: no support zone below price",
+   "green": [
+    "Leverage steady"
+   ],
+   "price": 1664.44,
+   "candle": "2026-11-25T00:00 UTC",
    "kind": "end"
   }
  ],
