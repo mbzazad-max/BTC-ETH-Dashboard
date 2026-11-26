@@ -9,13 +9,16 @@
     "Flush over",
     "Price confirms"
    ],
-   "at": "2026-11-26T09:12:24.930Z"
+   "at": "2026-11-26T10:19:22.038Z"
   },
   "BTC|sell": {
-   "score": 0,
+   "score": 2,
    "of": 5,
-   "green": [],
-   "at": "2026-11-26T09:12:24.930Z"
+   "green": [
+    "Squeeze over",
+    "Leverage piling in"
+   ],
+   "at": "2026-11-26T10:19:22.038Z"
   },
   "ETH|buy": {
    "score": 2,
@@ -24,31 +27,33 @@
     "Flush over",
     "Leverage steady"
    ],
-   "at": "2026-11-26T09:12:24.930Z"
+   "at": "2026-11-26T10:19:22.038Z"
   },
   "ETH|sell": {
-   "score": 0,
-   "of": 5,
-   "green": [],
-   "at": "2026-11-26T09:12:24.930Z"
-  },
-  "SOL|buy": {
-   "score": 3,
-   "of": 5,
-   "green": [
-    "Flush over",
-    "Leverage steady",
-    "Price confirms"
-   ],
-   "at": "2026-11-26T09:12:24.930Z"
-  },
-  "SOL|sell": {
    "score": 1,
    "of": 5,
    "green": [
+    "Squeeze over"
+   ],
+   "at": "2026-11-26T10:19:22.038Z"
+  },
+  "SOL|buy": {
+   "score": 2,
+   "of": 5,
+   "green": [
+    "Flush over",
+    "Price confirms"
+   ],
+   "at": "2026-11-26T10:19:22.038Z"
+  },
+  "SOL|sell": {
+   "score": 2,
+   "of": 5,
+   "green": [
+    "Leverage piling in",
     "Structure breaks"
    ],
-   "at": "2026-11-26T09:12:24.930Z"
+   "at": "2026-11-26T10:19:22.038Z"
   },
   "BNB|buy": {
    "score": 3,
@@ -58,13 +63,13 @@
     "Leverage steady",
     "Price confirms"
    ],
-   "at": "2026-11-26T09:12:24.930Z"
+   "at": "2026-11-26T10:19:22.038Z"
   },
   "BNB|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-26T09:12:24.930Z"
+   "at": "2026-11-26T10:19:22.038Z"
   }
  },
  "log": [
@@ -626,6 +631,23 @@
    "price": 558.87,
    "candle": "2026-11-26T00:00 UTC",
    "kind": "up"
+  },
+  {
+   "at": "2026-11-26T10:19:22.038Z",
+   "coin": "SOL",
+   "list": "buy",
+   "score": 2,
+   "of": 5,
+   "prev": 3,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Price confirms"
+   ],
+   "price": 70.84,
+   "candle": "2026-11-26T04:00 UTC",
+   "kind": "end"
   }
  ],
  "from": "2026-11-13"
