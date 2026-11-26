@@ -3,22 +3,22 @@
  "level": 3,
  "last": {
   "BTC|buy": {
-   "score": 2,
+   "score": 3,
    "of": 5,
    "green": [
     "Flush over",
+    "Leverage steady",
     "Price confirms"
    ],
-   "at": "2026-11-26T20:11:19.573Z"
+   "at": "2026-11-26T21:18:05.505Z"
   },
   "BTC|sell": {
-   "score": 2,
+   "score": 1,
    "of": 5,
    "green": [
-    "Squeeze over",
-    "Leverage piling in"
+    "Squeeze over"
    ],
-   "at": "2026-11-26T20:11:19.573Z"
+   "at": "2026-11-26T21:18:05.505Z"
   },
   "ETH|buy": {
    "score": 2,
@@ -27,33 +27,31 @@
     "Flush over",
     "Leverage steady"
    ],
-   "at": "2026-11-26T20:11:19.573Z"
+   "at": "2026-11-26T21:18:05.505Z"
   },
   "ETH|sell": {
-   "score": 1,
+   "score": 0,
    "of": 5,
-   "green": [
-    "Squeeze over"
-   ],
-   "at": "2026-11-26T20:11:19.573Z"
+   "green": [],
+   "at": "2026-11-26T21:18:05.505Z"
   },
   "SOL|buy": {
-   "score": 2,
+   "score": 3,
    "of": 5,
    "green": [
     "Flush over",
+    "Leverage steady",
     "Price confirms"
    ],
-   "at": "2026-11-26T20:11:19.573Z"
+   "at": "2026-11-26T21:18:05.505Z"
   },
   "SOL|sell": {
-   "score": 2,
+   "score": 1,
    "of": 5,
    "green": [
-    "Leverage piling in",
     "Structure breaks"
    ],
-   "at": "2026-11-26T20:11:19.573Z"
+   "at": "2026-11-26T21:18:05.505Z"
   },
   "BNB|buy": {
    "score": 3,
@@ -63,13 +61,13 @@
     "Leverage steady",
     "Price confirms"
    ],
-   "at": "2026-11-26T20:11:19.573Z"
+   "at": "2026-11-26T21:18:05.505Z"
   },
   "BNB|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-26T20:11:19.573Z"
+   "at": "2026-11-26T21:18:05.505Z"
   }
  },
  "log": [
@@ -648,6 +646,42 @@
    "price": 70.84,
    "candle": "2026-11-26T04:00 UTC",
    "kind": "end"
+  },
+  {
+   "at": "2026-11-26T21:18:05.505Z",
+   "coin": "BTC",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 2,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 60718.59,
+   "candle": "2026-11-26T16:00 UTC",
+   "kind": "up"
+  },
+  {
+   "at": "2026-11-26T21:18:05.505Z",
+   "coin": "SOL",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 2,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 71.28,
+   "candle": "2026-11-26T16:00 UTC",
+   "kind": "up"
   }
  ],
  "from": "2026-11-13"
