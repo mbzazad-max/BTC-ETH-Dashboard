@@ -105,3 +105,10 @@ Owner's request: the same cycle analysis for SOL and BNB, each under its own coi
 ## One cycle tab per coin (22 Nov 2026)
 
 Owner's request: BTC cycle shows only under BTC; ETH / SOL / BNB show only their own cycle tab. Switching coin while on a cycle tab goes to the new coin's own one; a `#btccyc` / `#ethcyc` / `#solcyc` / `#bnbcyc` link opens the cycle tab of the coin you have picked. Checked the same day: ETH / SOL / BNB prices equal the market-data candles, every daily and weekly SMA recomputed independently matches, the cycle dates are the real highest/lowest closes, the drawdowns and week counts match, and the BTC context column equals the BTC cycle tab.
+
+## S&P 500 tab (26 Nov 2026)
+A third market button next to USDT.D and TOTAL2ES (`#spx`). `build/usdtd.js --asset=spx` runs the cycle engine on Market-Data `tv/SP_SPX/1D`
+(TradingView SP:SPX, from Dec 2010) with the S&P's own cycle dates, and `build/spxlink.js` adds "What BTC can do next, from the S&P 500":
+BTC's next 7/30 days in each S&P state and after each S&P early sign since Sep 2015, plus the 60-day BTC–S&P correlation.
+Output `public/spxcycle.json`, log `history/spx_log.json`. The S&P trades Mon–Fri: day counts are trading days and a week closes on its
+last trading day.

@@ -26,7 +26,7 @@ async function view(asset) {
   await sleep(2500);
   const CYC = { ETH: 'ethcyc', SOL: 'solcyc', BNB: 'bnbcyc' }, own = CYC[asset];
   const eth_tab_ok = Object.entries({ BTC: 'btccyc', ...CYC }).every(([c, id]) => d.getElementById(id).hidden === (c !== asset));
-  for (const tab of ['patterns', 'plan', 'forecast', own || 'btccyc', 'usdtd', 'total2']) { d.getElementById(tab).click(); await sleep(400); }
+  for (const tab of ['patterns', 'plan', 'forecast', own || 'btccyc', 'usdtd', 'spx', 'total2']) { d.getElementById(tab).click(); await sleep(400); }
   await sleep(1200);   // the last tab drawn (TOTAL2ES) loads its JSON after the click
   // USDT.D and TOTAL2ES sit in the top switch (22 Nov 2026): picking one hides the coin's tiles and tab bar; picking the coin brings them back
   const nav = d.querySelector('nav.br-tabs'), gauge_view = nav.hidden && d.getElementById('tiles').hidden && !d.querySelector('[data-page="total2"]').hidden &&
@@ -43,6 +43,7 @@ async function view(asset) {
     btccyc: { cards: d.querySelectorAll('#btccyc-root .br-card').length, lines: d.querySelectorAll('#btccyc-root svg path').length, now: t('#btccyc-root h2') },
     ethcyc: own ? { cards: d.querySelectorAll('#' + own + '-root .br-card').length, lines: d.querySelectorAll('#' + own + '-root svg path').length, now: t('#' + own + '-root h2') } : null, eth_tab_ok,
     total2: { cards: d.querySelectorAll('#total2-root .br-card').length, lines: d.querySelectorAll('#total2-root svg path').length, now: t('#total2-root h2') },
+    spx: { cards: d.querySelectorAll('#spx-root .br-card').length, lines: d.querySelectorAll('#spx-root svg path').length, now: t('#spx-root h2'), link: /What BTC can do next/.test(t('#spx-root')) },
     usdtd: { cards: d.querySelectorAll('#usdtd-root .br-card').length, lines: d.querySelectorAll('#usdtd-root svg path').length, now: t('#usdtd-root h2'), tables: d.querySelectorAll('#usdtd-root table').length },
     // the artifact host's head must be there: UTF-8 and "hidden" really hides (else the loading box and empty pills show)
     loading_box_shown: !d.getElementById('rfEmpty').hidden || !/\[hidden\]:not\(\[hidden=until-found i\]\)\{display:none!important\}/.test(d.head.innerHTML),
@@ -52,7 +53,7 @@ async function view(asset) {
 (async () => {
   const out = [await view('BTC'), await view('ETH'), await view('SOL'), await view('BNB')];
   const noCg = (v) => (v.asset === 'SOL' || v.asset === 'BNB') && /not saved yet/.test(v.cg);   // until the CoinGlass load includes SOL and BNB
-  const bad = out.filter((v) => v.errors.length || !v.eth_tab_ok || (v.ethcyc && (v.ethcyc.cards < 10 || v.ethcyc.lines < 5 || !new RegExp("This week's read for " + v.asset).test(v.ethcyc.now))) || !v.gauge_view || !v.coin_back || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || (v.spot < 3 && !/no buy zone/.test(v.chk4)) || (v.derivs < 6 && !noCg(v)) || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || (v.checklist < 15 && !noCg(v)) || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8 || v.usdtd.cards < 10 || (v.asset === 'BTC' && (v.btccyc.cards < 10 || v.btccyc.lines < 5 || !/This week's read for BTC/.test(v.btccyc.now))) || v.total2.cards < 10 || v.total2.lines < 5 || !/This week's read for altcoins/.test(v.total2.now) || v.usdtd.lines < 5 || !/This week's read/.test(v.usdtd.now));
+  const bad = out.filter((v) => v.errors.length || v.spx.cards < 10 || !v.spx.link || !v.eth_tab_ok || (v.ethcyc && (v.ethcyc.cards < 10 || v.ethcyc.lines < 5 || !new RegExp("This week's read for " + v.asset).test(v.ethcyc.now))) || !v.gauge_view || !v.coin_back || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || (v.spot < 3 && !/no buy zone/.test(v.chk4)) || (v.derivs < 6 && !noCg(v)) || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || (v.checklist < 15 && !noCg(v)) || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8 || v.usdtd.cards < 10 || (v.asset === 'BTC' && (v.btccyc.cards < 10 || v.btccyc.lines < 5 || !/This week's read for BTC/.test(v.btccyc.now))) || v.total2.cards < 10 || v.total2.lines < 5 || !/This week's read for altcoins/.test(v.total2.now) || v.usdtd.lines < 5 || !/This week's read/.test(v.usdtd.now));
   console.log(JSON.stringify(out, null, 1));
   process.exit(bad.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(2); });

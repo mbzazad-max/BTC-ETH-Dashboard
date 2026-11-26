@@ -179,7 +179,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
       <div>
         <div class="as-head"><h1><span class="a-name">Bitcoin</span> Dashboard</h1>
           <div class="br-win as-sw" id="assetSw" role="group" aria-label="Coin"><button type="button" data-asset="BTC" aria-pressed="true">BTC</button><button type="button" data-asset="ETH" aria-pressed="false">ETH</button><button type="button" data-asset="SOL" aria-pressed="false">SOL</button><button type="button" data-asset="BNB" aria-pressed="false">BNB</button></div>
-          <div class="br-win as-sw" id="gaugeSw" role="group" aria-label="Market"><button type="button" id="usdtd" data-gauge="usdtd" aria-pressed="false">USDT.D</button><button type="button" id="total2" data-gauge="total2" aria-pressed="false">TOTAL2ES</button></div></div>
+          <div class="br-win as-sw" id="gaugeSw" role="group" aria-label="Market"><button type="button" id="usdtd" data-gauge="usdtd" aria-pressed="false">USDT.D</button><button type="button" id="total2" data-gauge="total2" aria-pressed="false">TOTAL2ES</button><button type="button" id="spx" data-gauge="spx" aria-pressed="false">S&amp;P 500</button></div></div>
         <p class="rf-note">BTC (Coinbase BTCUSD), ETH (Binance ETHUSDT), SOL (Binance SOLUSDT) and BNB (Binance BNBUSDT): 4H, daily, weekly and monthly bars, market-sentiment gauges and the US macro calendar, saved as a snapshot each time you refresh. Every tab follows the coin you pick. Spot only.</p>
       </div>
       <div class="rf-status">
@@ -246,6 +246,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14p
   <section class="br-page" data-page="solcyc" hidden><div id="solcyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>
 
   <section class="br-page" data-page="bnbcyc" hidden><div id="bnbcyc-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>
+
+  <section class="br-page" data-page="spx" hidden><div id="spx-root" style="display:flex;flex-direction:column;gap:var(--cds-gap-md)"></div></section>
 
   <section class="br-page" data-page="daily" hidden>
     <div class="br-card" id="daily-heatmap">
@@ -2207,6 +2209,8 @@ dash.calc('headline', {
       if (window.__solcyc) window.__solcyc();
     } else if (current === 'bnbcyc') {
       if (window.__bnbcyc) window.__bnbcyc();
+    } else if (current === 'spx') {
+      if (window.__spx) window.__spx();
     } else {
       const yd = dash.data('yearly_roi');
       const rows = yd.status === 'ok' ? yd.data : [];
@@ -2229,7 +2233,7 @@ dash.calc('headline', {
 
   dash.onData(draw);
   const named = location.hash.slice(1);
-  const GAUGES = ['usdtd', 'total2'], gBtns = [...document.querySelectorAll('#gaugeSw button')];
+  const GAUGES = ['usdtd', 'total2', 'spx'], gBtns = [...document.querySelectorAll('#gaugeSw button')];
   let coinTab = 'monthly';
   const gaugeView = (g) => {
     const on = GAUGES.includes(g);
