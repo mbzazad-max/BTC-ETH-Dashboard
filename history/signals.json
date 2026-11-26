@@ -9,13 +9,13 @@
     "Flush over",
     "Price confirms"
    ],
-   "at": "2026-11-26T02:59:55.708Z"
+   "at": "2026-11-26T04:06:00.436Z"
   },
   "BTC|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-26T02:59:55.708Z"
+   "at": "2026-11-26T04:06:00.436Z"
   },
   "ETH|buy": {
    "score": 2,
@@ -24,22 +24,23 @@
     "Flush over",
     "Leverage steady"
    ],
-   "at": "2026-11-26T02:59:55.708Z"
+   "at": "2026-11-26T04:06:00.436Z"
   },
   "ETH|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-26T02:59:55.708Z"
+   "at": "2026-11-26T04:06:00.436Z"
   },
   "SOL|buy": {
-   "score": 2,
+   "score": 3,
    "of": 5,
    "green": [
     "Flush over",
-    "Leverage steady"
+    "Leverage steady",
+    "Price confirms"
    ],
-   "at": "2026-11-26T02:59:55.708Z"
+   "at": "2026-11-26T04:06:00.436Z"
   },
   "SOL|sell": {
    "score": 1,
@@ -47,22 +48,23 @@
    "green": [
     "Structure breaks"
    ],
-   "at": "2026-11-26T02:59:55.708Z"
+   "at": "2026-11-26T04:06:00.436Z"
   },
   "BNB|buy": {
-   "score": 2,
+   "score": 3,
    "of": 5,
    "green": [
     "Flush over",
-    "Leverage steady"
+    "Leverage steady",
+    "Price confirms"
    ],
-   "at": "2026-11-26T02:59:55.708Z"
+   "at": "2026-11-26T04:06:00.436Z"
   },
   "BNB|sell": {
    "score": 0,
    "of": 5,
    "green": [],
-   "at": "2026-11-26T02:59:55.708Z"
+   "at": "2026-11-26T04:06:00.436Z"
   }
  },
  "log": [
@@ -588,6 +590,42 @@
    "price": 539.22,
    "candle": "2026-11-25T04:00 UTC",
    "kind": "end"
+  },
+  {
+   "at": "2026-11-26T04:06:00.436Z",
+   "coin": "SOL",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 2,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 71.03,
+   "candle": "2026-11-26T00:00 UTC",
+   "kind": "up"
+  },
+  {
+   "at": "2026-11-26T04:06:00.436Z",
+   "coin": "BNB",
+   "list": "buy",
+   "score": 3,
+   "of": 5,
+   "prev": 2,
+   "prev_of": 5,
+   "verdict": "Wait: no structure shift yet",
+   "green": [
+    "Flush over",
+    "Leverage steady",
+    "Price confirms"
+   ],
+   "price": 558.87,
+   "candle": "2026-11-26T00:00 UTC",
+   "kind": "up"
   }
  ],
  "from": "2026-11-13"
