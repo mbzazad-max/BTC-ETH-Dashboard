@@ -121,3 +121,11 @@ Owner's request: the BTC cycle analysis (#btccyc) for XRP, DOGE, LINK, UNI, ARB,
 - Short histories: DOGE from Jul 2019, LINK Jan 2019, UNI Sep 2020, ARB Mar 2023 (no 200W yet, no past bear), XLM May 2018 (after its Jan 2018 top), TRX May 2021. The weekly read starts when each coin's 100W exists.
 - Rebuilds: Market-Data `dashboards.json` lists the 7 daily series, so a new daily candle rebuilds the board. They are not in `public/freshness.json`, so Check dashboards does not watch them (same as the cycle tabs' other inputs).
 - `tests/render.js` opens the Alts page with BTC selected and checks each of the 7 coins.
+
+## Cycle early-sign email alerts (27 Nov 2026)
+Owner's request: an email when any cycle-tab asset shows at least two early bottom or top signs. `build/cycle_alerts.js` runs after the cycle tabs on every build and reads the "⚡ Early warning (daily)" block of BTC, ETH, SOL, BNB, the 7 alts, S&P 500, USDT.D and TOTAL2ES.
+- Episode = one live 30-day closing low (bottom) or high (top). A sign counts once fired (the RSI divergence setup included; the baseline row not). Expired episodes (30+ days without a new extreme) never alert.
+- Email 1: the episode reaches 2+ fired signs. Email 2: the ★ swing break fires later (if it was not already in email 1). At most two emails per episode.
+- Same delivery as the checklist alerts: a GitHub issue mentioning @mbzazad-max, opened by the workflow's email step; GitHub emails it.
+- State in `history/cycle_alerts.json` (per episode: signs fired, alerts sent; log of every alert). Prices in the email are the asset's own closes from its tab's daily series.
+- First run sends the episodes already at 2+ (on 27 Nov 2026: SOL, XRP, LINK bottoms after the 20 Nov lows and the TRX top after the 29 Oct high).
