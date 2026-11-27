@@ -123,9 +123,10 @@ Owner's request: the BTC cycle analysis (#btccyc) for XRP, DOGE, LINK, UNI, ARB,
 - `tests/render.js` opens the Alts page with BTC selected and checks each of the 7 coins.
 
 ## Cycle early-sign email alerts (27 Nov 2026)
-Owner's request: an email when any cycle-tab asset shows at least two early bottom or top signs. `build/cycle_alerts.js` runs after the cycle tabs on every build and reads the "⚡ Early warning (daily)" block of BTC, ETH, SOL, BNB, the 7 alts, S&P 500, USDT.D and TOTAL2ES.
+Owner's request: an email when any cycle-tab asset shows at least two early, or two daily/weekly swing, bottom or top signs. `build/cycle_alerts.js` runs after the cycle tabs on every build and reads the "⚡ Early warning (daily)" block of BTC, ETH, SOL, BNB, the 7 alts, S&P 500, USDT.D and TOTAL2ES.
 - Episode = one live 30-day closing low (bottom) or high (top). A sign counts once fired (the RSI divergence setup included; the baseline row not). Expired episodes (30+ days without a new extreme) never alert.
 - Email 1: the episode reaches 2+ fired signs. Email 2: the ★ swing break fires later (if it was not already in email 1). At most two emails per episode.
 - Same delivery as the checklist alerts: a GitHub issue mentioning @mbzazad-max, opened by the workflow's email step; GitHub emails it.
 - State in `history/cycle_alerts.json` (per episode: signs fired, alerts sent; log of every alert). Prices in the email are the asset's own closes from its tab's daily series.
-- First run sends the episodes already at 2+ (on 27 Nov 2026: SOL, XRP, LINK bottoms after the 20 Nov lows and the TRX top after the 29 Oct high).
+- Also the slower **🧭 swing confirmation (daily + weekly)** signs after the 90-day extreme (20D, 50D, 20D/50D cross, 20W, 200D, 50W): email 1 when 2+ have fired, email 2 when the first weekly sign (20W or 50W) fires later. A swing episode can stay open for months, so it emails only if its newest sign fired within the last 10 days; older ones are recorded silently.
+- First run sends the episodes already at 2+ (on 27 Nov 2026: early bottoms SOL, XRP, LINK after the 20 Nov lows, early top TRX after the 29 Oct high, swing top ARB after the 22 Sep high; UNI's swing top recorded without email, newest sign 15 Nov).
