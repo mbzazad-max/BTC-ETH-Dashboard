@@ -112,3 +112,12 @@ A third market button next to USDT.D and TOTAL2ES (`#spx`). `build/usdtd.js --as
 BTC's next 7/30 days in each S&P state and after each S&P early sign since Sep 2015, plus the 60-day BTC–S&P correlation.
 Output `public/spxcycle.json`, log `history/spx_log.json`. The S&P trades Mon–Fri: day counts are trading days and a week closes on its
 last trading day.
+
+## Alts page (27 Nov 2026)
+Owner's request: the BTC cycle analysis (#btccyc) for XRP, DOGE, LINK, UNI, ARB, XLM and TRX, under one **Alts** button next to S&P 500 in the market switch (`#alts`; `#alts-<coin>` opens one coin). A row of coin buttons picks the coin; each shows the same cards as the BTC cycle tab (weekly read, bottom/top watch with the early warning, every swing, SMAs now, chart, SMA behaviour by the coin's own bulls and bears, weekly crosses, past bears vs now, turning points). BTC is the context column.
+- Engine: `node build/usdtd.js <market-data> --asset=<xrp|doge|link|uni|arb|xlm|trx>` -> `public/<coin>cycle.json`, permanent log `history/<coin>_log.json`. Same rules and code path as ETH / SOL / BNB; the existing tabs' outputs were checked byte-identical before and after (apart from the build time).
+- Per-coin settings in `config/alts.json`: Market-Data series, cycle dates (each coin's own highest/lowest daily closes), regimes, past-bear labels and the page wording. To add a coin: add it there and to `order`, to `ALTS` in public/usdtd.js, to the build.yml loop and to Market-Data `dashboards.json` uses.
+- Data (nothing new fetched): Market-Data `binance/<COIN>USDT/1D`; XRP before 4 May 2018 = the stored `tv/BITSTAMP_XRPUSD/1D` history (frozen, from Aug 2013). Prices under $1 keep 6 significant digits.
+- Short histories: DOGE from Jul 2019, LINK Jan 2019, UNI Sep 2020, ARB Mar 2023 (no 200W yet, no past bear), XLM May 2018 (after its Jan 2018 top), TRX May 2021. The weekly read starts when each coin's 100W exists.
+- Rebuilds: Market-Data `dashboards.json` lists the 7 daily series, so a new daily candle rebuilds the board. They are not in `public/freshness.json`, so Check dashboards does not watch them (same as the cycle tabs' other inputs).
+- `tests/render.js` opens the Alts page with BTC selected and checks each of the 7 coins.

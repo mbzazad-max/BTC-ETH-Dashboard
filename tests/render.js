@@ -1,5 +1,5 @@
 /* Render check: public/index.html (the original page + shim.js + cloud.js) opened with the built public/snapshot.json,
-   once with each coin (BTC, ETH, SOL, BNB) selected. Fails on any page error, a missing number, or a futures section.
+   once with each coin (BTC, ETH, SOL, BNB) selected; with BTC also the Alts page and each of its 7 coins (27 Nov 2026). Fails on any page error, a missing number, or a futures section.
    usage: node tests/render.js <node_modules dir that has jsdom and d3> */
 'use strict';
 const fs = require('fs'), path = require('path');
@@ -31,6 +31,18 @@ async function view(asset) {
   // USDT.D and TOTAL2ES sit in the top switch (22 Nov 2026): picking one hides the coin's tiles and tab bar; picking the coin brings them back
   const nav = d.querySelector('nav.br-tabs'), gauge_view = nav.hidden && d.getElementById('tiles').hidden && !d.querySelector('[data-page="total2"]').hidden &&
     d.getElementById('total2').getAttribute('aria-pressed') === 'true' && ![...d.querySelectorAll('#assetSw button')].some((b) => b.getAttribute('aria-pressed') === 'true');
+  // Alts page (owner, 27 Nov 2026): the Alts button, then every coin in its row; each shows the full cycle analysis for that coin
+  const alts = {};
+  if (asset === 'BTC') {
+    d.getElementById('alts').click(); await sleep(400);
+    alts.view = nav.hidden && d.getElementById('tiles').hidden && !d.querySelector('[data-page="alts"]').hidden;
+    for (const c of ['XRP', 'DOGE', 'LINK', 'UNI', 'ARB', 'XLM', 'TRX']) {
+      d.querySelector(`#alts-root [data-alt="${c}"]`).click(); await sleep(900);
+      const R = d.getElementById('alt-' + c.toLowerCase() + '-root');
+      alts[c] = { shown: !R.hidden && [...d.querySelectorAll('#alts-root > div[id^="alt-"]')].filter((x) => !x.hidden).length === 1, cards: R.querySelectorAll('.br-card').length, lines: R.querySelectorAll('svg path').length,
+        now: (R.querySelector('h2') || {}).textContent || '', nan: /NaN|undefined/.test(R.textContent), price: ((R.querySelectorAll('h2')[5] || {}).textContent || '').replace(/\s+/g, ' ').slice(0, 60) };
+    }
+  }
   d.querySelector(`#assetSw button[data-asset="${asset}"]`).click(); await sleep(300);
   const coin_back = !nav.hidden && !d.getElementById('tiles').hidden && !d.querySelector(`[data-page="${own || 'btccyc'}"]`).hidden && d.querySelector(`#assetSw button[data-asset="${asset}"]`).getAttribute('aria-pressed') === 'true' &&
     [...nav.querySelectorAll('button')].map((b) => b.id).join() === 'daily,weekly,monthly,quarterly,yearly,patterns,plan,forecast,btccyc,ethcyc,solcyc,bnbcyc';
@@ -39,7 +51,7 @@ async function view(asset) {
   const v = { asset, h1: t('h1'), lede: t('#lede'), status: t('#rfAt'), cg: t('#rfCg'), cmc: t('#rfCr'), fc1w: t('#fc-7 .big'), price4h: t('.tp-strip .v'),
     levels: rows('tp_levels'), spot: rows('tp_spot'), derivs: rows('derivs'), signals: rows('fc_signals'), sentiment: rows('mkt_sentiment'), events: rows('fc_events'),
     monthly: rows('monthly_grid'), checklist: [...d.querySelectorAll('table[data-source="derivs"] tbody tr')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()).filter((x) => /checklist|Flush over|Leverage steady|Funding reset|Price confirms|Squeeze over|Leverage piling in|Funding hot|Price stalls|Structure shift|Structure breaks|Structure test/.test(x)).length, futures: !!d.getElementById('plan-futures'), chk4: [...d.querySelectorAll('table[data-source="derivs"] tbody tr')].map((r) => r.textContent).find((x) => /^\s*4\. Price confirms/.test(x)) || '', refresh_hidden: d.getElementById('rfBtn').hidden && d.getElementById('ghRefresh').hidden,
-    fresh: t('#fresh summary'), errors, gauge_view, coin_back,
+    fresh: t('#fresh summary'), errors, gauge_view, coin_back, alts,
     btccyc: { cards: d.querySelectorAll('#btccyc-root .br-card').length, lines: d.querySelectorAll('#btccyc-root svg path').length, now: t('#btccyc-root h2') },
     ethcyc: own ? { cards: d.querySelectorAll('#' + own + '-root .br-card').length, lines: d.querySelectorAll('#' + own + '-root svg path').length, now: t('#' + own + '-root h2') } : null, eth_tab_ok,
     total2: { cards: d.querySelectorAll('#total2-root .br-card').length, lines: d.querySelectorAll('#total2-root svg path').length, now: t('#total2-root h2') },
@@ -53,7 +65,8 @@ async function view(asset) {
 (async () => {
   const out = [await view('BTC'), await view('ETH'), await view('SOL'), await view('BNB')];
   const noCg = (v) => (v.asset === 'SOL' || v.asset === 'BNB') && /not saved yet/.test(v.cg);   // until the CoinGlass load includes SOL and BNB
-  const bad = out.filter((v) => v.errors.length || v.spx.cards < 10 || !v.spx.link || !v.eth_tab_ok || (v.ethcyc && (v.ethcyc.cards < 10 || v.ethcyc.lines < 5 || !new RegExp("This week's read for " + v.asset).test(v.ethcyc.now))) || !v.gauge_view || !v.coin_back || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || (v.spot < 3 && !/no buy zone/.test(v.chk4)) || (v.derivs < 6 && !noCg(v)) || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || (v.checklist < 15 && !noCg(v)) || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8 || v.usdtd.cards < 10 || (v.asset === 'BTC' && (v.btccyc.cards < 10 || v.btccyc.lines < 5 || !/This week's read for BTC/.test(v.btccyc.now))) || v.total2.cards < 10 || v.total2.lines < 5 || !/This week's read for altcoins/.test(v.total2.now) || v.usdtd.lines < 5 || !/This week's read/.test(v.usdtd.now));
+  const altBad = (v) => v.asset === 'BTC' && (!v.alts.view || ['XRP', 'DOGE', 'LINK', 'UNI', 'ARB', 'XLM', 'TRX'].some((c) => { const x = v.alts[c]; return !x || !x.shown || x.cards < 10 || x.lines < 5 || x.nan || !new RegExp("This week's read for " + c).test(x.now); }));
+  const bad = out.filter((v) => v.errors.length || altBad(v) || v.spx.cards < 10 || !v.spx.link || !v.eth_tab_ok || (v.ethcyc && (v.ethcyc.cards < 10 || v.ethcyc.lines < 5 || !new RegExp("This week's read for " + v.asset).test(v.ethcyc.now))) || !v.gauge_view || !v.coin_back || /—/.test(v.fc1w + v.price4h) || !v.fc1w || v.levels < 3 || (v.spot < 3 && !/no buy zone/.test(v.chk4)) || (v.derivs < 6 && !noCg(v)) || v.signals < 8 || v.sentiment < 6 || v.monthly < 5 || (v.checklist < 15 && !noCg(v)) || v.futures || !v.refresh_hidden || v.loading_box_shown || !v.utf8 || v.usdtd.cards < 10 || (v.asset === 'BTC' && (v.btccyc.cards < 10 || v.btccyc.lines < 5 || !/This week's read for BTC/.test(v.btccyc.now))) || v.total2.cards < 10 || v.total2.lines < 5 || !/This week's read for altcoins/.test(v.total2.now) || v.usdtd.lines < 5 || !/This week's read/.test(v.usdtd.now));
   console.log(JSON.stringify(out, null, 1));
   process.exit(bad.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(2); });

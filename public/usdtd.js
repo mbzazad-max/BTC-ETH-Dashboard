@@ -34,6 +34,8 @@ function make(A) {
       dates: 'top 21 May 2015, low 11 Feb 2016, top 20 Sep 2018, bottom 24 Dec 2018, top 19 Feb 2020, bottom 23 Mar 2020, top 3 Jan 2022, bottom 12 Oct 2022, top 19 Feb 2025, low 8 Apr 2025, top 6 Oct 2026',
       hist: 'S&P 500 history starts 2 Dec 2010 (TradingView SP:SPX); records start Sep 2015 because BTC, the context column, starts Dec 2014. The S&P trades Monday to Friday only: day counts here are trading days, and a week closes on its last trading day (usually Friday), not on Sunday.' }
   };
+  // Alts page (owner, 27 Nov 2026): the coin's wording and cycle dates come with its JSON (config/alts.json -> J.coin)
+  const AL = !!A.alt; if (AL) COINS[A.coin] = { an: 'a', since: '', sinceY: '', readSince: '', chart: ['2015-01-01', 'All'], sig: '', cy: {}, vsBtc: '', behave: '', dates: '', hist: '' };
   const T2 = !!A.t2, OB = !!A.btc, CC = COINS[A.coin], ET = !!CC, B = OB || T2 || ET, NM = OB ? 'BTC' : T2 ? 'TOTAL2ES' : ET ? A.coin : 'USDT.D';
   const CYW = ET ? NM : 'BTC';     // whose cycle the regimes and past bears follow
   let J = null, loading = null, tf = 'daily', span = '3y';
@@ -41,7 +43,7 @@ function make(A) {
   const COL = { close: 'var(--ink)', 20: 'var(--acc)', 50: 'var(--warn)', 100: '#9b59b6', 200: 'var(--dn)' };
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dd = (s) => { if (!s) return '—'; const d = new Date(s + 'T00:00:00Z'); return d.getUTCDate() + ' ' + MON[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); };
-  const f2 = (v) => (v == null ? '—' : ET ? (CC.pre != null ? CC.pre : '$') + (v < 100 ? v.toFixed(2) : Math.round(v).toLocaleString('en-US')) : T2 ? '$' + (v >= 1e12 ? (v / 1e12).toFixed(2) + 'T' : Math.round(v / 1e9) + 'B') : B ? '$' + Math.round(v).toLocaleString('en-US') : v.toFixed(2));
+  const f2 = (v) => (v == null ? '—' : ET ? (CC.pre != null ? CC.pre : '$') + (AL && v < 1 ? v.toFixed(4) : v < 100 ? v.toFixed(2) : Math.round(v).toLocaleString('en-US')) : T2 ? '$' + (v >= 1e12 ? (v / 1e12).toFixed(2) + 'T' : Math.round(v / 1e9) + 'B') : B ? '$' + Math.round(v).toLocaleString('en-US') : v.toFixed(2));
   const fp = (v) => (B ? f2(v) : f2(v) + '%');          // a level with its unit
   // colours of a sign: for USDT.D a top is good for crypto (green); for BTC a top is bad (red)
   const goodTop = !B, tc = (top) => (top === goodTop ? 'var(--up)' : 'var(--dn)'), tbg = (top) => (top === goodTop ? 'var(--up-bg)' : 'var(--dn-bg)');
@@ -55,7 +57,10 @@ function make(A) {
 
   function load() {
     if (J) return Promise.resolve(J);
-    if (!loading) loading = fetch(A.json, { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((j) => (J = j));
+    if (!loading) loading = fetch(A.json, { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((j) => {
+      if (AL && j.coin) { const c = j.coin.cy || {}; Object.assign(CC, j.coin, { cy: Object.fromEntries(['t1', 'b1', 't2', 'b2', 't3'].filter((k) => c[k]).map((k) => [c[k], k[0] === 't' ? 'top' : 'bottom'])) }); }
+      return (J = j);
+    });
     return loading;
   }
 
@@ -353,7 +358,7 @@ function make(A) {
       const lx = x(a < x0 ? x0 : a) + 4;
       if (x(b > x1 ? x1 : b) - lx > 60) svg.append('text').attr('x', lx).attr('y', m.t + 12).attr('fill', R.kind === 'bear' ? 'var(--dn)' : 'var(--up)').text(R.name);
     });
-    svg.append('g').attr('transform', `translate(${W - m.r},0)`).call(T2 ? d3.axisRight(y).tickValues([2e9, 5e9, 1e10, 2e10, 5e10, 1e11, 2e11, 3e11, 5e11, 7e11, 1e12, 1.5e12, 2e12].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => '$' + (v >= 1e12 ? v / 1e12 + 'T' : v / 1e9 + 'B')) : B ? d3.axisRight(y).tickValues([...(ET ? [0.5, 1, 2, 5, 10, 20, 50] : []), 100, 200, ...(ET ? [300] : []), 500, 1e3, 2e3, 5e3, 1e4, 2e4, 3e4, 5e4, 7e4, 1e5, 1.5e5, 2e5].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => '$' + (v >= 1e3 ? v / 1e3 + 'k' : v)) : span === '2017' ? d3.axisRight(y).tickValues([0.1, 0.2, 0.5, 1, 2, 5, 10].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => v + '%') : d3.axisRight(y).ticks(6).tickFormat((v) => v + '%')).call((g) => g.select('.domain').remove()).call((g) => g.selectAll('line').attr('stroke', 'var(--line)')).call((g) => g.selectAll('text').attr('fill', 'var(--muted)'));
+    svg.append('g').attr('transform', `translate(${W - m.r},0)`).call(T2 ? d3.axisRight(y).tickValues([2e9, 5e9, 1e10, 2e10, 5e10, 1e11, 2e11, 3e11, 5e11, 7e11, 1e12, 1.5e12, 2e12].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => '$' + (v >= 1e12 ? v / 1e12 + 'T' : v / 1e9 + 'B')) : B ? d3.axisRight(y).tickValues([...(AL ? [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2] : []), ...(ET ? [0.5, 1, 2, 5, 10, 20, 50] : []), 100, 200, ...(ET ? [300] : []), 500, 1e3, 2e3, 5e3, 1e4, 2e4, 3e4, 5e4, 7e4, 1e5, 1.5e5, 2e5].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => '$' + (v >= 1e3 ? v / 1e3 + 'k' : v < 1 ? String(+v.toPrecision(2)) : v)) : span === '2017' ? d3.axisRight(y).tickValues([0.1, 0.2, 0.5, 1, 2, 5, 10].filter((v) => v >= y.domain()[0] && v <= y.domain()[1])).tickFormat((v) => v + '%') : d3.axisRight(y).ticks(6).tickFormat((v) => v + '%')).call((g) => g.select('.domain').remove()).call((g) => g.selectAll('line').attr('stroke', 'var(--line)')).call((g) => g.selectAll('text').attr('fill', 'var(--muted)'));
     svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.max(3, Math.floor(W / 110)))).call((g) => g.select('.domain').attr('stroke', 'var(--line)')).call((g) => g.selectAll('line').attr('stroke', 'var(--line)')).call((g) => g.selectAll('text').attr('fill', 'var(--muted)'));
     [200, 100, 50, 20].forEach((n) => svg.append('path').datum(rows.filter((r) => r[n] != null)).attr('fill', 'none').attr('stroke', COL[n]).attr('stroke-width', 1.3).attr('opacity', 0.9)
       .attr('d', d3.line().x((r) => x(r.d)).y((r) => y(r[n]))));
@@ -402,7 +407,8 @@ function make(A) {
       .sort((a, b) => (a[0] === b[0] ? 0 : new Date(a[0]) - new Date(b[0])));
     const byDate = rows.map((r) => ({ r, t: Date.parse(r[0]) })).sort((a, b) => a.t - b.t).map((x) => x.r);
     const HD = OB ? ['Week', 'Signal', 'BTC'] : ['Week', 'Signal', NM, 'BTC'];
-    c.append(table(HD, byDate));
+    if (byDate.length) c.append(table(HD, byDate));
+    else c.append(el('p', null, `<b>None yet:</b> ${NM} has not crossed its 100W${B ? ' or 200W' : ''}, and the 50W has not crossed the 100W, since they first exist.`));
     c.append(el('p', { className: 'rf-note' }, ET ? CC.sig : T2 ? 'Since the 100W first exists (2016) and the 200W (2018).' : B ? 'Since the 100W first exists (Nov 2016) and the 200W (Oct 2018).' : 'Since the 100W first exists (Feb 2017). There are no crosses before Dec 2020: in the USDT launch years USDT.D stayed above its 100W through the 2017 bull, the 2018 bear and the 2019 rally.'));
     const d = el('details'); d.append(el('summary', { className: 'rf-note' }, `All weekly 50W crosses and daily 50D/200D crosses since ${ET ? CC.sinceY : B ? '2015' : '2017'}`));
     d.append(table(HD, mk(C.price_50w, (x) => 'Weekly close ' + (x.dir === 'up' ? 'above' : 'below') + ' 50W')));
@@ -441,8 +447,8 @@ function make(A) {
 
   function analogCardBtc() {
     const A = J.analog, PS = A.pasts || [], P = PS[PS.length - 1], N = A.now, NW = J.now;
-    const c = card(`Past bears vs now: ${PS.map((p) => p.label).join(', ')} and this one`,
-      `Weeks counted from each ${CYW} top (${PS.map((p) => dd(p.top)).join(', ')} and ${dd(N.top)})${T2 ? '; TOTAL2ES depth is measured from its close on that BTC top day' : ''}. Distance = % above (+) or below (−) the SMA on the day of the low (weekly: last closed week's SMA; the 200W did not exist yet in 2018).`);
+    const c = card(PS.length ? `Past bears vs now: ${PS.map((p) => p.label).join(', ')} and this one` : `This bear so far <span style="font-weight:400;color:var(--muted);font-size:13px">(no past bear in ${NM}'s data to compare)</span>`,
+      (PS.length ? `Weeks counted from each ${CYW} top (${PS.map((p) => dd(p.top)).join(', ')} and ${dd(N.top)})` : `Weeks counted from the ${dd(N.top)} ${NM} top`) + `${T2 ? '; TOTAL2ES depth is measured from its close on that BTC top day' : ''}. Distance = % above (+) or below (−) the SMA on the day of the low (weekly: last closed week's SMA${AL ? '; — where the coin did not have enough weeks for it yet' : '; the 200W did not exist yet in 2018'}).`);
     const st = (o, k) => (o ? NS.map((n) => (o[k][n] == null ? `${n}: —` : `${n}: <span class="${cls(o[k][n])}">${sp(o[k][n])}</span>`)).join('<br>') : '—');
     const nowObj = { d: Object.fromEntries(NS.map((n) => [n, NW.daily[n].pct])), w: Object.fromEntries(NS.map((n) => [n, NW.weekly[n].pct])) };
     const col = (f, nowTxt) => PS.map(f).concat([nowTxt]);
@@ -457,10 +463,10 @@ function make(A) {
       ['…and first weekly close above', ...col((p) => NS.map((n) => `${n}W ${dd(p.unwind['w' + n])}`).join('<br>'), N.peak ? NS.map((n) => `${n}W ${dd(N.unwind['w' + n])}`).join('<br>') : '—')]
     ]));
     const w = [];
-    w.push(T2 ? `Timing: TOTAL2ES made its bear low ${PS.map((p) => `in week ${p.weeks_top_to_peak} (${p.label})`).join(' and ')} after the BTC top; BTC bottomed in weeks ${PS.map((p) => p.weeks_top_to_bottom).join(' and ')}. This bear is in week ${N.weeks_since_top}.` : `Timing: the ${PS.map((p) => p.label).join(' and ')} bear${PS.length > 1 ? 's' : ''} bottomed ${PS.map((p) => p.weeks_top_to_bottom).join(' and ')} weeks after the top. This bear is in week ${N.weeks_since_top}: past that point, so the clock says "late", not "when".`);
-    w.push(`Depth: ${PS.map((p) => `${p.label} fell ${sp(p.drawdown)}`).join(', ')}; this one is ${sp(N.drawdown)} at its lowest so far.${OB ? " Each cycle's fall has been shallower than the last." : ''}`);
-    if (P && P.peak && P.peak.w[200] != null) w.push(`The 200W: at the 2022 low ${NM} was ${sp(P.peak.w[200])} from its 200W; today it is ${sp(NW.weekly[200].pct)} at the last weekly close (200W ${f2(NW.weekly[200].sma)}).`);
-    w.push(`How 2022 turned up: daily close above the 20D (now ${f2(NW.daily[20].sma)}) → 50D (${f2(NW.daily[50].sma)}) → 200D (${f2(NW.daily[200].sma)}) → weekly close above the 50W (${f2(NW.weekly[50].sma)}) and later the 100W (${f2(NW.weekly[100].sma)}).`);
+    if (PS.length) w.push(T2 ? `Timing: TOTAL2ES made its bear low ${PS.map((p) => `in week ${p.weeks_top_to_peak} (${p.label})`).join(' and ')} after the BTC top; BTC bottomed in weeks ${PS.map((p) => p.weeks_top_to_bottom).join(' and ')}. This bear is in week ${N.weeks_since_top}.` : `Timing: the ${PS.map((p) => p.label).join(' and ')} bear${PS.length > 1 ? 's' : ''} bottomed ${PS.map((p) => p.weeks_top_to_bottom).join(' and ')} weeks after the top. This bear is in week ${N.weeks_since_top}: past that point, so the clock says "late", not "when".`);
+    w.push(PS.length ? `Depth: ${PS.map((p) => `${p.label} fell ${sp(p.drawdown)}`).join(', ')}; this one is ${sp(N.drawdown)} at its lowest so far.${OB ? " Each cycle's fall has been shallower than the last." : ''}` : `Depth: ${sp(N.drawdown)} from the ${dd(N.top)} top at its lowest so far.`);
+    if (P && P.peak && P.peak.w[200] != null) w.push(`The 200W: at the ${AL ? P.label : '2022'} low ${NM} was ${sp(P.peak.w[200])} from its 200W; today it is ${sp(NW.weekly[200].pct)} at the last weekly close (200W ${f2(NW.weekly[200].sma)}).`);
+    w.push(`${PS.length && AL ? 'How the ' + P.label + ' bear ended' : AL ? 'What a turn would look like' : 'How 2022 turned up'}: daily close above the 20D (now ${f2(NW.daily[20].sma)}) → 50D (${f2(NW.daily[50].sma)}) → 200D (${f2(NW.daily[200].sma)}) → weekly close above the 50W (${f2(NW.weekly[50].sma)}) and later the 100W (${f2(NW.weekly[100].sma)}).`);
     c.append(el('p', { className: 'rf-note' }, '<b style="color:var(--ink)">What to watch</b>'));
     c.append(el('ul', { className: 'rf-note' }, w.map((x) => `<li style="margin:3px 0">${x}</li>`).join('')));
     return c;
@@ -503,4 +509,30 @@ function make(A) {
   window.__solcyc = make({ coin: 'SOL', json: 'solcycle.json', root: 'solcyc-root' });
   window.__bnbcyc = make({ coin: 'BNB', json: 'bnbcycle.json', root: 'bnbcyc-root' });
   window.__spx = make({ coin: 'SPX', json: 'spxcycle.json', root: 'spx-root' });
+  // Alts page (owner, 27 Nov 2026): XRP, DOGE, LINK, UNI, ARB, XLM, TRX under one "Alts" button next to S&P 500. A row of coin
+  // buttons picks which coin's cycle analysis is shown (same cards as the BTC cycle tab); #alts-<coin> opens one directly
+  const ALTS = ['XRP', 'DOGE', 'LINK', 'UNI', 'ARB', 'XLM', 'TRX'], AF = {};
+  ALTS.forEach((c) => { AF[c] = make({ alt: true, coin: c, json: c.toLowerCase() + 'cycle.json', root: 'alt-' + c.toLowerCase() + '-root' }); });
+  window.__alts = function () {
+    const box = document.getElementById('alts-root'); if (!box) return;
+    if (!box.dataset.built) {
+      box.dataset.built = '1';
+      const bar = document.createElement('div'); bar.className = 'br-tabs'; bar.setAttribute('role', 'tablist'); bar.setAttribute('aria-label', 'Alt coin');
+      bar.style.cssText = 'flex-wrap:wrap;align-self:flex-start';
+      ALTS.forEach((c) => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.alt = c; b.textContent = c; b.onclick = () => pick(c); bar.append(b); });
+      box.append(bar);
+      ALTS.forEach((c) => { const r = document.createElement('div'); r.id = 'alt-' + c.toLowerCase() + '-root'; r.hidden = true; r.style.cssText = 'display:flex;flex-direction:column;gap:var(--cds-gap-md)'; box.append(r); });
+    }
+    let cur = null;
+    const h = (location.hash || '').match(/^#alts-(\w+)$/i); if (h && ALTS.includes(h[1].toUpperCase())) cur = h[1].toUpperCase();
+    if (!cur) { try { const v = localStorage.getItem('bd_alt'); if (ALTS.includes(v)) cur = v; } catch (e) { /* storage unavailable */ } }
+    pick(cur || box.dataset.cur || 'XRP');
+    function pick(c) {
+      box.dataset.cur = c;
+      try { localStorage.setItem('bd_alt', c); } catch (e) { /* storage unavailable */ }
+      box.querySelectorAll('[data-alt]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.alt === c)));
+      ALTS.forEach((k) => { document.getElementById('alt-' + k.toLowerCase() + '-root').hidden = k !== c; });
+      AF[c]();
+    }
+  };
 })();

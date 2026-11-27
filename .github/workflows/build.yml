@@ -68,6 +68,8 @@ jobs:
         run: node build/usdtd.js md --asset=sol; node build/usdtd.js md --asset=bnb
       - name: S&P 500 tab, the cycle analysis on SP:SPX daily plus what BTC did next in each S&P state (keeps the last good file if it fails)
         run: node build/usdtd.js md --asset=spx
+      - name: Alts page, the same cycle analysis for XRP, DOGE, LINK, UNI, ARB, XLM and TRX with their own cycle dates (config/alts.json; keeps the last good file if it fails)
+        run: for c in xrp doge link uni arb xlm trx; do node build/usdtd.js md --asset=$c; done
       - name: Save the new snapshot (one commit)
         run: |
           git config user.name "github-actions[bot]"
@@ -81,7 +83,7 @@ jobs:
           [ -f history/total2es_log.json ] && git add history/total2es_log.json
           [ -f public/ethcycle.json ] && git add public/ethcycle.json
           [ -f history/eth_log.json ] && git add history/eth_log.json
-          for c in sol bnb spx; do [ -f public/${c}cycle.json ] && git add public/${c}cycle.json; [ -f history/${c}_log.json ] && git add history/${c}_log.json; done
+          for c in sol bnb spx xrp doge link uni arb xlm trx; do [ -f public/${c}cycle.json ] && git add public/${c}cycle.json; [ -f history/${c}_log.json ] && git add history/${c}_log.json; done
           if git diff --cached --quiet; then echo "Nothing changed."; exit 0; fi
           git commit -q -m "Dashboard build $(node -p "require('./public/freshness.json').generated")"
           for i in 1 2 3 4 5; do git push -q origin HEAD:main && exit 0; git pull -q --rebase origin main; sleep $((i*2)); done
