@@ -70,12 +70,15 @@ jobs:
         run: node build/usdtd.js md --asset=spx
       - name: Alts page, the same cycle analysis for XRP, DOGE, LINK, UNI, ARB, XLM and TRX with their own cycle dates (config/alts.json; keeps the last good file if it fails)
         run: for c in xrp doge link uni arb xlm trx; do node build/usdtd.js md --asset=$c; done
+      - name: Cycle early-sign alerts, 2+ fast bottom or top signs on any cycle tab (BTC, ETH, SOL, BNB, the 7 alts, S&P 500, USDT.D, TOTAL2ES; skipped with a warning if it fails)
+        run: node build/cycle_alerts.js || echo "::warning::Cycle early-sign alerts skipped"
       - name: Save the new snapshot (one commit)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/snapshot.json public/freshness.json public/usdtd.json history/plans.json history/structure_test.json history/signals.json
           [ -f history/levels.json ] && git add history/levels.json
+          [ -f history/cycle_alerts.json ] && git add history/cycle_alerts.json
           [ -f history/usdtd_log.json ] && git add history/usdtd_log.json
           [ -f public/btccycle.json ] && git add public/btccycle.json
           [ -f history/btc_log.json ] && git add history/btc_log.json
@@ -88,14 +91,14 @@ jobs:
           git commit -q -m "Dashboard build $(node -p "require('./public/freshness.json').generated")"
           for i in 1 2 3 4 5; do git push -q origin HEAD:main && exit 0; git pull -q --rebase origin main; sleep $((i*2)); done
           echo "::error::Could not save the snapshot."; exit 1
-      - name: Email new signals and Bull / Bear case triggers (a GitHub issue that mentions the owner; GitHub sends the email)
+      - name: Email new signals, Bull / Bear case triggers and cycle early-sign alerts (a GitHub issue that mentions the owner; GitHub sends the email)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          [ -s /tmp/signal_alerts.json ] || [ -s /tmp/level_alerts.json ] || exit 0
+          [ -s /tmp/signal_alerts.json ] || [ -s /tmp/level_alerts.json ] || [ -s /tmp/cycle_alerts.json ] || exit 0
           node -e '
             const fs = require("fs"), rd = (f) => (fs.existsSync(f) && fs.statSync(f).size ? JSON.parse(fs.readFileSync(f, "utf8")) : []);
-            const a = rd("/tmp/signal_alerts.json").concat(rd("/tmp/level_alerts.json"));
+            const a = rd("/tmp/signal_alerts.json").concat(rd("/tmp/level_alerts.json"), rd("/tmp/cycle_alerts.json"));
             a.forEach((x, i) => { require("fs").writeFileSync("/tmp/alert_" + i + ".md", x.body + "\n\n@mbzazad-max"); require("fs").writeFileSync("/tmp/alert_" + i + ".title", x.title); });
             console.log(a.length);' > /tmp/alert_n
           n=$(cat /tmp/alert_n); i=0
