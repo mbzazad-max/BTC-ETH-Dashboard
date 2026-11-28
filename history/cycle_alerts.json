@@ -6,42 +6,42 @@
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "BTC|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "BTC|top|swing|2026-11-22": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "ETH|bottom|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "ETH|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "ETH|top|swing|2026-11-22": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "SOL|bottom|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
@@ -58,42 +58,42 @@
     "div10 2026-11-23",
     "d10 2026-11-23"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "SOL|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "SOL|top|swing|2026-11-23": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "BNB|bottom|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "BNB|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "BNB|top|swing|2026-11-22": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "XRP|bottom|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
@@ -110,21 +110,21 @@
     "div10 2026-11-26",
     "d10 2026-11-26"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "XRP|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "XRP|top|swing|2026-11-27": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "DOGE|bottom|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
@@ -141,21 +141,21 @@
     "div10 2026-11-27",
     "d10 2026-11-27"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "DOGE|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "DOGE|top|swing|2026-11-27": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "LINK|bottom|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
@@ -171,21 +171,21 @@
     "rev 2026-11-26",
     "d10 2026-11-23"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "LINK|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "LINK|top|swing|2026-11-27": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "UNI|bottom|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
@@ -194,14 +194,14 @@
    "signs": [
     "d10 2026-11-27"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "UNI|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "UNI|top|swing|2026-09-22": {
    "first_seen": "2026-11-28T07:16Z",
@@ -221,21 +221,21 @@
     "w20 2026-11-15",
     "d200 2026-11-14"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "ARB|bottom|2026-11-24": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "ARB|bottom|swing|2026-11-24": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "ARB|top|swing|2026-09-22": {
    "first_seen": "2026-11-28T07:16Z",
@@ -255,28 +255,28 @@
     "d200 2026-11-19",
     "w50 2026-11-22"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "XLM|bottom|2026-11-24": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "XLM|bottom|swing|2026-11-24": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "XLM|top|swing|2026-11-25": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "TRX|bottom|2026-11-27": {
    "first_seen": "2026-11-28T07:16Z",
@@ -285,14 +285,14 @@
    "signs": [
     "div 2026-11-27"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "TRX|bottom|swing|2026-11-27": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "TRX|top|2026-10-29": {
    "first_seen": "2026-11-28T07:16Z",
@@ -310,7 +310,7 @@
     "swing 2026-10-30",
     "d20 2026-10-30"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "S&P 500|bottom|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
@@ -326,7 +326,7 @@
     "rev 2026-11-23",
     "d10 2026-11-27"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "S&P 500|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
@@ -335,35 +335,35 @@
    "signs": [
     "w50 2026-11-27"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "S&P 500|top|swing|2026-11-27": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "USDT.D|bottom|swing|2026-11-23": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "USDT.D|top|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "USDT.D|top|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "TOTAL2ES|bottom|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
@@ -372,21 +372,21 @@
    "signs": [
     "div 2026-11-20"
    ],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "TOTAL2ES|bottom|swing|2026-11-20": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   },
   "TOTAL2ES|top|swing|2026-11-23": {
    "first_seen": "2026-11-28T07:16Z",
    "alerts": [],
    "count": 0,
    "signs": [],
-   "updated": "2026-11-28T11:06Z"
+   "updated": "2026-11-28T11:17Z"
   }
  },
  "log": [
