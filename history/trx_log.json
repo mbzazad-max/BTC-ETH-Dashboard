@@ -1294,6 +1294,19 @@
    "btc_chg": 3.9,
    "logged_at": "2026-11-27 07:36 UTC",
    "live": false
+  },
+  {
+   "key": "bottom|2026-10-31|fast|div",
+   "swing": "bottom|2026-10-31",
+   "kind": "bottom",
+   "layer": "fast",
+   "sign": "div",
+   "day": "2026-11-27",
+   "usdtd": 0.3009,
+   "btc": 59923,
+   "btc_chg": 0,
+   "logged_at": "2026-11-28 01:18 UTC",
+   "live": true
   }
  ]
 }
