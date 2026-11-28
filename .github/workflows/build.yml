@@ -28,6 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main   # the newest main when the job starts (a queued run must not build on the commit it was triggered at)
           fetch-depth: 1
       - name: The page must be the original artifact, unchanged
         run: node tools/check_page.js
