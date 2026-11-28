@@ -1,60 +1,7 @@
 {
  "_about": "Bull case / Bear case levels the page showed at the end of each UTC day, and every daily close beyond them (build/levels.js).",
- "page": "ccb4f283c58992a7",
+ "page": "de47c46c0513c27a",
  "days": {
-  "2026-11-25": {
-   "BTC": {
-    "spot": 60458.01,
-    "bull": "A daily close above 66,595 (top of the 64,443–66,595 resistance, 5 methods) hands control to buyers; next stop 68,647–70,799.",
-    "bear": "Nearest minor levels (1–2 methods): equal lows 59,073–60,001 (1D); equal lows 52,530–53,500 (1W). Qualified support: a daily close below 47,130 (floor of the 47,130–49,282 support, 3 methods) hands control to sellers; next minor levels (1–2 methods): swing high 45,000 (1W); no qualified support below them.",
-    "bull_level": 66595.1386714935,
-    "bull_zone": [
-     64443.15440110609,
-     66595.1386714935
-    ],
-    "bear_level": 47130.22882043836,
-    "bear_zone": [
-     47130.22882043836,
-     49282.213090825775
-    ]
-   },
-   "ETH": {
-    "spot": 1692.65,
-    "bull": "A daily close above 2,019 (top of the 1,943–2,019 resistance, 6 methods) hands control to buyers; next stop 2,029–2,098.",
-    "bear": "No qualified support (3+ methods) below. Nearest minor levels (1–2 methods): swing high 1,440 (1D+1W+1M, 1-year low 1,506); fib 0.786 at 1,125 (1M).",
-    "bull_level": 2019.3870516576653,
-    "bull_zone": [
-     1943.0929483423347,
-     2019.3870516576653
-    ],
-    "bear_level": null,
-    "bear_zone": null
-   },
-   "SOL": {
-    "spot": 70.47,
-    "bull": "A daily close above 72.3 (top of the 68.9–72.3 resistance, 4 methods) hands control to buyers; next stop 75.7–79.1.",
-    "bear": "No qualified support (3+ methods) below. Nearest minor levels (1–2 methods): swing low 67.5 (1D); swing low 60.1 (1D+1W, 1-year low).",
-    "bull_level": 72.30011697102209,
-    "bull_zone": [
-     68.8598830289779,
-     72.30011697102209
-    ],
-    "bear_level": null,
-    "bear_zone": null
-   },
-   "BNB": {
-    "spot": 554.03,
-    "bull": "A daily close above 617.7 (top of the 598.1–617.7 resistance, 5 methods) hands control to buyers; next stop 635.4–655.0.",
-    "bear": "No qualified support (3+ methods) below. Nearest minor levels (1–2 methods): swing low 537.3 (1D); equal lows 454.8–471.3 + fib 0.786 at 471.0 (1W); swing low 400.0 (1W+1M).",
-    "bull_level": 617.6524510634587,
-    "bull_zone": [
-     598.0675489365414,
-     617.6524510634587
-    ],
-    "bear_level": null,
-    "bear_zone": null
-   }
-  },
   "2026-11-26": {
    "BTC": {
     "spot": 60577.18,

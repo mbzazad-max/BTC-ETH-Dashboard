@@ -10,9 +10,11 @@
    "fng": 1,
    "asi": 0,
    "mcap": 0,
-   "etf": 0
+   "etf": 0,
+   "flow": 0,
+   "flow_alts": 0
   },
-  "checked": "2026-11-28 08:57 UTC"
+  "checked": "2026-11-28 11:02 UTC"
  },
  "log": [
   {
