@@ -12,9 +12,11 @@
    "mcap": 0,
    "etf": 0,
    "flow": 0,
-   "flow_alts": 0
+   "flow_alts": 0,
+   "fomc": 0,
+   "treasuries": 0
   },
-  "checked": "2026-11-28 11:43 UTC"
+  "checked": "2026-11-28 11:49 UTC"
  },
  "log": [
   {
