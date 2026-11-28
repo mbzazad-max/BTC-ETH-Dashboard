@@ -2598,6 +2598,32 @@
    "btc_chg": 3.9,
    "logged_at": "2026-11-26 12:31 UTC",
    "live": false
+  },
+  {
+   "key": "bottom|2026-11-19|fast|d10",
+   "swing": "bottom|2026-11-19",
+   "kind": "bottom",
+   "layer": "fast",
+   "sign": "d10",
+   "day": "2026-11-27",
+   "usdtd": 7297.49,
+   "btc": 59923,
+   "btc_chg": 1.6,
+   "logged_at": "2026-11-28 01:37 UTC",
+   "live": true
+  },
+  {
+   "key": "bottom|2026-11-19|slow|w50",
+   "swing": "bottom|2026-11-19",
+   "kind": "bottom",
+   "layer": "slow",
+   "sign": "w50",
+   "day": "2026-11-27",
+   "usdtd": 7297.49,
+   "btc": 59923,
+   "btc_chg": 1.6,
+   "logged_at": "2026-11-28 01:37 UTC",
+   "live": true
   }
  ]
 }
