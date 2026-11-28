@@ -18,6 +18,7 @@
    9. S&P 500 (26 Nov 2026): a third market button next to USDT.D and TOTAL2ES (#spx), the cycle analysis on public/spxcycle.json plus "What BTC can do next".
    10. Alts (27 Nov 2026): a fourth market button after S&P 500 (#alts, #alts-<coin>): the BTC cycle analysis for XRP, DOGE, LINK, UNI, ARB, XLM and TRX
        (public/<coin>cycle.json, config/alts.json), one coin at a time from a row of coin buttons drawn by public/usdtd.js (window.__alts).
+   11. Market sentiment card (28 Nov 2026): US spot ETF net flows rows (score 0), from the sentiment document's flow_* rows.
    usage: require('./page.js').edit(originalText) -> served page body */
 'use strict';
 const ONE = 1;
@@ -116,6 +117,14 @@ const EDITS = [
    "  else if (/^alts-\\w+$/i.test(named)) { try { localStorage.setItem('bd_alt', named.slice(5).toUpperCase()); } catch (e) { /* storage unavailable */ } gaugeView('alts'); }\n", ONE],
   [/Math\.round\((\w+)\)\.toLocaleString\('en-US'\)/g, '__px0($1)', 8],
   [/d3\.format\(',\.0f'\)\((\w+)\)/g, '__pxd($1)', 4],
+
+  // 11. Market sentiment card (28 Nov 2026): US spot ETF net flows as context rows (score 0): the selected coin's own row
+  //     (BTC, ETH, SOL) and, in the BTC view, one row for the other coin ETFs (ETH, SOL, ZEC, HYPE)
+  ["    const total = out.reduce((a, x) => a + (x.score || 0), 0);\n",
+   "    const flw = cr['flow_' + coinA.toLowerCase()];\n" +
+   "    if (flw) out.push({ id: 'flow', gauge: flw.metric, now: flw.value, d1: null, d7: null, d30: null, trend: flw.change || '—', read: flw.note || '', score: 0, source: 'Farside' });\n" +
+   "    if (coinA === 'BTC' && cr.flow_alts) out.push({ id: 'flow_alts', gauge: cr.flow_alts.metric, now: cr.flow_alts.value, d1: null, d7: null, d30: null, trend: cr.flow_alts.change || '—', read: cr.flow_alts.note || '', score: 0, source: 'Farside' });\n" +
+   "    const total = out.reduce((a, x) => a + (x.score || 0), 0);\n", ONE],
 ];
 function edit(src) {
   let out = src;

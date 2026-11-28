@@ -23,7 +23,8 @@
   "gauge_total2":{ "series_4h": "tv/CRYPTOCAP_TOTAL2ES/4H", "use": "1D_from_4H", "last": 400 }
  },
  "readings": {
-  "sentiment":  { "reading": "snap/cmc_global", "use": "cmc", "quotes": "snap/cmc_quotes" },
+  "sentiment":  { "reading": "snap/cmc_global", "use": "cmc", "quotes": "snap/cmc_quotes",
+   "flows": "snap/etf_flows" },
   "derivs":     { "reading": "snap/coinglass_btc", "use": "coinglass" },
   "derivs_eth": { "reading": "snap/coinglass_eth", "use": "coinglass" },
   "derivs_sol": { "reading": "snap/coinglass_sol", "use": "coinglass" },

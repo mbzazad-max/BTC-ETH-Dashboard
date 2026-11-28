@@ -1434,6 +1434,9 @@ dash.calc('mkt_sentiment', {
     if (cr.mcap) out.push({ id: 'mcap', gauge: 'Total crypto market cap', now: cr.mcap.value, d1: null, d7: null, d30: null, trend: cr.mcap.change || '—', read: cr.mcap.note || '', score: 0, source: 'CoinMarketCap' });
     const coinA = window.__snap ? window.__snap.asset() : 'BTC', isEth = coinA === 'ETH', isAlt = coinA === 'SOL' || coinA === 'BNB', etf = isAlt ? cr['coin_' + coinA.toLowerCase()] : isEth ? cr.etf_eth : cr.etf;
     if (etf) out.push({ id: 'etf', gauge: isAlt ? etf.metric : isEth ? 'US spot ETH ETF assets' : 'US spot BTC ETF assets', now: etf.value, d1: null, d7: null, d30: null, trend: etf.change || '—', read: etf.note || '', score: 0, source: 'CoinMarketCap' });
+    const flw = cr['flow_' + coinA.toLowerCase()];
+    if (flw) out.push({ id: 'flow', gauge: flw.metric, now: flw.value, d1: null, d7: null, d30: null, trend: flw.change || '—', read: flw.note || '', score: 0, source: 'Farside' });
+    if (coinA === 'BTC' && cr.flow_alts) out.push({ id: 'flow_alts', gauge: cr.flow_alts.metric, now: cr.flow_alts.value, d1: null, d7: null, d30: null, trend: cr.flow_alts.change || '—', read: cr.flow_alts.note || '', score: 0, source: 'Farside' });
     const total = out.reduce((a, x) => a + (x.score || 0), 0);
     out.push({ id: 'overall', gauge: 'Overall', now: total >= 1 ? 'Risk-on' : total <= -1 ? 'Risk-off' : 'Neutral', d1: null, d7: null, d30: null, trend: '—', read: `Sum of tilts ${total >= 0 ? '+' : ''}${total.toFixed(1)} across ${out.filter((x) => x.score !== 0).length} scoring gauges`, score: total, source: '' });
     return out;

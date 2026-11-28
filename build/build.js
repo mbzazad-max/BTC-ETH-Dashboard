@@ -11,6 +11,7 @@
      sentiment -> the page's fetchCmc() applied to the stored CoinMarketCap answer (stamped with its fetch time)
      derivs / derivs_eth / derivs_sol / derivs_bnb -> the stored CoinGlass readings, as saved
      SOL / BNB CoinMarketCap rows -> added to the sentiment document from the stored get_crypto_quotes_latest answer
+     ETF net flows -> context rows added to the sentiment document from the stored Farside / SoSoValue history (snap/etf_flows)
    usage: node build/build.js <market-data dir> [--force]
    Writes public/snapshot.json and public/freshness.json. A source that cannot be built keeps its last good
    documents and is listed (the page shows "N sources kept from an older refresh"). Nothing is invented.
@@ -118,12 +119,58 @@ function quoteRows(q) {
   }
   return out;
 }
+// US spot ETF net flows (added 28 Nov 2026): one context row per coin (score 0 on the page) from the stored Farside /
+// SoSoValue history (Market-Data snap/etf_flows, US$ millions per US trading day). BTC's read uses the owner's backtest
+// (claude/btcdash/etf_flows_backtest.md, 28 Nov 2026): 5-day total in the lowest 15% since Jan 2024 -> BTC up 14 days later
+// 39% of the time vs 51% (not a contrarian buy); inflows over 5 days while BTC fell over 7 days -> 59% vs 51%; top 15% -> no edge.
+const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayTxt = (d) => Number(d.slice(8)) + ' ' + MONS[Number(d.slice(5, 7)) - 1];
+const musd = (v) => { const a = Math.abs(v), s = v < 0 ? '−' : v > 0 ? '+' : ''; return s + (a >= 1000 ? '$' + (a / 1000).toFixed(2) + 'B' : a >= 10 ? '$' + Math.round(a) + 'M' : a > 0 ? '$' + a.toFixed(1) + 'M' : '$0'); };
+function flowRows(p, btcClose) {
+  const out = [], A = p.assets || {}, stats = {};
+  for (const [sym, a] of Object.entries(A)) {
+    const d = (a.days || []).filter((x) => typeof x[1] === 'number').sort((x, y) => (x[0] < y[0] ? -1 : 1));
+    if (!d.length) continue;
+    const v = d.map((x) => x[1]), n = v.length, sum = (k) => (n >= k ? v.slice(-k).reduce((x, y) => x + y, 0) : null);
+    let out_ = 0; for (let i = n - 1; i >= 0 && v[i] < 0; i--) out_++;
+    let in_ = 0; for (let i = n - 1; i >= 0 && v[i] > 0; i--) in_++;
+    stats[sym] = { last: d[n - 1], s5: sum(5), s20: sum(20), out_, in_, d, a };
+  }
+  const streak = (s) => (s.out_ >= 2 ? `${s.out_} days of outflows in a row` : s.in_ >= 2 ? `${s.in_} days of inflows in a row` : '');
+  const change = (s) => [s.s5 != null && `5d ${musd(s.s5)}`, s.s20 != null && `20d ${musd(s.s20)}`, streak(s)].filter(Boolean).join(' · ');
+  const B = stats.BTC;
+  if (B) {
+    let read;
+    const sums = []; for (let i = 4; i < B.d.length; i++) sums.push(B.d.slice(i - 4, i + 1).reduce((x, y) => x + y[1], 0));
+    const srt = [...sums].sort((x, y) => x - y), q = (f) => srt[Math.floor(f * (srt.length - 1))];
+    const closes = btcClose || [], c0 = closes.length ? closes[closes.length - 1] : null, c7 = closes.length > 7 ? closes[closes.length - 8] : null;
+    const btc7 = c0 && c7 ? c0 / c7 - 1 : null;
+    if (sums.length < 250 || B.s5 == null) read = 'Not enough flow history yet to rank this week.';
+    else if (B.s5 <= q(0.15)) read = `Heavy outflows (5-day total in the lowest 15% since Jan 2024${B.s5 <= srt[0] ? ', the lowest on record' : ''}): institutions are selling. In the backtest BTC was higher 14 days later only 39% of the time from here (vs 51% normally): not a contrarian buy.`;
+    else if (B.s5 > 0 && btc7 != null && btc7 < 0) read = 'Inflows while BTC fell over the last week (dip buying). In the backtest BTC was higher 14 days later 59% of the time from here (vs 51% normally).';
+    else if (B.s5 >= q(0.85)) read = 'Strong inflows (5-day total in the top 15%): institutions buying, but the backtest found no clear edge from here (54% vs 51%).';
+    else read = 'Flows within their normal range: no signal.';
+    out.push({ id: 'flow_btc', metric: 'US spot BTC ETF net flows', value: `${musd(B.last[1])} (${dayTxt(B.last[0])})`, num: B.last[1], change: change(B),
+      note: read + ' Context only (score 0) until the edge is confirmed; re-test due Mar 2027. Farside, US$, per US trading day.' });
+  }
+  for (const sym of ['ETH', 'SOL', 'ZEC', 'HYPE']) {
+    const s = stats[sym]; if (!s) continue;
+    out.push({ id: 'flow_' + sym.toLowerCase(), metric: `US spot ${sym} ETF net flows`, value: `${musd(s.last[1])} (${dayTxt(s.last[0])})`, num: s.last[1], change: change(s),
+      note: `${s.s5 == null ? 'Too few days stored for a 5-day total yet.' : s.s5 < 0 ? 'Money leaving the funds over the last 5 trading days.' : s.s5 > 0 ? 'Money coming into the funds over the last 5 trading days.' : 'No net flow over the last 5 trading days.'}` +
+        (s.a.net_assets_musd ? ` Total net assets ${musd(s.a.net_assets_musd).replace('+', '')}.` : '') + ` Not backtested; context only. ${String(s.a.source || '').split(' (')[0]}.` });
+  }
+  const alts = ['ETH', 'SOL', 'ZEC', 'HYPE'].filter((k) => stats[k]);
+  if (alts.length) out.push({ id: 'flow_alts', metric: 'Other US spot crypto ETFs (net flows)', value: alts.map((k) => `${k} ${musd(stats[k].last[1])}`).join(' · '), num: null,
+    change: alts.filter((k) => stats[k].s5 != null).map((k) => `5d ${k} ${musd(stats[k].s5)}`).join(' · ') || 'building history',
+    note: `Latest US trading day per coin (${[...new Set(alts.map((k) => dayTxt(stats[k].last[0])))].join(', ')}). Farside (ETH, SOL, ZEC) and SoSoValue (HYPE). Not backtested; context only.` });
+  return out;
+}
 function reading(id) { const f = path.join(MD, 'data', 'snap', id.split('/')[1] + '.json'); return fs.existsSync(f) ? rd(f) : null; }
 
 // ---------- inputs and the skip check ----------
 const usedSeries = new Set(), usedReadings = new Set();
 for (const s of Object.values(cfg.sources)) { for (const k of ['series', 'series_4h', 'then', 'then_4h']) if (s[k]) usedSeries.add(s[k]); if (s.reading) usedReadings.add(s.reading); }
-for (const s of Object.values(cfg.readings)) { usedReadings.add(s.reading); if (s.quotes) usedReadings.add(s.quotes); }
+for (const s of Object.values(cfg.readings)) { usedReadings.add(s.reading); if (s.quotes) usedReadings.add(s.quotes); if (s.flows) usedReadings.add(s.flows); }
 const pageSum = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'reference', 'index.original.html'))).digest('hex');
 const buildSum = crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex');
 const inputsHash = crypto.createHash('sha256').update(JSON.stringify([pageSum, buildSum, cfg,
@@ -181,6 +228,7 @@ for (const [doc, s] of Object.entries(cfg.readings)) {
   try {
     if (!r) throw new Error('no reading ' + s.reading);
     docs['snap/' + doc] = s.use === 'cmc' ? cmcDoc(r.payload, r.fetched_at) : r.payload;
+    if (s.flows) { const fr = reading(s.flows); try { if (fr) { const bc = Object.keys(docs).filter((k) => /^snap\/btc_daily-\d+$/.test(k)).sort((x, y) => Number(x.split('-')[1]) - Number(y.split('-')[1])).flatMap((k) => docs[k].rows.map((r) => r[4])); docs['snap/' + doc].rows.push(...flowRows(fr.payload, bc)); } else kept.push({ id: s.flows, why: 'no reading yet' }); } catch (e) { kept.push({ id: s.flows, why: String(e.message || e) }); } }
     if (s.quotes) { const q = reading(s.quotes); try { if (q) docs['snap/' + doc].rows.push(...quoteRows(q.payload)); else kept.push({ id: s.quotes, why: 'no reading yet' }); } catch (e) { kept.push({ id: s.quotes, why: String(e.message || e) }); } }
   } catch (e) { kept.push({ id: doc, why: String(e.message || e) }); if (prevSnap.docs['snap/' + doc]) docs['snap/' + doc] = prevSnap.docs['snap/' + doc]; }
 }

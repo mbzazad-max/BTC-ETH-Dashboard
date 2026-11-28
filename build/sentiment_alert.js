@@ -67,8 +67,8 @@ function body(now, prev) {
   const rows = now.rows.filter((r) => r.id !== 'overall');
   const head = prev ? `Market sentiment changed from **${prev.label}** (${sgn(prev.total)}, since ${prev.since}) to **${now.label}** (${sgn(now.total)}).`
     : `Market sentiment alerts are now on. Current reading: **${now.label}** (${sgn(now.total)}). You will get an email each time the label changes.`;
-  const tbl = ['| Gauge | Now | 7D | Read | Tilt |', '|---|---|---|---|---|']
-    .concat(rows.map((r) => `| ${cell(r.gauge)} | ${cell(r.now)} | ${pct(r.d7)} | ${cell(r.read)} | ${r.score ? sgn(r.score) : '0 (context)'} |`))
+  const tbl = ['| Gauge | Now | 7D / recent | Read | Tilt |', '|---|---|---|---|---|']
+    .concat(rows.map((r) => `| ${cell(r.gauge)} | ${cell(r.now)} | ${r.d7 != null ? pct(r.d7) : cell(r.trend === '—' ? '' : r.trend)} | ${cell(r.read)} | ${r.score ? sgn(r.score) : '0 (context)'} |`))
     .concat([`| **Overall** | **${now.label}** | | Sum of tilts | **${sgn(now.total)}** |`]);
   const scoring = rows.filter((r) => r.score);
   const drivers = scoring.length ? scoring.map((r) => `${r.gauge} ${sgn(r.score)}`).join(', ') : 'no gauge leaning either way';
@@ -84,6 +84,7 @@ function body(now, prev) {
     '- Labels: total ≥ +1 = Risk-on, ≤ −1 = Risk-off, otherwise Neutral. Only the gauges with a non-zero tilt count; the others are context.',
     '- It is a short-horizon (about 2 weeks) contrarian read. For long-term investing use it to pace buying and trimming, not to decide whether to own BTC.',
     '- Your own backtest (htf_structure_backtest) found the TOTAL2 tilt had no edge; the stablecoin edge is real but fading since 2023 (57% vs 55%).',
+    '- ETF net flows are shown for context (score 0). Backtest (etf_flows_backtest): heavy BTC outflows were followed by more weakness (39% up after 14 days vs 51%), so they weaken a contrarian Risk-on; inflows while price falls (dip buying) leaned bullish (59%).',
     '- It does not show the trend. Check the daily/weekly trend and 4H structure on the Trade plan tab before acting.', '',
     `Board: ${URL}  ·  Build ${now.at}`, '',
     '_Not financial advice._'
