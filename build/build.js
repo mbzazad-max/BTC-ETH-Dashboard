@@ -166,12 +166,47 @@ function flowRows(p, btcClose) {
     note: `Latest US trading day per coin (${[...new Set(alts.map((k) => dayTxt(stats[k].last[0])))].join(', ')}). Farside and SoSoValue. Not backtested; context only.` });
   return out;
 }
+// FOMC odds and company BTC purchases (added 28 Nov 2026), SoSoValue API via Market-Data (snap/fomc_odds,
+// snap/btc_treasuries): context rows, score 0. Company buying backtest (28 Nov 2026, 96 weeks since Jan 2025): weeks in
+// the top 20% of buying -> BTC up 14 days later 55% vs 50% (p 0.4), no edge. FOMC odds: no history to test yet.
+const rangeTxt = (r) => { const m = String(r || '').match(/^(\d+)-(\d+)$/); return m ? (Number(m[1]) / 100).toFixed(2) + '–' + (Number(m[2]) / 100).toFixed(2) + '%' : String(r || '?'); };
+function fomcRow(p, histCsv) {
+  const ms = p.meetings || [], m = ms[0]; if (!m) return null;
+  const parts = [['Hike', m.p_hike], ['Hold', m.p_hold], ['Cut', m.p_cut]].filter((x) => typeof x[1] === 'number' && x[1] >= 0.5).sort((a, b) => b[1] - a[1]);
+  const top = (mm) => { const ps = mm.probabilities || []; let b = -1; ps.forEach((v, i) => { if (v != null && (b < 0 || v > ps[b])) b = i; }); return b < 0 ? null : [p.rate_ranges[b], ps[b]]; };
+  const nx = ms[1] && top(ms[1]);
+  let prev = '';
+  if (histCsv) {   // the last load on an earlier day for the same meeting: how the hike odds moved
+    const L = histCsv.trim().split('\n').slice(1).map((l) => l.split(',')).filter((c) => c[2] === m.meeting_date);
+    const today = L.length ? L[L.length - 1][1].slice(0, 10) : null, old = L.filter((c) => c[1].slice(0, 10) < today).pop();
+    if (old && old[6] !== '' && typeof m.p_hike === 'number') { const d = m.p_hike - Number(old[6]); prev = `hike odds ${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(1)} pts since ${dayTxt(old[1].slice(0, 10))}`; }
+  }
+  return { id: 'fomc', metric: `Next FOMC (${dayTxt(m.meeting_date)}): market odds`, value: parts.map((x) => `${x[0]} ${x[1].toFixed(1)}%`).join(' · ') || '—', num: m.p_hike,
+    change: [`now ${rangeTxt(p.current_range)}`, nx && `${dayTxt(ms[1].meeting_date)}: ${rangeTxt(nx[0])} most likely (${nx[1].toFixed(0)}%)`, prev].filter(Boolean).join(' · '),
+    note: 'Market-implied odds (SoSoValue, from Fed funds futures). A move that is almost fully priced in rarely moves BTC by itself; a surprise against these odds is what does. Context only, not backtested.' };
+}
+function treasuryRow(p, nowDay) {
+  const C = p.companies || {}, buys = [];
+  let held = 0, n = 0;
+  for (const [t, c] of Object.entries(C)) {
+    const r = c.purchases || []; if (!r.length) continue;
+    const h = [...r].reverse().find((x) => typeof x[2] === 'number'); if (h) { held += h[2]; n++; }
+    for (const x of r) if (typeof x[1] === 'number' && x[1] > 0) buys.push({ d: x[0], t, name: c.name || t, btc: x[1] });
+  }
+  if (!buys.length) return null;
+  const ago = (d) => (Date.parse(nowDay) - Date.parse(d)) / 864e5, b30 = buys.filter((x) => ago(x.d) <= 30), b7 = buys.filter((x) => ago(x.d) <= 7);
+  const sum = (a) => a.reduce((s, x) => s + x.btc, 0), fmt = (v) => Math.round(v).toLocaleString('en-US');
+  const prev30 = sum(buys.filter((x) => ago(x.d) > 30 && ago(x.d) <= 60)), last = buys.sort((a, b) => (a.d < b.d ? -1 : 1))[buys.length - 1];
+  return { id: 'treasuries', metric: 'Companies buying BTC (treasuries)', value: `${fmt(sum(b30))} BTC in 30 days (${new Set(b30.map((x) => x.t)).size} companies)`, num: sum(b30),
+    change: [`7d ${fmt(sum(b7))} BTC`, `prior 30d ${fmt(prev30)} BTC`, `latest ${last.name} +${fmt(last.btc)} (${dayTxt(last.d)})`].join(' · '),
+    note: `${n} listed companies hold about ${fmt(held)} BTC (SoSoValue). Purchases are dated when announced. Backtest since Jan 2025: heavy buying weeks were followed by BTC up 55% of the time after 14 days vs 50% normally, no clear edge. Context only.` };
+}
 function reading(id) { const f = path.join(MD, 'data', 'snap', id.split('/')[1] + '.json'); return fs.existsSync(f) ? rd(f) : null; }
 
 // ---------- inputs and the skip check ----------
 const usedSeries = new Set(), usedReadings = new Set();
 for (const s of Object.values(cfg.sources)) { for (const k of ['series', 'series_4h', 'then', 'then_4h']) if (s[k]) usedSeries.add(s[k]); if (s.reading) usedReadings.add(s.reading); }
-for (const s of Object.values(cfg.readings)) { usedReadings.add(s.reading); if (s.quotes) usedReadings.add(s.quotes); if (s.flows) usedReadings.add(s.flows); }
+for (const s of Object.values(cfg.readings)) { usedReadings.add(s.reading); if (s.quotes) usedReadings.add(s.quotes); if (s.flows) usedReadings.add(s.flows); if (s.fomc) usedReadings.add(s.fomc); if (s.treasuries) usedReadings.add(s.treasuries); }
 const pageSum = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'reference', 'index.original.html'))).digest('hex');
 const buildSum = crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex');
 const inputsHash = crypto.createHash('sha256').update(JSON.stringify([pageSum, buildSum, cfg,
@@ -230,6 +265,8 @@ for (const [doc, s] of Object.entries(cfg.readings)) {
     if (!r) throw new Error('no reading ' + s.reading);
     docs['snap/' + doc] = s.use === 'cmc' ? cmcDoc(r.payload, r.fetched_at) : r.payload;
     if (s.flows) { const fr = reading(s.flows); try { if (fr) { const bc = Object.keys(docs).filter((k) => /^snap\/btc_daily-\d+$/.test(k)).sort((x, y) => Number(x.split('-')[1]) - Number(y.split('-')[1])).flatMap((k) => docs[k].rows.map((r) => r[4])); docs['snap/' + doc].rows.push(...flowRows(fr.payload, bc)); } else kept.push({ id: s.flows, why: 'no reading yet' }); } catch (e) { kept.push({ id: s.flows, why: String(e.message || e) }); } }
+    if (s.fomc) { const fr = reading(s.fomc); try { if (fr) { const hf = path.join(MD, 'data', 'history', 'fomc_odds.csv'); const row = fomcRow(fr.payload, fs.existsSync(hf) ? fs.readFileSync(hf, 'utf8') : null); if (row) docs['snap/' + doc].rows.push(row); } else kept.push({ id: s.fomc, why: 'no reading yet' }); } catch (e) { kept.push({ id: s.fomc, why: String(e.message || e) }); } }
+    if (s.treasuries) { const tr = reading(s.treasuries); try { if (tr) { const row = treasuryRow(tr.payload, AT.slice(0, 10)); if (row) docs['snap/' + doc].rows.push(row); } else kept.push({ id: s.treasuries, why: 'no reading yet' }); } catch (e) { kept.push({ id: s.treasuries, why: String(e.message || e) }); } }
     if (s.quotes) { const q = reading(s.quotes); try { if (q) docs['snap/' + doc].rows.push(...quoteRows(q.payload)); else kept.push({ id: s.quotes, why: 'no reading yet' }); } catch (e) { kept.push({ id: s.quotes, why: String(e.message || e) }); } }
   } catch (e) { kept.push({ id: doc, why: String(e.message || e) }); if (prevSnap.docs['snap/' + doc]) docs['snap/' + doc] = prevSnap.docs['snap/' + doc]; }
 }

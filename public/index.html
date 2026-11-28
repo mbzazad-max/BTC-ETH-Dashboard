@@ -1437,6 +1437,8 @@ dash.calc('mkt_sentiment', {
     const flw = cr['flow_' + coinA.toLowerCase()];
     if (flw) out.push({ id: 'flow', gauge: flw.metric, now: flw.value, d1: null, d7: null, d30: null, trend: flw.change || '—', read: flw.note || '', score: 0, source: 'Farside' });
     if (coinA === 'BTC' && cr.flow_alts) out.push({ id: 'flow_alts', gauge: cr.flow_alts.metric, now: cr.flow_alts.value, d1: null, d7: null, d30: null, trend: cr.flow_alts.change || '—', read: cr.flow_alts.note || '', score: 0, source: 'Farside' });
+    if (cr.fomc) out.push({ id: 'fomc', gauge: cr.fomc.metric, now: cr.fomc.value, d1: null, d7: null, d30: null, trend: cr.fomc.change || '—', read: cr.fomc.note || '', score: 0, source: 'SoSoValue' });
+    if (coinA === 'BTC' && cr.treasuries) out.push({ id: 'treasuries', gauge: cr.treasuries.metric, now: cr.treasuries.value, d1: null, d7: null, d30: null, trend: cr.treasuries.change || '—', read: cr.treasuries.note || '', score: 0, source: 'SoSoValue' });
     const total = out.reduce((a, x) => a + (x.score || 0), 0);
     out.push({ id: 'overall', gauge: 'Overall', now: total >= 1 ? 'Risk-on' : total <= -1 ? 'Risk-off' : 'Neutral', d1: null, d7: null, d30: null, trend: '—', read: `Sum of tilts ${total >= 0 ? '+' : ''}${total.toFixed(1)} across ${out.filter((x) => x.score !== 0).length} scoring gauges`, score: total, source: '' });
     return out;
