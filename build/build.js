@@ -153,16 +153,17 @@ function flowRows(p, btcClose) {
     out.push({ id: 'flow_btc', metric: 'US spot BTC ETF net flows', value: `${musd(B.last[1])} (${dayTxt(B.last[0])})`, num: B.last[1], change: change(B),
       note: read + ' Context only (score 0) until the edge is confirmed; re-test due Mar 2027. Farside, US$, per US trading day.' });
   }
-  for (const sym of ['ETH', 'SOL', 'ZEC', 'HYPE']) {
+  const ALTS = ['ETH', 'SOL', 'XRP', 'DOGE', 'LINK', 'ZEC', 'HYPE'];
+  for (const sym of ALTS) {
     const s = stats[sym]; if (!s) continue;
     out.push({ id: 'flow_' + sym.toLowerCase(), metric: `US spot ${sym} ETF net flows`, value: `${musd(s.last[1])} (${dayTxt(s.last[0])})`, num: s.last[1], change: change(s),
       note: `${s.s5 == null ? 'Too few days stored for a 5-day total yet.' : s.s5 < 0 ? 'Money leaving the funds over the last 5 trading days.' : s.s5 > 0 ? 'Money coming into the funds over the last 5 trading days.' : 'No net flow over the last 5 trading days.'}` +
         (s.a.net_assets_musd ? ` Total net assets ${musd(s.a.net_assets_musd).replace('+', '')}.` : '') + ` Not backtested; context only. ${String(s.a.source || '').split(' (')[0]}.` });
   }
-  const alts = ['ETH', 'SOL', 'ZEC', 'HYPE'].filter((k) => stats[k]);
+  const alts = ALTS.filter((k) => stats[k]);
   if (alts.length) out.push({ id: 'flow_alts', metric: 'Other US spot crypto ETFs (net flows)', value: alts.map((k) => `${k} ${musd(stats[k].last[1])}`).join(' · '), num: null,
     change: alts.filter((k) => stats[k].s5 != null).map((k) => `5d ${k} ${musd(stats[k].s5)}`).join(' · ') || 'building history',
-    note: `Latest US trading day per coin (${[...new Set(alts.map((k) => dayTxt(stats[k].last[0])))].join(', ')}). Farside (ETH, SOL, ZEC) and SoSoValue (HYPE). Not backtested; context only.` });
+    note: `Latest US trading day per coin (${[...new Set(alts.map((k) => dayTxt(stats[k].last[0])))].join(', ')}). Farside and SoSoValue. Not backtested; context only.` });
   return out;
 }
 function reading(id) { const f = path.join(MD, 'data', 'snap', id.split('/')[1] + '.json'); return fs.existsSync(f) ? rd(f) : null; }
