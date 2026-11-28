@@ -1,0 +1,457 @@
+{
+ "about": "Cycle early-sign email alerts (build/cycle_alerts.js). episodes: <asset>|<bottom/top>|<extreme day> -> signs fired and alerts sent; log: every alert, newest last.",
+ "episodes": {
+  "BTC|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "BTC|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "BTC|top|swing|2026-11-22": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "ETH|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "ETH|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "ETH|top|swing|2026-11-22": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "SOL|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [
+    {
+     "at": "2026-11-28T07:16Z",
+     "count": 3,
+     "extra": false
+    }
+   ],
+   "count": 3,
+   "signs": [
+    "div 2026-11-20",
+    "div10 2026-11-23",
+    "d10 2026-11-23"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "SOL|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "SOL|top|swing|2026-11-23": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "BNB|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "BNB|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "BNB|top|swing|2026-11-22": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "XRP|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [
+    {
+     "at": "2026-11-28T07:16Z",
+     "count": 3,
+     "extra": false
+    }
+   ],
+   "count": 3,
+   "signs": [
+    "div 2026-11-20",
+    "div10 2026-11-26",
+    "d10 2026-11-26"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "XRP|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "XRP|top|swing|2026-11-27": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "DOGE|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [
+    {
+     "at": "2026-11-28T07:16Z",
+     "count": 3,
+     "extra": false
+    }
+   ],
+   "count": 3,
+   "signs": [
+    "div 2026-11-20",
+    "div10 2026-11-27",
+    "d10 2026-11-27"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "DOGE|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "DOGE|top|swing|2026-11-27": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "LINK|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [
+    {
+     "at": "2026-11-28T07:16Z",
+     "count": 2,
+     "extra": false
+    }
+   ],
+   "count": 2,
+   "signs": [
+    "rev 2026-11-26",
+    "d10 2026-11-23"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "LINK|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "LINK|top|swing|2026-11-27": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "UNI|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 1,
+   "signs": [
+    "d10 2026-11-27"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "UNI|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "UNI|top|swing|2026-09-22": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [
+    {
+     "at": "2026-11-28T07:16Z",
+     "count": 5,
+     "extra": true,
+     "silent": "newest sign 2026-11-15 older than 10 days"
+    }
+   ],
+   "count": 5,
+   "signs": [
+    "d20 2026-10-06",
+    "d50 2026-10-12",
+    "x2050 2026-10-22",
+    "w20 2026-11-15",
+    "d200 2026-11-14"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "ARB|bottom|2026-11-24": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "ARB|bottom|swing|2026-11-24": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "ARB|top|swing|2026-09-22": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [
+    {
+     "at": "2026-11-28T07:16Z",
+     "count": 6,
+     "extra": true
+    }
+   ],
+   "count": 6,
+   "signs": [
+    "d20 2026-10-02",
+    "d50 2026-10-22",
+    "x2050 2026-10-24",
+    "w20 2026-11-15",
+    "d200 2026-11-19",
+    "w50 2026-11-22"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "XLM|bottom|2026-11-24": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "XLM|bottom|swing|2026-11-24": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "XLM|top|swing|2026-11-25": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "TRX|bottom|2026-11-27": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 1,
+   "signs": [
+    "div 2026-11-27"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "TRX|bottom|swing|2026-11-27": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "TRX|top|2026-10-29": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [
+    {
+     "at": "2026-11-28T07:16Z",
+     "count": 4,
+     "extra": true
+    }
+   ],
+   "count": 4,
+   "signs": [
+    "rev 2026-10-30",
+    "d10 2026-10-30",
+    "swing 2026-10-30",
+    "d20 2026-10-30"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "S&P 500|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [
+    {
+     "at": "2026-11-28T07:16Z",
+     "count": 2,
+     "extra": false
+    }
+   ],
+   "count": 2,
+   "signs": [
+    "rev 2026-11-23",
+    "d10 2026-11-27"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "S&P 500|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 1,
+   "signs": [
+    "w50 2026-11-27"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "S&P 500|top|swing|2026-11-27": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "USDT.D|bottom|swing|2026-11-23": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "USDT.D|top|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "USDT.D|top|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "TOTAL2ES|bottom|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 1,
+   "signs": [
+    "div 2026-11-20"
+   ],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "TOTAL2ES|bottom|swing|2026-11-20": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  },
+  "TOTAL2ES|top|swing|2026-11-23": {
+   "first_seen": "2026-11-28T07:16Z",
+   "alerts": [],
+   "count": 0,
+   "signs": [],
+   "updated": "2026-11-28T07:16Z"
+  }
+ },
+ "log": [
+  {
+   "at": "2026-11-28T07:16Z",
+   "asset": "SOL",
+   "side": "bottom",
+   "layer": "fast",
+   "extreme": "2026-11-20",
+   "count": 3,
+   "why": "3 early bottom signs"
+  },
+  {
+   "at": "2026-11-28T07:16Z",
+   "asset": "XRP",
+   "side": "bottom",
+   "layer": "fast",
+   "extreme": "2026-11-20",
+   "count": 3,
+   "why": "3 early bottom signs"
+  },
+  {
+   "at": "2026-11-28T07:16Z",
+   "asset": "DOGE",
+   "side": "bottom",
+   "layer": "fast",
+   "extreme": "2026-11-20",
+   "count": 3,
+   "why": "3 early bottom signs"
+  },
+  {
+   "at": "2026-11-28T07:16Z",
+   "asset": "LINK",
+   "side": "bottom",
+   "layer": "fast",
+   "extreme": "2026-11-20",
+   "count": 2,
+   "why": "2 early bottom signs"
+  },
+  {
+   "at": "2026-11-28T07:16Z",
+   "asset": "ARB",
+   "side": "top",
+   "layer": "swing",
+   "extreme": "2026-09-22",
+   "count": 6,
+   "why": "6 daily/weekly swing top signs"
+  },
+  {
+   "at": "2026-11-28T07:16Z",
+   "asset": "TRX",
+   "side": "top",
+   "layer": "fast",
+   "extreme": "2026-10-29",
+   "count": 4,
+   "why": "4 early top signs"
+  },
+  {
+   "at": "2026-11-28T07:16Z",
+   "asset": "S&P 500",
+   "side": "bottom",
+   "layer": "fast",
+   "extreme": "2026-11-20",
+   "count": 2,
+   "why": "2 early bottom signs"
+  }
+ ]
+}
