@@ -3,6 +3,9 @@
    The page calls window.__usdtd() / window.__btccyc() when the tab is shown (tools/page.js edits). Read-only. */
 (function () {
   'use strict';
+// "Levels to watch next" (owner, 28 Nov 2026): one file for all tabs, built by build/levels_next.js (same list as the Metal page)
+let LVP = null;
+const levelsNext = () => LVP || (LVP = fetch('levels_next.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null));
 function make(A) {
   // B = price-like (BTC, TOTAL2ES: up = bullish); OB = BTC itself (no separate BTC column); T2 = TOTAL2ES (owner, 22 Nov 2026)
   // ET = a coin with its own cycle dates (ETH, SOL, BNB; owner, 22 Nov 2026): price-like like BTC, BTC kept as the context column.
@@ -38,7 +41,7 @@ function make(A) {
   const AL = !!A.alt; if (AL) COINS[A.coin] = { an: 'a', since: '', sinceY: '', readSince: '', chart: ['2015-01-01', 'All'], sig: '', cy: {}, vsBtc: '', behave: '', dates: '', hist: '' };
   const T2 = !!A.t2, OB = !!A.btc, CC = COINS[A.coin], ET = !!CC, B = OB || T2 || ET, NM = OB ? 'BTC' : T2 ? 'TOTAL2ES' : ET ? A.coin : 'USDT.D';
   const CYW = ET ? NM : 'BTC';     // whose cycle the regimes and past bears follow
-  let J = null, loading = null, tf = 'daily', span = '3y';
+  let J = null, LV = null, loading = null, tf = 'daily', span = '3y';
   const NS = [20, 50, 100, 200];
   const COL = { close: 'var(--ink)', 20: 'var(--acc)', 50: 'var(--warn)', 100: '#9b59b6', 200: 'var(--dn)' };
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -59,7 +62,7 @@ function make(A) {
     if (J) return Promise.resolve(J);
     if (!loading) loading = fetch(A.json, { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((j) => {
       if (AL && j.coin) { const c = j.coin.cy || {}; Object.assign(CC, j.coin, { cy: Object.fromEntries(['t1', 'b1', 't2', 'b2', 't3'].filter((k) => c[k]).map((k) => [c[k], k[0] === 't' ? 'top' : 'bottom'])) }); }
-      return (J = j);
+      return levelsNext().then((all) => { LV = (all && all.assets && all.assets[A.json]) || null; return (J = j); });
     });
     return loading;
   }
@@ -488,11 +491,24 @@ function make(A) {
     return c;
   }
 
+  // Levels to watch next: the nearest levels not reached yet, from build/levels_next.js (public/levels_next.json)
+  function levelsCard() {
+    if (!LV || (!LV.up.length && !LV.down.length)) return null;
+    const c = card('Levels to watch next', `Nearest first, from the last closed day (${dd(LV.day)}, ${fp(LV.price)}). Upside: the bottom signs and swing confirmation not fired yet, and the 100W while below it; downside: the latest 30-day low, the 200W while above it, and the top signs not fired yet.${B ? '' : ' For USDT.D, upside = USDT.D rising (bad for crypto).'} An email goes out when any of these is crossed on a closed day or week.`);
+    const pct = (v) => { const x = (v / LV.price - 1) * 100; return `<span class="${cls(x)}">${sp(x)}</span>`; };
+    const lab = (s) => s.replace(/\((\d{4}-\d\d-\d\d)\)/, (_, q) => '(' + dd(q) + ')');
+    for (const [head, xs] of [['Upside', LV.up], ['Downside', LV.down]]) {
+      c.append(el('p', null, `<b>${head}</b>`));
+      c.append(table(['Level', 'Price', 'From now'], xs.length ? xs.map((x) => [lab(x.label), fp(x.level), pct(x.level)]) : [['None', '—', '—']]));
+    }
+    return c;
+  }
+
   function render() {
     const R = root(); if (!R) return;
     if (!J) { R.replaceChildren(el('div', { className: 'br-card' }, '<p class="note">Loading ' + NM + ' analysis…</p>')); return; }
     const foot = el('p', { className: 'rf-note' }, `Built ${J.generated}. ${J.source} ${ET ? `${NM} cycle dates (closes): ${CC.dates}.` : 'BTC cycle dates (closes): top 16 Dec 2017, bottom 15 Dec 2018, 2019 rally high 26 Jun 2019, bottom 12 Mar 2020, top 8 Nov 2021, bottom 21 Nov 2022, top 6 Oct 2025.'} ${ET ? CC.hist : T2 ? 'TOTAL2ES history starts 1 Apr 2014; the 100W exists from 2016 and the 200W from 2018. Altcoin data before 2017 is thin (few coins).' : B ? 'BTC history starts 1 Dec 2014; the 100W exists from Nov 2016 and the 200W from Oct 2018.' : 'USDT.D history starts 8 Mar 2015; the 100W exists from Feb 2017 and the 200W from Jan 2019.'} Patterns from past cycles, not a forecast; not financial advice.`);
-    R.replaceChildren(...[linkCard(), readCard(), watchCard(B ? J.bottom_watch : J.top_watch), watchCard(B ? J.top_watch : J.bottom_watch), swingsCard()].filter(Boolean), nowCard(), chartCard(), behaveCard(), signalsCard(), B ? analogCardBtc() : analogCard(), turnCard(), foot);
+    R.replaceChildren(...[linkCard(), readCard(), watchCard(B ? J.bottom_watch : J.top_watch), watchCard(B ? J.top_watch : J.bottom_watch), levelsCard(), swingsCard()].filter(Boolean), nowCard(), chartCard(), behaveCard(), signalsCard(), B ? analogCardBtc() : analogCard(), turnCard(), foot);
   }
   let rs = null;
   window.addEventListener('resize', () => { clearTimeout(rs); rs = setTimeout(() => { const R = root(); if (J && R && !R.closest('[hidden]')) render(); }, 200); });

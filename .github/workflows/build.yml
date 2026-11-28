@@ -72,6 +72,8 @@ jobs:
         run: for c in xrp doge link uni arb xlm trx; do node build/usdtd.js md --asset=$c; done
       - name: Cycle early-sign alerts, 2+ fast bottom or top signs on any cycle tab (BTC, ETH, SOL, BNB, the 7 alts, S&P 500, USDT.D, TOTAL2ES; skipped with a warning if it fails)
         run: node build/cycle_alerts.js || echo "::warning::Cycle early-sign alerts skipped"
+      - name: Levels to watch next on every cycle tab, and an email when any listed level is crossed (skipped with a warning if it fails)
+        run: node build/levels_next.js || echo "::warning::Levels-to-watch list and alerts skipped"
       - name: Save the new snapshot (one commit)
         run: |
           git config user.name "github-actions[bot]"
@@ -79,6 +81,8 @@ jobs:
           git add public/snapshot.json public/freshness.json public/usdtd.json history/plans.json history/structure_test.json history/signals.json
           [ -f history/levels.json ] && git add history/levels.json
           [ -f history/cycle_alerts.json ] && git add history/cycle_alerts.json
+          [ -f history/levels_next.json ] && git add history/levels_next.json
+          [ -f public/levels_next.json ] && git add public/levels_next.json
           [ -f history/usdtd_log.json ] && git add history/usdtd_log.json
           [ -f public/btccycle.json ] && git add public/btccycle.json
           [ -f history/btc_log.json ] && git add history/btc_log.json
@@ -95,10 +99,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          [ -s /tmp/signal_alerts.json ] || [ -s /tmp/level_alerts.json ] || [ -s /tmp/cycle_alerts.json ] || exit 0
+          [ -s /tmp/signal_alerts.json ] || [ -s /tmp/level_alerts.json ] || [ -s /tmp/cycle_alerts.json ] || [ -s /tmp/levels_alerts.json ] || exit 0
           node -e '
             const fs = require("fs"), rd = (f) => (fs.existsSync(f) && fs.statSync(f).size ? JSON.parse(fs.readFileSync(f, "utf8")) : []);
-            const a = rd("/tmp/signal_alerts.json").concat(rd("/tmp/level_alerts.json"), rd("/tmp/cycle_alerts.json"));
+            const a = rd("/tmp/signal_alerts.json").concat(rd("/tmp/level_alerts.json"), rd("/tmp/cycle_alerts.json"), rd("/tmp/levels_alerts.json"));
             a.forEach((x, i) => { require("fs").writeFileSync("/tmp/alert_" + i + ".md", x.body + "\n\n@mbzazad-max"); require("fs").writeFileSync("/tmp/alert_" + i + ".title", x.title); });
             console.log(a.length);' > /tmp/alert_n
           n=$(cat /tmp/alert_n); i=0

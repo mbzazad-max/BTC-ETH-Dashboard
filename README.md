@@ -130,3 +130,16 @@ Owner's request: an email when any cycle-tab asset shows at least two early, or 
 - State in `history/cycle_alerts.json` (per episode: signs fired, alerts sent; log of every alert). Prices in the email are the asset's own closes from its tab's daily series.
 - Also the slower **🧭 swing confirmation (daily + weekly)** signs after the 90-day extreme (20D, 50D, 20D/50D cross, 20W, 200D, 50W): email 1 when 2+ have fired, email 2 when the first weekly sign (20W or 50W) fires later. A swing episode can stay open for months, so it emails only if its newest sign fired within the last 10 days; older ones are recorded silently.
 - First run sends the episodes already at 2+ (on 27 Nov 2026: early bottoms SOL, XRP, LINK after the 20 Nov lows, early top TRX after the 29 Oct high, swing top ARB after the 22 Sep high; UNI's swing top recorded without email, newest sign 15 Nov).
+
+## Levels to watch next + email alerts (added 28 Nov 2026, owner's request)
+- Every cycle tab (BTC, ETH, SOL, BNB, the 7 alts, S&P 500, USDT.D, TOTAL2ES) has a **Levels to watch next** card under the two
+  watch cards: the same list as the Metal Cycle page. Upside: the live early bottom signs not fired yet (10D, key reversal, 20D,
+  swing break), the bottom swing-confirmation signs not fired yet (20D, 50D, 20W, 200D, 50W) and the 100W while the weekly close
+  is below it. Downside: the latest 30-day low, the 200W while above it, and the live early top signs not fired yet. Nearest first.
+- `build/levels_next.js` builds it from each tab's own JSON (nothing new fetched) with `build/levels_core.js` (byte-identical copy
+  in repo Metal) and writes `public/levels_next.json` (only when a list changed); `public/usdtd.js` draws the card.
+- Email: each build compares the list saved last time (`history/levels_next.json`) with the new closed candles. A level triggers
+  when the listed sign has now fired in the same episode, a new weekly close is above its 100W / under its 200W, or a new daily
+  close is under the 30-day low. One email per tab per build lists every level that triggered plus the next levels (GitHub issue
+  mentioning the owner, the same email step as the other alerts). The first run only saves the lists.
+- `tests/render.js` checks the card is on every cycle tab.

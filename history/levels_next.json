@@ -1,0 +1,1242 @@
+{
+ "about": "Levels to watch next (build/levels_next.js): the list saved at the last build per cycle tab, and a log of every triggered level (newest last).",
+ "lists": {
+  "btccycle.json": {
+   "price": 59923.1,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:c10",
+     "label": "Daily close above the 10D",
+     "level": 60755.453,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 62639.52,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 65210.428,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 68314,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 71814.8887,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 73747.772,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 74266.8898,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 74408.7288,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 88352.2514,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 58951.51,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    }
+   ]
+  },
+  "ethcycle.json": {
+   "price": 1662.48,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:c10",
+     "label": "Daily close above the 10D",
+     "level": 1700.33,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 1770.55,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 1828.7645,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 1929.88,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 2107.9051,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 2153.6428,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 2223.9,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 2251.7684,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 2670.7402,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 1623.09,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    }
+   ]
+  },
+  "solcycle.json": {
+   "price": 71.66,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 73.56,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 75.0615,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 78.19,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 87.831,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 90.6308,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 92.6895,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 93.545,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 133.6323,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 68.88,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    }
+   ]
+  },
+  "bnbcycle.json": {
+   "price": 554.72,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:c10",
+     "label": "Daily close above the 10D",
+     "level": 558.023,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 582.71,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 598.5945,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 630.31,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 654.1347,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 674.397,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 675.0052,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 682.7084,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 725.7021,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 540.84,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    }
+   ]
+  },
+  "xrpcycle.json": {
+   "price": 0.9489,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 0.9732,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 0.97986,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 1.011,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 1.17289,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 1.22733,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 1.23891,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 1.38751,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 1.95538,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 0.9107,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    }
+   ]
+  },
+  "dogecycle.json": {
+   "price": 0.05775,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 0.05849,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 0.0603005,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 0.06454,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 0.0713952,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 0.0780035,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 0.0811008,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 0.0932478,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 0.155278,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 0.05439,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    }
+   ]
+  },
+  "linkcycle.json": {
+   "price": 9.375,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 9.3931,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 9.858,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 10.0616,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 10.1679,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 10.7941,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 10.8703,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 13.8514,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 8.545,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    }
+   ]
+  },
+  "unicycle.json": {
+   "price": 4.827,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 4.98,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 5.04473,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 5.34455,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 5.747,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 5.93875,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 6.39423,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 6.45398,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 4.476,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    }
+   ]
+  },
+  "arbcycle.json": {
+   "price": 0.1152,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:c10",
+     "label": "Daily close above the 10D",
+     "level": 0.11568,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 0.118,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 0.124147,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 0.131138,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 0.13171,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 0.1336,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 0.139445,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 0.157936,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 0.274306,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-24) restarts the bottom watch",
+     "level": 0.1104,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-24"
+    }
+   ]
+  },
+  "xlmcycle.json": {
+   "price": 0.1268,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:c10",
+     "label": "Daily close above the 10D",
+     "level": 0.12911,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 0.1324,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 0.136405,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 0.1416,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 0.159434,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 0.17799,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 0.180243,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 0.181524,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-24"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 0.25413,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-24) restarts the bottom watch",
+     "level": 0.1243,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-24"
+    }
+   ]
+  },
+  "trxcycle.json": {
+   "price": 0.3009,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:c10",
+     "label": "Daily close above the 10D",
+     "level": 0.30609,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-27"
+    },
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 0.3065,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-27"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 0.309325,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-27"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 0.3101,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-27"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 0.319106,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-27"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 0.320424,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-27"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 0.329065,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-27"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 0.330869,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-27"
+    }
+   ],
+   "down": [
+    {
+     "id": "w200",
+     "label": "Weekly close under the 200W",
+     "level": 0.206708,
+     "dir": "down",
+     "tf": "W",
+     "kind": "w200"
+    }
+   ]
+  },
+  "spxcycle.json": {
+   "price": 7297.49,
+   "day": "2026-11-27",
+   "week": "2026-11-23",
+   "up": [
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 7354.2707,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 7401.971,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 7580.1135,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 7595.7214,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 7619.38,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 6910.39,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w200",
+     "label": "Weekly close under the 200W",
+     "level": 5809.3542,
+     "dir": "down",
+     "tf": "W",
+     "kind": "w200"
+    }
+   ]
+  },
+  "usdtd.json": {
+   "price": 8.5205,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [],
+   "down": [
+    {
+     "id": "top_fast:c10",
+     "label": "Daily close below the 10D",
+     "level": 8.4639,
+     "dir": "down",
+     "tf": "D",
+     "kind": "top_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "top_fast:keyrev",
+     "label": "Key reversal: close below the high day's low",
+     "level": 8.2474,
+     "dir": "down",
+     "tf": "D",
+     "kind": "top_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "top_fast:c20",
+     "label": "Daily close below the 20D",
+     "level": 8.0353,
+     "dir": "down",
+     "tf": "D",
+     "kind": "top_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "top_fast:swing",
+     "label": "Swing break: close below the 7-day low before it",
+     "level": 7.6863,
+     "dir": "down",
+     "tf": "D",
+     "kind": "top_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-09-21) restarts the bottom watch",
+     "level": 6.2953,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-09-21"
+    },
+    {
+     "id": "w200",
+     "label": "Weekly close under the 200W",
+     "level": 6.0918,
+     "dir": "down",
+     "tf": "W",
+     "kind": "w200"
+    }
+   ]
+  },
+  "total2es.json": {
+   "price": 568948983961,
+   "day": "2026-11-27",
+   "week": "2026-11-16",
+   "up": [
+    {
+     "id": "bottom_fast:c10",
+     "label": "Daily close above the 10D",
+     "level": 574124255475.2,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:keyrev",
+     "label": "Key reversal: close above the low day's high",
+     "level": 597738538402,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:c20",
+     "label": "Daily close above the 20D",
+     "level": 611021751342,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_fast:swing",
+     "label": "Swing break: close above the 7-day high before it",
+     "level": 642397900647,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_fast",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c200",
+     "label": "Daily close above the 200D",
+     "level": 693689952398.32,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:c50",
+     "label": "Daily close above the 50D",
+     "level": 710704183186.38,
+     "dir": "up",
+     "tf": "D",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w20",
+     "label": "Weekly close above the 20W",
+     "level": 720680822617.85,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "bottom_swing:w50",
+     "label": "Weekly close above the 50W",
+     "level": 727936888129.08,
+     "dir": "up",
+     "tf": "W",
+     "kind": "bottom_swing",
+     "ep": "2026-11-20"
+    },
+    {
+     "id": "w100",
+     "label": "Weekly close back above the 100W (ends the Bear read)",
+     "level": 896383841402.92,
+     "dir": "up",
+     "tf": "W",
+     "kind": "w100"
+    }
+   ],
+   "down": [
+    {
+     "id": "low30",
+     "label": "Close under the latest 30-day low (2026-11-20) restarts the bottom watch",
+     "level": 553957582645,
+     "dir": "down",
+     "tf": "D",
+     "kind": "low30",
+     "ep": "2026-11-20"
+    }
+   ]
+  }
+ },
+ "log": []
+}
